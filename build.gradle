@@ -2,8 +2,8 @@ plugins {
     id 'fabric-loom' version '1.6-SNAPSHOT'
 }
 
-sourceCompatibility = JavaVersion.VERSION_21
-targetCompatibility = JavaVersion.VERSION_21
+sourceCompatibility = 25
+targetCompatibility = 25
 
 archivesBaseName = project.archives_base_name
 version = project.mod_version + '+v' + new Date().format('yyMMddHHmm')
@@ -41,5 +41,5 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
-    it.options.release = 21
+    it.options.release = 25
 }
