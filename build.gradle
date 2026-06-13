@@ -1,0 +1,45 @@
+plugins {
+    id 'fabric-loom' version '1.6-SNAPSHOT'
+}
+
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
+
+archivesBaseName = project.archives_base_name
+version = project.mod_version + '+v' + new Date().format('yyMMddHHmm')
+group = project.maven_group
+
+repositories {
+    maven {
+        url = uri("${rootDir}/../maven-repo")
+    }
+    maven {
+        url = 'https://masa.dy.fi/maven'
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Carpet 依赖 — 自动从共享 Maven 仓库检测最新版本
+    def carpetRepoDir = file("${rootDir}/../maven-repo/carpet/fabric-carpet")
+    def mcPrefix = project.minecraft_version.substring(0, project.minecraft_version.lastIndexOf('.'))
+    def versions = carpetRepoDir.exists() && carpetRepoDir.list() ?
+        carpetRepoDir.list().findAll { it.startsWith(mcPrefix) } : []
+    def carpetVersion = versions ? versions.sort().last() : project.carpet_version
+    modCompileOnly "carpet:fabric-carpet:${carpetVersion}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release = 21
+}
