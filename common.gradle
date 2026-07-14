@@ -1,0 +1,70 @@
+final int mcVersion = project.mcVersion
+final boolean unobfuscated = mcVersion >= 26_00_00
+
+apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
+apply plugin: 'com.replaymod.preprocess'
+
+repositories {
+    maven {
+        url = 'https://masa.dy.fi/maven'
+        content { includeModule('carpet', 'fabric-carpet') }
+    }
+    maven {
+        url = 'https://maven.fallenbreath.me/jitpack'
+        content { includeGroupAndSubgroups('com.github') }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    if (!unobfuscated) {
+        mappings loom.officialMojangMappings()
+    }
+    def loader = unobfuscated ? implementation("net.fabricmc:fabric-loader:${project.loader_version}")
+            : modImplementation("net.fabricmc:fabric-loader:${project.loader_version}")
+    def carpet = project.carpet_core_version.startsWith('com.github.')
+            ? project.carpet_core_version
+            : "carpet:fabric-carpet:${project.carpet_core_version}"
+    if (unobfuscated) {
+        implementation carpet
+    } else {
+        modImplementation carpet
+    }
+}
+
+def javaVersion = mcVersion >= 26_00_00 ? JavaVersion.VERSION_25 : JavaVersion.VERSION_21
+group = project.maven_group
+def artifactMcVersion = project.findProperty('artifact_mc_version') ?: project.minecraft_version
+version = "${project.mod_version}+v${new Date().format('yyMMddHHmm')}-mc${artifactMcVersion}"
+base.archivesName = project.archives_base_name
+
+loom {
+    mixin {
+        useLegacyMixinAp = !unobfuscated
+    }
+}
+
+processResources {
+    def properties = [
+            version: project.version,
+            minecraft_dependency: project.minecraft_dependency,
+            carpet_dependency: project.carpet_dependency,
+            java_level: javaVersion == JavaVersion.VERSION_25 ? 25 : 21,
+            compatibility_level: javaVersion == JavaVersion.VERSION_25 ? 'JAVA_25' : 'JAVA_21'
+    ]
+    inputs.properties(properties)
+    filesMatching('fabric.mod.json') { expand properties }
+    filesMatching('carpet-fga-addition.mixins.json') {
+        filter { line -> line.replace('{{COMPATIBILITY_LEVEL}}', properties.compatibility_level) }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = javaVersion == JavaVersion.VERSION_25 ? 25 : 21
+}
+
+java {
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+}

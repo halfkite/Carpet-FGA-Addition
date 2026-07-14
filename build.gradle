@@ -1,45 +1,60 @@
 plugins {
-    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom' version '1.17.14' apply false
+    id 'net.fabricmc.fabric-loom-remap' version '1.17.14' apply false
+    id 'com.replaymod.preprocess' version 'c5abb4fb12'
 }
 
-sourceCompatibility = JavaVersion.VERSION_21
-targetCompatibility = JavaVersion.VERSION_21
+preprocess {
+    strictExtraMappings = false
 
-archivesBaseName = project.archives_base_name
-version = project.mod_version + '+v' + new Date().format('yyMMddHHmm')
-group = project.maven_group
+    def mc1211 = createNode('1.21.1', 1_21_01, '')
+    def mc1214 = createNode('1.21.4', 1_21_04, '')
+    def mc1218 = createNode('1.21.8', 1_21_08, '')
+    def mc12110 = createNode('1.21.10', 1_21_10, '')
+    def mc12111 = createNode('1.21.11', 1_21_11, '')
+    def mc2601 = createNode('26.1.2', 26_01_02, '')
+    def mc2602 = createNode('26.2', 26_02_00, '')
 
-repositories {
-    maven {
-        url = uri("${rootDir}/../maven-repo")
-    }
-    maven {
-        url = 'https://masa.dy.fi/maven'
-    }
-}
+    mc1211.link(mc1214, file('versions/mapping-1.21.1-1.21.4.txt'))
+    mc1214.link(mc1218, file('versions/mapping-1.21.4-1.21.8.txt'))
+    mc1218.link(mc12110, file('versions/mapping-1.21.8-1.21.10.txt'))
+    mc12110.link(mc12111, file('versions/mapping-1.21.10-1.21.11.txt'))
+    mc12111.link(mc2601, file('versions/mapping-1.21.11-26.1.2.txt'))
+    mc2601.link(mc2602, file('versions/mapping-26.1.2-26.2.txt'))
 
-dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    // Carpet 依赖 — 自动从共享 Maven 仓库检测最新版本
-    def carpetRepoDir = file("${rootDir}/../maven-repo/carpet/fabric-carpet")
-    def mcPrefix = project.minecraft_version.substring(0, project.minecraft_version.lastIndexOf('.'))
-    def versions = carpetRepoDir.exists() && carpetRepoDir.list() ?
-        carpetRepoDir.list().findAll { it.startsWith(mcPrefix) } : []
-    def carpetVersion = versions ? versions.sort().last() : project.carpet_version
-    modCompileOnly "carpet:fabric-carpet:${carpetVersion}"
-}
-
-processResources {
-    inputs.property "version", project.version
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
+    for (def node in getNodes()) {
+        findProject(node.project).ext.mcVersion = node.mcVersion
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    it.options.encoding = "UTF-8"
-    it.options.release = 21
+def archiveTimestamp = new Date().format('yyyyMMdd-HHmmss', TimeZone.getTimeZone('Asia/Shanghai'))
+
+tasks.register('buildAllVersions') {
+    dependsOn subprojects.collect { it.tasks.named('build') }
+    doLast {
+        def archiveDir = layout.buildDirectory.dir("libs/${archiveTimestamp}").get().asFile
+        if (archiveDir.exists()) {
+            throw new GradleException("构建归档目录已存在：${archiveDir}")
+        }
+        if (!archiveDir.mkdirs()) {
+            throw new GradleException("无法创建构建归档目录：${archiveDir}")
+        }
+        subprojects.each { versionProject ->
+            def artifactTask = versionProject.mcVersion >= 26_00_00
+                    ? versionProject.tasks.named('jar').get()
+                    : versionProject.tasks.named('remapJar').get()
+            copy {
+                from artifactTask.archiveFile
+                into archiveDir
+            }
+        }
+        println "全版本构建已归档到 ${archiveDir}"
+    }
+}
+
+tasks.register('cleanTemporaryBuilds') {
+    doLast {
+        subprojects.each { delete it.layout.buildDirectory }
+        delete layout.buildDirectory.dir('tmp')
+    }
 }

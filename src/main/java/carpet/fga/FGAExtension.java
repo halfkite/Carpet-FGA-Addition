@@ -3,7 +3,10 @@ package carpet.fga;
 import carpet.CarpetExtension;
 import carpet.CarpetServer;
 import carpet.api.settings.SettingsManager;
-import net.fabricmc.loader.api.FabricLoader;
+import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.Map;
 
@@ -15,6 +18,7 @@ import java.util.Map;
 public class FGAExtension implements CarpetExtension {
 
     private static final String MOD_ID = "carpet-fga-addition";
+    private boolean previousBeeCollisionBoxRule;
 
     @Override
     public void onGameStarted() {
@@ -31,6 +35,31 @@ public class FGAExtension implements CarpetExtension {
     @Override
     public SettingsManager extensionSettingsManager() {
         return null;
+    }
+
+    @Override
+    public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext commandBuildContext) {
+        RangePlayerCommand.register(dispatcher);
+    }
+
+    @Override
+    public void onTick(MinecraftServer server) {
+        RangeActionManager.tick(server);
+        if (previousBeeCollisionBoxRule != FGASettings.restorePre26BeeCollisionBox) {
+            previousBeeCollisionBoxRule = FGASettings.restorePre26BeeCollisionBox;
+            BeeDimensions.refreshLoadedBees(server);
+        }
+    }
+
+    @Override
+    public void onServerClosed(MinecraftServer server) {
+        RangeActionManager.clear();
+        previousBeeCollisionBoxRule = false;
+    }
+
+    @Override
+    public void onPlayerLoggedOut(net.minecraft.server.level.ServerPlayer player) {
+        FGAModDetector.remove(player);
     }
 
     /**

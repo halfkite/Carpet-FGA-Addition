@@ -1,12 +1,25 @@
 {
     "required": true,
     "package": "carpet.fga.mixin",
-    "compatibilityLevel": "JAVA_21",
+    "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
     "mixins": [
-        "PlayerCommandMixin"
+        "PlayerCommandMixin",
+        "LivingEntityMixin",
+        "MobMixin",
+        "PiglinAiMixin",
+        "ClientboundPlayerInfoUpdatePacketMixin",
+        "EntitySelectorParserMixin",
+        "FriendlyByteBufWriteMixin",
+        "CustomPacketPayloadMixin",
+        "ServerGamePacketListenerImplMixin",
+        "ServerCommonPacketListenerAccessor",
+        "ServerCommonPacketListenerImplMixin",
+        "StringReaderUnicodeSupportMixin",
+        "EntityTypeDimensionsMixin"
     ],
     "client": [
-        "FriendlyByteBufMixin"
+        "FriendlyByteBufMixin",
+        "ClientPacketListenerMixin"
     ],
     "injectors": {
         "defaultRequire": 1

@@ -1,26 +1,49 @@
 package carpet.fga;
 
-import java.util.HashMap;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
-/**
- * 提供 Carpet FGA Addition 的分类名和规则名翻译。
- */
-public class FGATranslations {
+public final class FGATranslations {
+    private static final String LANGUAGE_ROOT = "/assets/carpet-fga-addition/lang/";
+    private static final Map<String, String> ENGLISH = loadLanguage("en_us.json");
+    private static final Map<String, String> CHINESE = loadLanguage("zh_cn.json");
+
+    private FGATranslations() {
+    }
 
     public static Map<String, String> getTranslations(String lang) {
-        Map<String, String> translations = new HashMap<>();
+        String language = lang == null ? "" : lang.toLowerCase(Locale.ROOT);
+        return language.equals("zh_cn") || language.equals("zh_ch") ? CHINESE : ENGLISH;
+    }
 
-        // FGA 分类名翻译（会出现在 /carpet 的可点击筛选列表中）
-        translations.put("carpet.category.FGA", "FGA");
-
-        // 规则显示名翻译
-        translations.put("carpet.rule.fakePlayerNameLength.name", "假人名字最大长度");
-
-        // 规则描述翻译（覆盖 @Rule 中的 desc）
-        translations.put("carpet.rule.fakePlayerNameLength.desc",
-            "设置假人玩家名字的最大字符长度（1-128），默认 128。客户端需同时安装此模组以支持超过 16 字符的名字。");
-
-        return translations;
+    private static Map<String, String> loadLanguage(String fileName) {
+        String resourcePath = LANGUAGE_ROOT + fileName;
+        try (InputStream stream = FGATranslations.class.getResourceAsStream(resourcePath)) {
+            if (stream == null) {
+                throw new IllegalStateException("Missing language resource: " + resourcePath);
+            }
+            JsonObject json = JsonParser.parseReader(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+            Map<String, String> translations = new LinkedHashMap<>();
+            for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+                if (!entry.getValue().isJsonPrimitive()
+                        || !entry.getValue().getAsJsonPrimitive().isString()) {
+                    throw new IllegalStateException("Language value must be a string: " + entry.getKey());
+                }
+                translations.put(entry.getKey(), entry.getValue().getAsString());
+            }
+            return Map.copyOf(translations);
+        } catch (IOException | RuntimeException exception) {
+            throw new IllegalStateException("Failed to load language resource: " + resourcePath, exception);
+        }
     }
 }
