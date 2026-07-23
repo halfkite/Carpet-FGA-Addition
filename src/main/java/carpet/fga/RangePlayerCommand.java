@@ -1,8 +1,13 @@
 package carpet.fga;
 
 import carpet.CarpetSettings;
+//#if MC >= 1.18
 import carpet.fakes.ServerPlayerInterface;
 import carpet.utils.CommandHelper;
+//#else
+//$$ import carpet.fakes.ServerPlayerEntityInterface;
+//$$ import carpet.settings.SettingsManager;
+//#endif
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -27,7 +32,13 @@ public final class RangePlayerCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("player")
-                .requires(source -> CommandHelper.canUseCommand(source, CarpetSettings.commandPlayer))
+                .requires(source ->
+                        //#if MC >= 1.18
+                        CommandHelper.canUseCommand(source, CarpetSettings.commandPlayer)
+                        //#else
+                        //$$ SettingsManager.canUseCommand(source, CarpetSettings.commandPlayer)
+                        //#endif
+                )
                 .then(Commands.argument("player", StringArgumentType.word())
                         .then(Commands.literal("stop").executes(RangePlayerCommand::stop))
                         .then(rangeAction("use", RangeActionManager.Mode.USE))
@@ -57,7 +68,12 @@ public final class RangePlayerCommand {
 
     private static double defaultReach(CommandContext<CommandSourceStack> context) {
         ServerPlayer player = getPlayer(context);
-        return player == null ? 4.5 : player.blockInteractionRange();
+        return player == null ? 4.5 :
+                //#if MC >= 1.20.5
+                player.blockInteractionRange();
+                //#else
+                //$$ 4.5;
+                //#endif
     }
 
     private static int start(CommandContext<CommandSourceStack> context, RangeActionManager.Mode mode,
@@ -67,10 +83,16 @@ public final class RangePlayerCommand {
         }
         ServerPlayer player = getPlayer(context);
         if (player == null) {
-            context.getSource().sendFailure(net.minecraft.network.chat.Component.literal("只能控制在线玩家"));
+            context.getSource().sendFailure(FGACompat.literal("只能控制在线玩家"));
             return 0;
         }
-        ServerPlayer sender = context.getSource().getPlayer();
+        ServerPlayer sender =
+                //#if MC >= 1.19
+                context.getSource().getPlayer();
+                //#else
+                //$$ context.getSource().getEntity() instanceof ServerPlayer
+                //$$         ? (ServerPlayer) context.getSource().getEntity() : null;
+                //#endif
         if (sender != null && !context.getSource().getServer().getPlayerList().isOp(
                 //#if MC >= 1.21.9
                 //$$ sender.nameAndId()
@@ -79,7 +101,7 @@ public final class RangePlayerCommand {
                 //#endif
         )
                 && sender != player && !(player instanceof carpet.patches.EntityPlayerMPFake)) {
-            context.getSource().sendFailure(net.minecraft.network.chat.Component.literal("非管理员不能控制其他真实玩家"));
+            context.getSource().sendFailure(FGACompat.literal("非管理员不能控制其他真实玩家"));
             return 0;
         }
         BlockPos from = BlockPosArgument.getLoadedBlockPos(context, "from");
@@ -189,14 +211,14 @@ public final class RangePlayerCommand {
     }
 
     private static CommandSyntaxException commandError(String message) {
-        return new SimpleCommandExceptionType(net.minecraft.network.chat.Component.literal(message)).create();
+        return new SimpleCommandExceptionType(FGACompat.literal(message)).create();
     }
 
     private static int showHelp(CommandContext<CommandSourceStack> context, RangeActionManager.Mode mode,
                                 boolean continuous) {
         String action = mode == RangeActionManager.Mode.USE ? "use" : "attack";
         String continuousPart = continuous ? " continuous" : "";
-        context.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+        FGACompat.sendSuccess(context.getSource(), FGACompat.literal(
                 "§6区域操作帮助\n"
                         + "§f/player <假人> " + action + continuousPart + " range <起点> to <终点> [参数...]\n\n"
                         + "§epathfinding§f  自动走向未完成目标\n"
@@ -221,13 +243,13 @@ public final class RangePlayerCommand {
     private static int stop(CommandContext<CommandSourceStack> context) {
         ServerPlayer player = getPlayer(context);
         if (player == null) {
-            context.getSource().sendFailure(net.minecraft.network.chat.Component.literal("只能控制在线玩家"));
+            context.getSource().sendFailure(FGACompat.literal("只能控制在线玩家"));
             return 0;
         }
         boolean stopped = RangeActionManager.stop(player);
-        ((ServerPlayerInterface) player).getActionPack().stopAll();
+        FGACompat.actionPack(player).stopAll();
         if (stopped) {
-            context.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("已停止假人的区域操作"), false);
+            FGACompat.sendSuccess(context.getSource(), FGACompat.literal("已停止假人的区域操作"), false);
         }
         return 1;
     }

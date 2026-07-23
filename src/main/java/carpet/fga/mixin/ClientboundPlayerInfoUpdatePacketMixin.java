@@ -33,8 +33,11 @@ public abstract class ClientboundPlayerInfoUpdatePacketMixin {
                 aliases.add(new ClientboundPlayerInfoUpdatePacket.Entry(
                         entry.profileId(), networkProfile, entry.listed(), entry.latency(), entry.gameMode(),
                         entry.displayName(),
+                        //#if MC >= 1.21.4
+                        //$$ entry.showHat(),
+                        //#endif
                         //#if MC >= 1.21.2
-                        //$$ entry.showHat(), entry.listOrder(),
+                        //$$ entry.listOrder(),
                         //#endif
                         entry.chatSession()));
             } else {

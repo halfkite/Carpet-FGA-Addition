@@ -11,7 +11,11 @@ import net.minecraft.world.entity.EntityType;
 
 public final class BeeDimensions {
     private static final EntityDimensions PRE_26_2_DIMENSIONS =
+            //#if MC >= 1.21.2
             EntityDimensions.scalable(0.7F, 0.6F).withEyeHeight(0.3F);
+            //#else
+            //$$ EntityDimensions.scalable(0.7F, 0.6F);
+            //#endif
 
     private BeeDimensions() {
     }

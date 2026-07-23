@@ -31,8 +31,12 @@ public final class FGATranslations {
             if (stream == null) {
                 throw new IllegalStateException("Missing language resource: " + resourcePath);
             }
-            JsonObject json = JsonParser.parseReader(
-                    new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+            JsonObject json =
+                    //#if MC >= 1.18
+                    JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+                    //#else
+                    //$$ new JsonParser().parse(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+                    //#endif
             Map<String, String> translations = new LinkedHashMap<>();
             for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
                 if (!entry.getValue().isJsonPrimitive()

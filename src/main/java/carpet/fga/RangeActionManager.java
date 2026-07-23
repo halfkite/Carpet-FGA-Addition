@@ -1,6 +1,10 @@
 package carpet.fga;
 
+//#if MC >= 1.18
 import carpet.fakes.ServerPlayerInterface;
+//#else
+//$$ import carpet.fakes.ServerPlayerEntityInterface;
+//#endif
 import carpet.helpers.EntityPlayerActionPack;
 import carpet.patches.EntityPlayerMPFake;
 import net.minecraft.commands.CommandSourceStack;
@@ -45,7 +49,7 @@ public final class RangeActionManager {
                                 boolean airPlace, boolean ignoreObstruction, boolean placeBlock,
                                 boolean interactBlock, int interactSpeed) {
         if (!(player instanceof EntityPlayerMPFake)) {
-            source.sendFailure(net.minecraft.network.chat.Component.literal("区域操作只能由假人执行"));
+            source.sendFailure(FGACompat.literal("区域操作只能由假人执行"));
             return false;
         }
         long sizeX = (long) Math.abs(first.getX() - second.getX()) + 1;
@@ -53,12 +57,12 @@ public final class RangeActionManager {
         long sizeZ = (long) Math.abs(first.getZ() - second.getZ()) + 1;
         long volume = sizeX * sizeY * sizeZ;
         if (volume > MAX_VOLUME) {
-            source.sendFailure(net.minecraft.network.chat.Component.literal("区域体积不能超过 " + MAX_VOLUME + " 个方块"));
+            source.sendFailure(FGACompat.literal("区域体积不能超过 " + MAX_VOLUME + " 个方块"));
             return false;
         }
         InteractionHand blockHand = selectBlockHand(player);
         if (mode == Mode.USE && placeBlock && blockHand == null) {
-            source.sendFailure(net.minecraft.network.chat.Component.literal("假人主手或副手必须持有方块物品"));
+            source.sendFailure(FGACompat.literal("假人主手或副手必须持有方块物品"));
             return false;
         }
 
@@ -69,7 +73,7 @@ public final class RangeActionManager {
         }
         TASKS.put(key, new RangeTask(player, mode, first, second, continuous, pathfinding,
                 reach, airPlace, ignoreObstruction, blockHand, placeBlock, interactBlock, interactSpeed));
-        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+        FGACompat.sendSuccess(source, FGACompat.literal(
                 "已开始区域" + mode.label + "，共 " + volume + " 个坐标，持续=" + continuous
                         + "，寻路=" + pathfinding + "，手长=" + reach + "，凭空放置=" + airPlace
                         + "，忽略阻挡=" + ignoreObstruction), false);
@@ -86,7 +90,7 @@ public final class RangeActionManager {
             }
         }
         if (stopped) {
-            ((ServerPlayerInterface) player).getActionPack().stopMovement();
+            FGACompat.actionPack(player).stopMovement();
         }
         return stopped;
     }
@@ -97,7 +101,7 @@ public final class RangeActionManager {
                 ServerPlayer player = server.getPlayerList().getPlayer(task.playerId);
                 if (player != null) {
                     task.stop(player);
-                    ((ServerPlayerInterface) player).getActionPack().stopMovement();
+                    FGACompat.actionPack(player).stopMovement();
                 }
             }
             TASKS.clear();
@@ -114,7 +118,7 @@ public final class RangeActionManager {
                 ServerPlayer player = server.getPlayerList().getPlayer(task.playerId);
                 if (player != null) {
                     task.stop(player);
-                    ((ServerPlayerInterface) player).getActionPack().stopMovement();
+                    FGACompat.actionPack(player).stopMovement();
                 }
                 LOGGER.error("假人 {} 的区域{}任务发生异常，任务已停止",
                         player == null ? task.playerId : player.getScoreboardName(), task.mode.label, throwable);
@@ -191,7 +195,7 @@ public final class RangeActionManager {
                 return false;
             }
 
-            ServerLevel level = player.serverLevel();
+            ServerLevel level = FGACompat.serverLevel(player);
             if (!continuous) {
                 targets.removeIf(pos -> isComplete(level, pos));
             }
@@ -204,7 +208,11 @@ public final class RangeActionManager {
                     miningProgress.clear();
                     return true;
                 }
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("区域" + mode.label + "已完成"));
+                //#if MC >= 1.19
+                player.sendSystemMessage(FGACompat.literal("区域" + mode.label + "已完成"));
+                //#else
+                //$$ player.sendMessage(FGACompat.literal("区域" + mode.label + "已完成"), player.getUUID());
+                //#endif
                 return false;
             }
 
@@ -232,7 +240,7 @@ public final class RangeActionManager {
         }
 
         private boolean attack(ServerPlayer player, BlockPos target) {
-            ServerLevel level = player.serverLevel();
+            ServerLevel level = FGACompat.serverLevel(player);
             BlockState state = level.getBlockState(target);
             if (state.isAir() || player.blockActionRestricted(level, target, player.gameMode.getGameModeForPlayer())) {
                 miningProgress.remove(target);
@@ -265,14 +273,14 @@ public final class RangeActionManager {
         }
 
         private boolean use(ServerPlayer player, BlockPos target) {
-            boolean targetWasAir = player.serverLevel().getBlockState(target).isAir();
+            boolean targetWasAir = FGACompat.serverLevel(player).getBlockState(target).isAir();
             boolean interacted = false;
             if (interactBlock) {
                 interacted = targetWasAir
                         ? interactForAirTarget(player, target)
                         : interactWithBlock(player, target);
             }
-            if (!player.serverLevel().getBlockState(target).isAir()) {
+            if (!FGACompat.serverLevel(player).getBlockState(target).isAir()) {
                 return interacted || !targetWasAir;
             }
             if (!placeBlock) {
@@ -284,7 +292,7 @@ public final class RangeActionManager {
             }
             for (Direction direction : SUPPORT_DIRECTIONS) {
                 BlockPos support = target.relative(direction);
-                BlockState supportState = player.serverLevel().getBlockState(support);
+                BlockState supportState = FGACompat.serverLevel(player).getBlockState(support);
                 if (supportState.isAir() || !supportState.getFluidState().isEmpty()) {
                     continue;
                 }
@@ -300,12 +308,12 @@ public final class RangeActionManager {
                     continue;
                 }
                 BlockHitResult hit = new BlockHitResult(hitPosition, face, support, false);
-                InteractionResult result = player.gameMode.useItemOn(player, player.serverLevel(), stack,
+                InteractionResult result = player.gameMode.useItemOn(player, FGACompat.serverLevel(player), stack,
                         blockHand, hit);
                 if (result.consumesAction()) {
                     player.swing(blockHand);
                     player.resetLastActionTime();
-                    return !player.serverLevel().getBlockState(target).isAir();
+                    return !FGACompat.serverLevel(player).getBlockState(target).isAir();
                 }
             }
             if (airPlace) {
@@ -315,7 +323,7 @@ public final class RangeActionManager {
                 if (result.consumesAction()) {
                     player.swing(blockHand);
                     player.resetLastActionTime();
-                    return !player.serverLevel().getBlockState(target).isAir();
+                    return !FGACompat.serverLevel(player).getBlockState(target).isAir();
                 }
             }
             return false;
@@ -324,7 +332,7 @@ public final class RangeActionManager {
         private boolean interactForAirTarget(ServerPlayer player, BlockPos target) {
             for (Direction direction : SUPPORT_DIRECTIONS) {
                 BlockPos support = target.relative(direction);
-                BlockState supportState = player.serverLevel().getBlockState(support);
+                BlockState supportState = FGACompat.serverLevel(player).getBlockState(support);
                 if (supportState.isAir()) {
                     continue;
                 }
@@ -349,7 +357,13 @@ public final class RangeActionManager {
             if (!inReach(player, target) || !hasLineOfSight(player, target, hitPosition)) {
                 return false;
             }
-            Direction face = Direction.getNearest(player.getEyePosition().subtract(hitPosition));
+            Vec3 direction = player.getEyePosition().subtract(hitPosition);
+            Direction face =
+                    //#if MC >= 1.19
+                    Direction.getNearest(direction);
+                    //#else
+                    //$$ Direction.getNearest(direction.x, direction.y, direction.z);
+                    //#endif
             return interactWithHit(player, target, face, hitPosition);
         }
 
@@ -363,7 +377,7 @@ public final class RangeActionManager {
                 if (player.getMainHandItem().isEmpty()) {
                     break;
                 }
-                InteractionResult result = player.gameMode.useItemOn(player, player.serverLevel(),
+                InteractionResult result = player.gameMode.useItemOn(player, FGACompat.serverLevel(player),
                         player.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
                 attempted = true;
                 if (result.consumesAction()) {
@@ -378,7 +392,7 @@ public final class RangeActionManager {
             if (ignoreObstruction) {
                 return true;
             }
-            BlockHitResult hit = player.level().clip(new ClipContext(player.getEyePosition(), end,
+            BlockHitResult hit = FGACompat.level(player).clip(new ClipContext(player.getEyePosition(), end,
                     ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
             return hit.getType() == HitResult.Type.MISS || hit.getBlockPos().equals(expectedHit);
         }
@@ -398,11 +412,12 @@ public final class RangeActionManager {
         }
 
         private BlockPos nearestTarget(ServerPlayer player, List<BlockPos> pending) {
-            return pending.stream().min(Comparator.comparingDouble(pos -> pos.distToCenterSqr(player.position()))).orElseThrow();
+            return pending.stream().min(Comparator.comparingDouble(pos ->
+                    Vec3.atCenterOf(pos).distanceToSqr(player.position()))).orElseThrow();
         }
 
         private void moveToward(ServerPlayer player, BlockPos target) {
-            EntityPlayerActionPack actionPack = ((ServerPlayerInterface) player).getActionPack();
+            EntityPlayerActionPack actionPack = FGACompat.actionPack(player);
             Vec3 destination = Vec3.atBottomCenterOf(target);
             actionPack.lookAt(new Vec3(destination.x, player.getEyeY(), destination.z));
             actionPack.setSprinting(true).setForward(1.0F);
@@ -418,13 +433,13 @@ public final class RangeActionManager {
 
         private void stop(ServerPlayer player) {
             for (BlockPos pos : miningProgress.keySet()) {
-                player.serverLevel().destroyBlockProgress(player.getId(), pos, -1);
+                FGACompat.serverLevel(player).destroyBlockProgress(player.getId(), pos, -1);
             }
             miningProgress.clear();
         }
 
         private static void stopMovement(ServerPlayer player) {
-            ((ServerPlayerInterface) player).getActionPack().stopMovement();
+            FGACompat.actionPack(player).stopMovement();
         }
 
         private static List<BlockPos> createTargets(BlockPos first, BlockPos second) {

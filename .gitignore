@@ -2,6 +2,8 @@
 .gradle/
 build/
 bin/
+tools/
+mod-builds/
 !gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.properties
 

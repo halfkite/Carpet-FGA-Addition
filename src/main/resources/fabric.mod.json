@@ -18,7 +18,8 @@
         "carpet-fga-addition.mixins.json"
     ],
     "depends": {
-        "fabricloader": ">=0.16.14",
+        "fabricloader": ">=0.15.11",
+        ${fabric_api_dependency}
         "minecraft": "${minecraft_dependency}",
         "java": ">=${java_level}",
         "carpet": "${carpet_dependency}"

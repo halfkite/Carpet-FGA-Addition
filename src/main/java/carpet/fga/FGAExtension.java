@@ -2,9 +2,15 @@ package carpet.fga;
 
 import carpet.CarpetExtension;
 import carpet.CarpetServer;
+//#if MC >= 1.18
 import carpet.api.settings.SettingsManager;
+//#else
+//$$ import carpet.settings.SettingsManager;
+//#endif
 import com.mojang.brigadier.CommandDispatcher;
+//#if MC >= 1.19.3
 import net.minecraft.commands.CommandBuildContext;
+//#endif
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 
@@ -22,6 +28,14 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onGameStarted() {
+        VillagerBreedingAnimalization.registerRuleObserver();
+        //#if MC < 1.18
+        //$$ carpet.settings.SettingsManager.addGlobalRuleObserver((source, rule, userInput) -> {
+        //$$     if (rule.name.equals("unlimitedFillCommands")) {
+        //$$         carpet.CarpetSettings.fillLimit = Boolean.TRUE.equals(rule.get()) ? Integer.MAX_VALUE : 32768;
+        //$$     }
+        //$$ });
+        //#endif
         // 将 FGA 规则注册到 carpet 主 SettingsManager，这样规则出现在 /carpet 下
         carpet.settings.SettingsManager carpetManager = CarpetServer.settingsManager;
         if (carpetManager != null) {
@@ -33,17 +47,46 @@ public class FGAExtension implements CarpetExtension {
      * 返回 null 表示不创建独立命令，规则统一由 /carpet 管理。
      */
     @Override
-    public SettingsManager extensionSettingsManager() {
+    public SettingsManager
+            //#if MC >= 1.18
+            extensionSettingsManager() {
+            //#else
+            //$$ customSettingsManager() {
+            //#endif
         return null;
     }
 
     @Override
-    public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext commandBuildContext) {
+    public void onServerLoaded(MinecraftServer server) {
+        //#if MC >= 1.21.1
+        VillagerPerformanceConfig.load(server);
+        //#endif
+        //#if MC <= 26.2
+        DroppedItemStackLimitConfig.load(server);
+        DroppedItemStackLimitConfig.warnLegacyRule(server);
+        //#endif
+    }
+
+    @Override
+    public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher
+                                 //#if MC >= 1.19.3
+                                 , CommandBuildContext commandBuildContext
+                                 //#endif
+    ) {
         RangePlayerCommand.register(dispatcher);
+        //#if MC <= 26.2
+        DroppedItemStackLimitCommand.register(dispatcher);
+        //#endif
+        //#if MC >= 1.21.1
+        VillagerPerformanceCommand.register(dispatcher);
+        //#endif
     }
 
     @Override
     public void onTick(MinecraftServer server) {
+        //#if MC <= 26.2
+        DeathDropPreStackManager.clearTickCache();
+        //#endif
         RangeActionManager.tick(server);
         if (previousBeeCollisionBoxRule != FGASettings.restorePre26BeeCollisionBox) {
             previousBeeCollisionBoxRule = FGASettings.restorePre26BeeCollisionBox;
@@ -53,6 +96,13 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onServerClosed(MinecraftServer server) {
+        //#if MC >= 1.21.1
+        FakePlayerProfilePreloadManager.close(server);
+        VillagerTradeOnlyManager.clear();
+        //#endif
+        //#if MC <= 26.2
+        DeathDropPreStackManager.clear();
+        //#endif
         RangeActionManager.clear();
         previousBeeCollisionBoxRule = false;
     }
