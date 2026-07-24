@@ -1,0 +1,27 @@
+{
+    "schemaVersion": 1,
+    "id": "carpet-fga-addition",
+    "version": "${version}",
+    "name": "Carpet FGA Addition",
+    "description": "Carpet 扩展：支持长名字假人的客户端兼容显示、假人范围控制和掉落物自定义",
+    "icon": "assets/carpet-fga-addition/icon.png",
+    "authors": ["FGA"],
+    "contact": {},
+    "license": ["MIT", "LGPL-3.0-or-later"],
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "carpet.fga.CarpetFGAAddition"
+        ]
+    },
+    "mixins": [
+        "carpet-fga-addition.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.15.11",
+        ${fabric_api_dependency}
+        "minecraft": "${minecraft_dependency}",
+        "java": ">=${java_level}",
+        "carpet": "${carpet_dependency}"
+    }
+}

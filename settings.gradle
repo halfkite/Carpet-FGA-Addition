@@ -1,0 +1,33 @@
+import groovy.json.JsonSlurper
+
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven {
+            url = 'https://maven.fallenbreath.me/jitpack'
+            content { includeGroupAndSubgroups('com.github') }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'net.fabricmc.fabric-loom'
+                    || requested.id.id == 'net.fabricmc.fabric-loom-remap') {
+                useModule("net.fabricmc:fabric-loom:${requested.version}")
+            } else if (requested.id.id == 'com.replaymod.preprocess') {
+                useModule("com.github.Fallen-Breath:preprocessor:${requested.version}")
+            }
+        }
+    }
+}
+
+rootProject.name = 'carpet-fga-addition'
+
+def settings = new JsonSlurper().parseText(file('settings.json').text)
+for (String version : settings.versions) {
+    include(":${version}")
+    def versionProject = project(":${version}")
+    versionProject.projectDir = file("versions/${version}")
+    versionProject.buildFileName = '../../common.gradle'
+}

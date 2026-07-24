@@ -1,0 +1,6 @@
+This project includes code adapted from remove-dialog-warning.
+
+Copyright (c) 2023 Drex
+
+Licensed under the MIT License:
+https://github.com/DrexHD/remove-dialog-warning/blob/main/LICENSE

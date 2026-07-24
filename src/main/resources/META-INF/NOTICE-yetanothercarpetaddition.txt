@@ -1,0 +1,6 @@
+Unicode argument support is adapted from Yet Another Carpet Addition:
+https://github.com/hotpad100c/yetanothercarpetaddition
+
+Copyright (C) 2025 Ryan100c and contributors.
+The adapted code is licensed under GNU LGPL version 3 or later.
+See LICENSE-yaca-LGPL-3.0.txt in this directory.

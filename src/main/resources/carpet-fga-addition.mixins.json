@@ -1,0 +1,73 @@
+{
+    "required": true,
+    "package": "carpet.fga.mixin",
+    "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
+    "mixins": [
+        //#if MC >= 1.18
+        "PlayerCommandMixin",
+        //#endif
+        "LivingEntityMixin",
+        "MobMixin",
+        "PiglinAiMixin",
+        //#if MC >= 1.19.3
+        "ClientboundPlayerInfoUpdatePacketMixin",
+        //#endif
+        "EntitySelectorParserMixin",
+        //#if MC >= 1.18
+        "FriendlyByteBufWriteMixin",
+        //#endif
+        //#if MC >= 1.20.2
+        "CustomPacketPayloadMixin",
+        "ServerGamePacketListenerImplMixin",
+        "ServerCommonPacketListenerAccessor",
+        "ServerCommonPacketListenerImplMixin",
+        //#endif
+        "StringReaderUnicodeSupportMixin",
+        "EntityTypeDimensionsMixin",
+        "VillagerBreedingMixin"
+        //#if MC >= 1.21.1
+        ,"VillagerTradeOnlyMixin",
+        "BrainVillagerPerformanceMixin"
+        //#endif
+        //#if MC >= 1.21.1
+        ,"EntityPlayerMPFakeMixin"
+        //#endif
+        //#if MC < 1.18
+        ,"ChunkMapCompatMixin"
+        //#endif
+        //#if MC <= 26.2
+        ,"ItemEntityMixin",
+        "ItemEntityAccessor",
+        "HopperBlockEntityMixin",
+        "ServerLevelMixin"
+        //#endif
+        //#if MC <= 26.2
+        //#if MC >= 1.18
+        ,"FillCommandLimitMixin"
+        //#endif
+        //#if MC >= 1.19.4
+        ,"FillBiomeCommandLimitMixin"
+        //#endif
+        //#endif
+        //#if MC >= 1.21.8
+        //$$ ,"DialogWarningActionMixin",
+        //$$ "DialogWarningClickEventMixin",
+        //$$ "DialogWarningDialogMixin",
+        //$$ "DialogWarningParsedTemplateAccessor",
+        //$$ "DialogWarningServerCommonPacketListenerMixin",
+        //$$ "DialogWarningServerConfigurationPacketListenerMixin"
+        //#endif
+        //#if MC >= 1.21.1
+        ,"ClientDimensionIdPacketMixin"
+        //#endif
+    ],
+    "client": [
+        //#if MC >= 1.20.2
+        "FriendlyByteBufMixin",
+        "ClientPacketListenerMixin"
+        //#endif
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

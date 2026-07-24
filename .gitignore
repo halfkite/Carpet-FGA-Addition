@@ -1,0 +1,34 @@
+# Gradle
+.gradle/
+.gradle-user-home/
+.gradle-link/
+.jdk25/
+build/
+bin/
+tools/
+mod-builds/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# Generated run and preprocessor state
+run/
+versions/mainProject
+
+# IDE
+.agents/
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Temp / backups
+.source-push-*/
+.tmp/
+gradle-local.bat
+*.log
+git-push-*
+
+# OS
+.DS_Store
+Thumbs.db
