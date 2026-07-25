@@ -37,7 +37,7 @@ public final class MobEquipmentMenu extends ChestMenu {
     //$$     }
     //$$     super.clicked(slotId, button, input, player);
     //$$ }
-    //#else
+    //#elseif MC >= 1.17
     @Override
     public void clicked(int slotId, int button, ClickType clickType, Player player) {
         if (isUnavailableMenuSlot(slotId)) {
@@ -46,6 +46,15 @@ public final class MobEquipmentMenu extends ChestMenu {
         }
         super.clicked(slotId, button, clickType, player);
     }
+    //#else
+    //$$ @Override
+    //$$ public ItemStack clicked(int slotId, int button, ClickType clickType, Player player) {
+    //$$     if (isUnavailableMenuSlot(slotId)) {
+    //$$         broadcastChanges();
+    //$$         return ItemStack.EMPTY;
+    //$$     }
+    //$$     return super.clicked(slotId, button, clickType, player);
+    //$$ }
     //#endif
 
     @Override
@@ -88,9 +97,11 @@ public final class MobEquipmentMenu extends ChestMenu {
             return false;
         }
 
+        //#if MC >= 1.17
         @Override
         public boolean allowModification(Player player) {
             return false;
         }
+        //#endif
     }
 }

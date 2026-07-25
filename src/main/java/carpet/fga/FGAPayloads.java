@@ -1,3 +1,4 @@
+//#if MC >= 1.20.5
 package carpet.fga;
 
 import net.minecraft.network.FriendlyByteBuf;
@@ -7,7 +8,11 @@ import net.minecraft.resources.ResourceLocation;
 
 public final class FGAPayloads {
     public static final ResourceLocation HANDSHAKE_CHANNEL =
+            //#if MC >= 1.21
             ResourceLocation.fromNamespaceAndPath("carpet-fga-addition", "handshake");
+            //#else
+            //$$ new ResourceLocation("carpet-fga-addition", "handshake");
+            //#endif
 
     private FGAPayloads() {
     }
@@ -31,3 +36,4 @@ public final class FGAPayloads {
         }
     }
 }
+//#endif

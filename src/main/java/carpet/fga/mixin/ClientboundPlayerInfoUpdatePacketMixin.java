@@ -1,3 +1,4 @@
+//#if MC >= 1.19.3
 package carpet.fga.mixin;
 
 import carpet.fga.FakePlayerNameAlias;
@@ -49,3 +50,4 @@ public abstract class ClientboundPlayerInfoUpdatePacketMixin {
         }
     }
 }
+//#endif

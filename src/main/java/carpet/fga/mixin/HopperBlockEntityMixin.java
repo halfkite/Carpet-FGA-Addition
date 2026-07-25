@@ -23,7 +23,7 @@ public abstract class HopperBlockEntityMixin {
                                                              CallbackInfoReturnable<Boolean> cir) {
         ItemStack original = itemEntity.getItem();
         int batchLimit = Math.min(original.getMaxStackSize(),
-                //#if MC >= 1.18
+                //#if MC >= 1.20.5
                 destination.getMaxStackSize(original)
                 //#else
                 //$$ destination.getMaxStackSize()
@@ -50,7 +50,7 @@ public abstract class HopperBlockEntityMixin {
 
         if (remaining.isEmpty()) {
             itemEntity.setItem(ItemStack.EMPTY);
-            itemEntity.discard();
+            FGACompat.discard(itemEntity);
             cir.setReturnValue(true);
         } else {
             itemEntity.setItem(remaining);

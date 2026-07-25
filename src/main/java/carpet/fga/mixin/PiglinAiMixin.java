@@ -16,8 +16,13 @@ import net.minecraft.world.level.storage.loot.LootParams;
 //$$ import net.minecraft.world.level.storage.loot.LootContext;
 //#endif
 import net.minecraft.world.level.storage.loot.LootTable;
+//#if MC >= 1.17
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+//#else
+//$$ import org.apache.logging.log4j.LogManager;
+//$$ import org.apache.logging.log4j.Logger;
+//#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -27,7 +32,11 @@ import java.util.Set;
 @Mixin(PiglinAi.class)
 public abstract class PiglinAiMixin {
     private static final int MAX_REROLLS = 4096;
+    //#if MC >= 1.17
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/piglin-barter");
+    //#else
+    //$$ private static final Logger LOGGER = LogManager.getLogger("carpet-fga-addition/piglin-barter");
+    //#endif
 
     @Redirect(
         method = "getBarterResponseItems",

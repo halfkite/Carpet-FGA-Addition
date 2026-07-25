@@ -89,10 +89,36 @@ if (mcVersion < 1_18_00) {
             'carpet/fga/mixin/ServerCommonPacketListenerAccessor.java',
             'carpet/fga/mixin/ServerCommonPacketListenerImplMixin.java',
             'carpet/fga/mixin/FillBiomeCommandLimitMixin.java',
-            'carpet/fga/mixin/FillCommandLimitMixin.java',
             'carpet/fga/mixin/PlayerCommandMixin.java',
             'carpet/fga/mixin/ClientPacketListenerMixin.java',
             'carpet/fga/mixin/FriendlyByteBufMixin.java',
             'carpet/fga/mixin/FriendlyByteBufWriteMixin.java'
     )
 }
+
+
+
+if (mcVersion < 1_19_03) {
+    sourceSets.main.java.exclude(
+            'carpet/fga/mixin/ClientboundPlayerInfoUpdatePacketMixin.java'
+    )
+}
+
+if (mcVersion < 1_19_04) {
+    sourceSets.main.java.exclude(
+            'carpet/fga/mixin/FillBiomeCommandLimitMixin.java'
+    )
+}
+
+if (mcVersion < 1_20_05) {
+    sourceSets.main.java.exclude(
+            'carpet/fga/FGAPayloads.java',
+            'carpet/fga/mixin/CustomPacketPayloadMixin.java',
+            'carpet/fga/mixin/ServerGamePacketListenerImplMixin.java',
+            'carpet/fga/mixin/ServerCommonPacketListenerAccessor.java',
+            'carpet/fga/mixin/ServerCommonPacketListenerImplMixin.java',
+            'carpet/fga/mixin/ClientPacketListenerMixin.java',
+            'carpet/fga/mixin/FriendlyByteBufMixin.java'
+    )
+}
+

@@ -17,8 +17,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
+//#if MC >= 1.17
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+//#else
+//$$ import org.apache.logging.log4j.LogManager;
+//$$ import org.apache.logging.log4j.Logger;
+//#endif
 
 import java.io.IOException;
 import java.io.Reader;
@@ -40,7 +45,11 @@ import java.util.function.UnaryOperator;
 public final class DroppedItemStackLimitConfig {
     public static final int MAX_LIMIT = 8192;
     private static final int DEFAULT_LIMIT = 64;
+    //#if MC >= 1.17
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/dropped-item-stack-limit");
+    //#else
+    //$$ private static final Logger LOGGER = LogManager.getLogger("carpet-fga-addition/dropped-item-stack-limit");
+    //#endif
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path LEGACY_CONFIG_PATH = FabricLoader.getInstance().getConfigDir()
             .resolve("carpet-fga-addition")

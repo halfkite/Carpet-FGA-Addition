@@ -38,13 +38,13 @@ public class PlayerCommandMixin {
     }
     //#endif
 
-    /**
-     * 在 maxNameLength 方法入口处拦截，直接返回自定义的名字长度上限。
-     */
+    // Carpet 1.20+ 才有 maxNameLength；更早版本保持原版/Carpet 默认名字长度。
+    //#if MC >= 1.20
     @Inject(method = "maxNameLength", at = @At("HEAD"), cancellable = true, remap = false)
     private static void overrideMaxNameLength(MinecraftServer server, CallbackInfoReturnable<Integer> cir) {
         if (FGASettings.fakePlayerNameLength > 0) {
             cir.setReturnValue(FGASettings.fakePlayerNameLength);
         }
     }
+    //#endif
 }

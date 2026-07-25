@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC >= 1.18
+//#if MC >= 1.19
 import carpet.api.settings.Validator;
 import carpet.api.settings.CarpetRule;
 //#else
@@ -30,7 +30,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.HashSet;
 import java.util.Set;
 
-//#if MC >= 1.18
+//#if MC >= 1.19
 import static carpet.api.settings.RuleCategory.FEATURE;
 //#else
 //$$ import static carpet.settings.RuleCategory.FEATURE;
@@ -62,19 +62,19 @@ public class FGASettings {
     public static int fakePlayerNameLength = -1;
 
     public static class Minecraft1_18OrNewerCondition implements
-            //#if MC >= 1.18
+            //#if MC >= 1.19
             carpet.api.settings.Rule.Condition {
             //#else
             //$$ carpet.settings.Condition {
             //#endif
         @Override
         public boolean
-                //#if MC >= 1.18
+                //#if MC >= 1.19
                 shouldRegister() {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC >= 1.18
+            //#if MC >= 1.19
             return true;
             //#else
             //$$ return false;
@@ -98,14 +98,14 @@ public class FGASettings {
     public static String fakePlayerProfilePreload = "false";
 
     public static class FakePlayerProfilePreloadValidator extends
-            //#if MC >= 1.18
+            //#if MC >= 1.19
             Validator<String> {
             //#else
             //$$ Validator<String> {
             //#endif
         @Override
         public String validate(CommandSourceStack source,
-                               //#if MC >= 1.18
+                               //#if MC >= 1.19
                                CarpetRule<String> currentRule,
                                //#else
                                //$$ ParsedRule<String> currentRule,
@@ -123,14 +123,14 @@ public class FGASettings {
     }
 
     public static class Minecraft1_21_1OnlyCondition implements
-            //#if MC >= 1.18
+            //#if MC >= 1.19
             carpet.api.settings.Rule.Condition {
             //#else
             //$$ carpet.settings.Condition {
             //#endif
         @Override
         public boolean
-                //#if MC >= 1.18
+                //#if MC >= 1.19
                 shouldRegister() {
                 //#else
                 //$$ isTrue() {
@@ -168,7 +168,12 @@ public class FGASettings {
 
     public static class ClientDimensionIdsValidator extends Validator<String> {
         @Override
-        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+        public String validate(CommandSourceStack source,
+                //#if MC >= 1.19
+                CarpetRule<String> currentRule,
+                //#else
+                //$$ ParsedRule<String> currentRule,
+                //#endif
                                String newValue, String userInput) {
             try {
                 ClientDimensionIdMapping.validateAndApply(newValue, source);
@@ -189,14 +194,14 @@ public class FGASettings {
     public static boolean removeDialogWarning = false;
 
     public static class Minecraft1_21_8OrNewerCondition implements
-            //#if MC >= 1.18
+            //#if MC >= 1.19
             carpet.api.settings.Rule.Condition {
             //#else
             //$$ carpet.settings.Condition {
             //#endif
         @Override
         public boolean
-                //#if MC >= 1.18
+                //#if MC >= 1.19
                 shouldRegister() {
                 //#else
                 //$$ isTrue() {
@@ -210,14 +215,14 @@ public class FGASettings {
     }
 
     public static class Minecraft26_2OrNewerCondition implements
-            //#if MC >= 1.18
+            //#if MC >= 1.19
             carpet.api.settings.Rule.Condition {
             //#else
             //$$ carpet.settings.Condition {
             //#endif
         @Override
         public boolean
-                //#if MC >= 1.18
+                //#if MC >= 1.19
                 shouldRegister() {
                 //#else
                 //$$ isTrue() {
@@ -248,7 +253,13 @@ public class FGASettings {
     public static String villagerPerformanceOptimization = "false";
 
     public static class VillagerPerformanceOptimizationValidator extends Validator<String> {
-        @Override public String validate(CommandSourceStack source, CarpetRule<String> currentRule, String newValue, String userInput) {
+        @Override public String validate(CommandSourceStack source,
+                //#if MC >= 1.19
+                CarpetRule<String> currentRule,
+                //#else
+                //$$ ParsedRule<String> currentRule,
+                //#endif
+                               String newValue, String userInput) {
             if (!Set.of("false", "true", "ops", "1", "2", "3", "4").contains(newValue)) {
                 Messenger.m(source, "r villagerPerformanceOptimization must be false, true, ops, or 1-4");
                 return null;
@@ -368,7 +379,7 @@ public class FGASettings {
                 if (!(entity instanceof Mob)) {
                     throw new IllegalArgumentException("entity is not a mob: " + id);
                 }
-                entity.discard();
+                FGACompat.discard(entity);
             }
             result.add(id);
         }
@@ -378,7 +389,7 @@ public class FGASettings {
     public static class PreStackMobDeathDropsValidator extends Validator<String> {
         @Override
         public String validate(CommandSourceStack source,
-                               //#if MC >= 1.18
+                               //#if MC >= 1.19
                                CarpetRule<String> currentRule,
                                //#else
                                //$$ ParsedRule<String> currentRule,
@@ -401,7 +412,7 @@ public class FGASettings {
     public static class PreStackMobDeathDropsRangeValidator extends Validator<Double> {
         @Override
         public Double validate(CommandSourceStack source,
-                               //#if MC >= 1.18
+                               //#if MC >= 1.19
                                CarpetRule<Double> currentRule,
                                //#else
                                //$$ ParsedRule<Double> currentRule,
@@ -433,14 +444,14 @@ public class FGASettings {
     }
 
     public static class Minecraft1_21_1Condition implements
-            //#if MC >= 1.18
+            //#if MC >= 1.19
             carpet.api.settings.Rule.Condition {
             //#else
             //$$ carpet.settings.Condition {
             //#endif
         @Override
         public boolean
-                //#if MC >= 1.18
+                //#if MC >= 1.19
                 shouldRegister() {
                 //#else
                 //$$ isTrue() {
@@ -456,14 +467,14 @@ public class FGASettings {
     }
 
     public static class Minecraft1_21_8Condition implements
-            //#if MC >= 1.18
+            //#if MC >= 1.19
             carpet.api.settings.Rule.Condition {
             //#else
             //$$ carpet.settings.Condition {
             //#endif
         @Override
         public boolean
-                //#if MC >= 1.18
+                //#if MC >= 1.19
                 shouldRegister() {
                 //#else
                 //$$ isTrue() {
@@ -481,7 +492,7 @@ public class FGASettings {
     public static class DroppedItemMergeDistanceValidator extends Validator<Double> {
         @Override
         public Double validate(CommandSourceStack source,
-                               //#if MC >= 1.18
+                               //#if MC >= 1.19
                                CarpetRule<Double> currentRule,
                                //#else
                                //$$ ParsedRule<Double> currentRule,
@@ -597,7 +608,7 @@ public class FGASettings {
     public static class PiglinBarterExclusionsValidator extends Validator<String> {
         @Override
         public String validate(CommandSourceStack source,
-                               //#if MC >= 1.18
+                               //#if MC >= 1.19
                                CarpetRule<String> currentRule,
                                //#else
                                //$$ ParsedRule<String> currentRule,
@@ -624,7 +635,7 @@ public class FGASettings {
     public static class NameLengthValidator extends Validator<Integer> {
         @Override
         public Integer validate(CommandSourceStack source,
-                                //#if MC >= 1.18
+                                //#if MC >= 1.19
                                 CarpetRule<Integer> currentRule,
                                 //#else
                                 //$$ ParsedRule<Integer> currentRule,

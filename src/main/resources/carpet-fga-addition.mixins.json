@@ -3,7 +3,7 @@
     "package": "carpet.fga.mixin",
     "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
     "mixins": [
-        //#if MC >= 1.18
+        //#if MC >= 1.20
         "PlayerCommandMixin",
         //#endif
         "LivingEntityMixin",
@@ -16,7 +16,7 @@
         //#if MC >= 1.18
         "FriendlyByteBufWriteMixin",
         //#endif
-        //#if MC >= 1.20.2
+        //#if MC >= 1.20.5
         "CustomPacketPayloadMixin",
         "ServerGamePacketListenerImplMixin",
         "ServerCommonPacketListenerAccessor",
@@ -42,9 +42,7 @@
         "ServerLevelMixin"
         //#endif
         //#if MC <= 26.2
-        //#if MC >= 1.18
         ,"FillCommandLimitMixin"
-        //#endif
         //#if MC >= 1.19.4
         ,"FillBiomeCommandLimitMixin"
         //#endif
@@ -63,11 +61,14 @@
     ],
     "client": [
         //#if MC >= 1.20.2
-        "FriendlyByteBufMixin",
-        "ClientPacketListenerMixin"
+        "FriendlyByteBufMixin"
+        //#endif
+        //#if MC >= 1.20.5
+        ,"ClientPacketListenerMixin"
         //#endif
     ],
     "injectors": {
         "defaultRequire": 1
     }
 }
+

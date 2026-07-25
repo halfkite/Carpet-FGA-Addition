@@ -18,11 +18,13 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(FillCommand.class)
 public abstract class FillCommandLimitMixin {
-    //#if MC < 1.18
+    // 1.16.5-1.19.2: hard-coded fill limit 32768
+    //#if MC < 1.19.4
     //$$ @ModifyConstant(method = "fillBlocks", constant = @Constant(intValue = 32768))
     //$$ private static int carpetFga$unlimitedFillVolume(int vanillaLimit) {
     //$$     return FGASettings.unlimitedFillCommands ? Integer.MAX_VALUE : vanillaLimit;
     //$$ }
+    // 1.19.4-1.21.1: gamerule limit stored into local 6
     //#elseif MC <= 1.21.1
     @ModifyVariable(method = "fillBlocks", at = @At(value = "STORE"), index = 6)
     private static int carpetFga$unlimitedFillVolume(int effectiveLimit) {

@@ -28,6 +28,16 @@ versions/mainProject
 gradle-local.bat
 *.log
 git-push-*
+_build_*.cmd
+_build_*.ps1
+_smoke_*.cmd
+_smoke_*.ps1
+_run_*.cmd
+_run_*.ps1
+_fix_*.py
+_mk_*.py
+_write_*.py
+testwrite.txt
 
 # OS
 .DS_Store

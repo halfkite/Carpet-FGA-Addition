@@ -1,10 +1,5 @@
 package carpet.fga;
 
-//#if MC >= 1.18
-import carpet.fakes.ServerPlayerInterface;
-//#else
-//$$ import carpet.fakes.ServerPlayerEntityInterface;
-//#endif
 import carpet.helpers.EntityPlayerActionPack;
 import carpet.patches.EntityPlayerMPFake;
 import net.minecraft.commands.CommandSourceStack;
@@ -23,8 +18,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+//#if MC >= 1.17
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+//#else
+//$$ import org.apache.logging.log4j.LogManager;
+//$$ import org.apache.logging.log4j.Logger;
+//#endif
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,7 +39,11 @@ public final class RangeActionManager {
     public static final double MAX_REACH = 64.0;
 
     private static final Map<TaskKey, RangeTask> TASKS = new HashMap<>();
+    //#if MC >= 1.17
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/range-control");
+    //#else
+    //$$ private static final Logger LOGGER = LogManager.getLogger("carpet-fga-addition/range-control");
+    //#endif
 
     private RangeActionManager() {
     }
@@ -357,9 +361,9 @@ public final class RangeActionManager {
             if (!inReach(player, target) || !hasLineOfSight(player, target, hitPosition)) {
                 return false;
             }
-            Vec3 direction = player.getEyePosition().subtract(hitPosition);
+            Vec3 direction = FGACompat.eyePosition(player).subtract(hitPosition);
             Direction face =
-                    //#if MC >= 1.19
+                    //#if MC >= 1.20.5
                     Direction.getNearest(direction);
                     //#else
                     //$$ Direction.getNearest(direction.x, direction.y, direction.z);
@@ -392,13 +396,13 @@ public final class RangeActionManager {
             if (ignoreObstruction) {
                 return true;
             }
-            BlockHitResult hit = FGACompat.level(player).clip(new ClipContext(player.getEyePosition(), end,
+            BlockHitResult hit = FGACompat.level(player).clip(new ClipContext(FGACompat.eyePosition(player), end,
                     ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
             return hit.getType() == HitResult.Type.MISS || hit.getBlockPos().equals(expectedHit);
         }
 
         private boolean inReach(ServerPlayer player, BlockPos target) {
-            return player.getEyePosition().distanceToSqr(Vec3.atCenterOf(target)) <= reachSquared;
+            return FGACompat.eyePosition(player).distanceToSqr(Vec3.atCenterOf(target)) <= reachSquared;
         }
 
         private boolean isComplete(ServerLevel level, BlockPos pos) {

@@ -6,8 +6,13 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
+//#if MC >= 1.17
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+//#else
+//$$ import org.apache.logging.log4j.LogManager;
+//$$ import org.apache.logging.log4j.Logger;
+//#endif
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -16,7 +21,11 @@ import java.util.*;
 import java.util.function.UnaryOperator;
 
 public final class VillagerPerformanceConfig {
+    //#if MC >= 1.17
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/villager-performance");
+    //#else
+    //$$ private static final Logger LOGGER = LogManager.getLogger("carpet-fga-addition/villager-performance");
+    //#endif
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile State state = State.defaults();
     private static volatile Path path;

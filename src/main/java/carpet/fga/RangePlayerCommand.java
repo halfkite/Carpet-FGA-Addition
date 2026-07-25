@@ -1,11 +1,9 @@
 package carpet.fga;
 
 import carpet.CarpetSettings;
-//#if MC >= 1.18
-import carpet.fakes.ServerPlayerInterface;
+//#if MC >= 1.19
 import carpet.utils.CommandHelper;
 //#else
-//$$ import carpet.fakes.ServerPlayerEntityInterface;
 //$$ import carpet.settings.SettingsManager;
 //#endif
 import com.mojang.brigadier.CommandDispatcher;
@@ -33,7 +31,7 @@ public final class RangePlayerCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("player")
                 .requires(source ->
-                        //#if MC >= 1.18
+                        //#if MC >= 1.19
                         CommandHelper.canUseCommand(source, CarpetSettings.commandPlayer)
                         //#else
                         //$$ SettingsManager.canUseCommand(source, CarpetSettings.commandPlayer)

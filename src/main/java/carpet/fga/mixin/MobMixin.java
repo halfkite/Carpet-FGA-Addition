@@ -96,11 +96,11 @@ public abstract class MobMixin {
             return stack;
         }
 
-        if (stack.is(Items.GOLDEN_HELMET)
-                || stack.is(Items.GOLDEN_CHESTPLATE)
-                || stack.is(Items.GOLDEN_LEGGINGS)
-                || stack.is(Items.GOLDEN_BOOTS)
-                || stack.is(Items.GOLDEN_SWORD)
+        if (FGACompat.isItem(stack, Items.GOLDEN_HELMET)
+                || FGACompat.isItem(stack, Items.GOLDEN_CHESTPLATE)
+                || FGACompat.isItem(stack, Items.GOLDEN_LEGGINGS)
+                || FGACompat.isItem(stack, Items.GOLDEN_BOOTS)
+                || FGACompat.isItem(stack, Items.GOLDEN_SWORD)
                 ||
                 //#if MC >= 1.19.3
                 BuiltInRegistries.ITEM.getKey(stack.getItem())

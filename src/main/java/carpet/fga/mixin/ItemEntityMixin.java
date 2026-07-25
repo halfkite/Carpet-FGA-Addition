@@ -40,31 +40,31 @@ public abstract class ItemEntityMixin {
     private static final String EXTENDED_COUNT_KEY = "carpet-fga-addition:ExtendedCount";
     private static final int VANILLA_SAVED_COUNT_LIMIT = 99;
 
-    //#if MC >= 1.18
-    @Redirect(
-            method = "isMergable",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I")
-    )
-    private int carpetFga$stackLimitForMergable(ItemStack stack) {
-        return FGASettings.effectiveDroppedItemStackLimit(stack);
+        // Avoid @Redirect on isMergable: Carpet also redirects getMaxStackSize there and hard-fails on conflict.
+    @Shadow
+    private int age;
+    @Shadow
+    private int pickupDelay;
+
+    @Inject(method = "isMergable", at = @At("RETURN"), cancellable = true)
+    private void carpetFga$stackLimitForMergable(CallbackInfoReturnable<Boolean> cir) {
+        ItemEntity self = (ItemEntity) (Object) this;
+        ItemStack stack = self.getItem();
+        int limit = FGASettings.effectiveDroppedItemStackLimit(stack);
+        if (cir.getReturnValueZ()) {
+            if (stack.getCount() >= limit) {
+                cir.setReturnValue(false);
+            }
+            return;
+        }
+        if (self.isAlive()
+                && pickupDelay != 32767
+                && age != -32768
+                && age < 6000
+                && stack.getCount() < limit) {
+            cir.setReturnValue(true);
+        }
     }
-    //#else
-    //$$ @Shadow
-    //$$ private int age;
-    //$$ @Shadow
-    //$$ private int pickupDelay;
-    //$$
-    //$$ @Inject(method = "isMergable", at = @At("RETURN"), cancellable = true)
-    //$$ private void carpetFga$stackLimitForMergable(CallbackInfoReturnable<Boolean> cir) {
-    //$$     ItemEntity self = (ItemEntity) (Object) this;
-    //$$     ItemStack stack = self.getItem();
-    //$$     cir.setReturnValue(self.isAlive()
-    //$$             && pickupDelay != 32767
-    //$$             && age != -32768
-    //$$             && age < 6000
-    //$$             && stack.getCount() < FGASettings.effectiveDroppedItemStackLimit(stack));
-    //$$ }
-    //#endif
 
     @Redirect(
             method = "areMergable",

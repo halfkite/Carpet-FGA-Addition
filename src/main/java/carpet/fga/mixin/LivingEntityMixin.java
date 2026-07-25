@@ -25,7 +25,7 @@ public abstract class LivingEntityMixin {
     //#if MC <= 26.2
     @Shadow
     protected abstract void dropAllDeathLoot(
-            //#if MC >= 1.20.5
+            //#if MC >= 1.21
             ServerLevel serverLevel,
             //#endif
             DamageSource damageSource);
@@ -34,7 +34,7 @@ public abstract class LivingEntityMixin {
             method = "die",
             at = @At(
                     value = "INVOKE",
-                    //#if MC >= 1.20.5
+                    //#if MC >= 1.21
                     target = "Lnet/minecraft/world/entity/LivingEntity;dropAllDeathLoot(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V"
                     //#else
                     //$$ target = "Lnet/minecraft/world/entity/LivingEntity;dropAllDeathLoot(Lnet/minecraft/world/damagesource/DamageSource;)V"
@@ -42,16 +42,16 @@ public abstract class LivingEntityMixin {
             )
     )
     private void carpetFga$preStackSelectedMobDrops(LivingEntity entity,
-                                                     //#if MC >= 1.20.5
+                                                     //#if MC >= 1.21
                                                      ServerLevel level,
                                                      //#endif
                                                      DamageSource damageSource) {
-        //#if MC < 1.20.5
+        //#if MC < 1.21
         //$$ ServerLevel level = (ServerLevel) FGACompat.level(entity);
         //#endif
         if (!(entity instanceof Mob mob) || !FGASettings.shouldPreStackDeathDrops(mob)) {
             this.dropAllDeathLoot(
-                    //#if MC >= 1.20.5
+                    //#if MC >= 1.21
                     level,
                     //#endif
                     damageSource);
@@ -62,7 +62,7 @@ public abstract class LivingEntityMixin {
         boolean completedNormally = false;
         try {
             this.dropAllDeathLoot(
-                    //#if MC >= 1.20.5
+                    //#if MC >= 1.21
                     level,
                     //#endif
                     damageSource);
@@ -100,7 +100,7 @@ public abstract class LivingEntityMixin {
         if ((Object) this instanceof ZombifiedPiglin
                 && FGASettings.blocksZombifiedPiglinRottenFlesh()) {
             return stack -> {
-                if (!stack.is(Items.ROTTEN_FLESH)) {
+                if (!FGACompat.isItem(stack, Items.ROTTEN_FLESH)) {
                     consumer.accept(stack);
                 }
             };

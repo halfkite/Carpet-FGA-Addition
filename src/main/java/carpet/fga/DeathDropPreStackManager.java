@@ -103,7 +103,7 @@ public final class DeathDropPreStackManager {
                     continue;
                 }
                 ItemStack destinationStack = destination.getItem();
-                if (!ItemStack.isSameItemSameComponents(sourceStack, destinationStack)) {
+                if (!FGACompat.isSameItemSameTags(sourceStack, destinationStack)) {
                     continue;
                 }
                 int destinationLimit = FGASettings.effectiveDroppedItemStackLimit(destinationStack);
@@ -133,10 +133,9 @@ public final class DeathDropPreStackManager {
     }
 
     private static ItemEntity copyForOverflow(ItemEntity source, ItemStack stack) {
-        ItemEntity copy = new ItemEntity(FGACompat.level(source), source.getX(), source.getY(), source.getZ(), stack,
+        ItemEntity copy = FGACompat.createItemEntity(FGACompat.level(source), source.getX(), source.getY(), source.getZ(), stack,
                 source.getDeltaMovement().x, source.getDeltaMovement().y, source.getDeltaMovement().z);
-        copy.setYRot(source.getYRot());
-        copy.setXRot(source.getXRot());
+        FGACompat.copyRotation(source, copy);
         ((ItemEntityAccessor) copy).carpetFga$setPickupDelay(
                 ((ItemEntityAccessor) source).carpetFga$getPickupDelay());
         return copy;

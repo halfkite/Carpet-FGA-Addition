@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC >= 1.18
+//#if MC >= 1.19
 import carpet.api.settings.SettingsManager;
 //#else
 //$$ import carpet.settings.SettingsManager;
@@ -25,7 +25,7 @@ public final class VillagerBreedingAnimalization {
             return;
         }
         observerRegistered = true;
-        //#if MC >= 1.18
+        //#if MC >= 1.19
         SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
             if (rule.name().equals("breedingCooldownDisabled")) {
                 tisBreedingCooldownDisabled = Boolean.TRUE.equals(rule.value());
@@ -59,7 +59,7 @@ public final class VillagerBreedingAnimalization {
             if (growthFoodUnits == 0) {
                 return false;
             }
-            if (!FGACompat.level(player).isClientSide() && !player.getAbilities().instabuild) {
+            if (!FGACompat.level(player).isClientSide() && !FGACompat.isCreative(player)) {
                 stack.shrink(1);
             }
             for (int i = 0; i < growthFoodUnits; i++) {
@@ -89,7 +89,7 @@ public final class VillagerBreedingAnimalization {
         }
 
         if (!FGACompat.level(player).isClientSide()) {
-            if (!player.getAbilities().instabuild) {
+            if (!FGACompat.isCreative(player)) {
                 stack.shrink(required);
             }
             if (villager.getAge() > 0) {
@@ -102,20 +102,20 @@ public final class VillagerBreedingAnimalization {
     }
 
     private static int requiredFoodCount(ItemStack stack) {
-        if (stack.is(Items.BREAD)) {
+        if (FGACompat.isItem(stack, Items.BREAD)) {
             return 3;
         }
-        if (stack.is(Items.CARROT) || stack.is(Items.POTATO) || stack.is(Items.BEETROOT)) {
+        if (FGACompat.isItem(stack, Items.CARROT) || FGACompat.isItem(stack, Items.POTATO) || FGACompat.isItem(stack, Items.BEETROOT)) {
             return 12;
         }
         return 0;
     }
 
     private static int growthFoodUnits(ItemStack stack) {
-        if (stack.is(Items.BREAD)) {
+        if (FGACompat.isItem(stack, Items.BREAD)) {
             return 4;
         }
-        if (stack.is(Items.CARROT) || stack.is(Items.POTATO) || stack.is(Items.BEETROOT)) {
+        if (FGACompat.isItem(stack, Items.CARROT) || FGACompat.isItem(stack, Items.POTATO) || FGACompat.isItem(stack, Items.BEETROOT)) {
             return 1;
         }
         return 0;

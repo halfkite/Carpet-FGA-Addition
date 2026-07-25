@@ -1,3 +1,4 @@
+//#if MC >= 1.20.5
 package carpet.fga.mixin;
 
 import carpet.fga.FGAPayloads;
@@ -33,3 +34,4 @@ public interface CustomPacketPayloadMixin {
         return extendedCodecs;
     }
 }
+//#endif

@@ -2,7 +2,7 @@ package carpet.fga;
 
 import carpet.CarpetExtension;
 import carpet.CarpetServer;
-//#if MC >= 1.18
+//#if MC >= 1.19
 import carpet.api.settings.SettingsManager;
 //#else
 //$$ import carpet.settings.SettingsManager;
@@ -34,7 +34,7 @@ public class FGAExtension implements CarpetExtension {
     @Override
     public void onGameStarted() {
         VillagerBreedingAnimalization.registerRuleObserver();
-        //#if MC < 1.18
+        //#if MC < 1.19
         //$$ carpet.settings.SettingsManager.addGlobalRuleObserver((source, rule, userInput) -> {
         //$$     if (rule.name.equals("unlimitedFillCommands")) {
         //$$         carpet.CarpetSettings.fillLimit = Boolean.TRUE.equals(rule.get()) ? Integer.MAX_VALUE : 32768;
@@ -53,7 +53,7 @@ public class FGAExtension implements CarpetExtension {
      */
     @Override
     public SettingsManager
-            //#if MC >= 1.18
+            //#if MC >= 1.19
             extensionSettingsManager() {
             //#else
             //$$ customSettingsManager() {

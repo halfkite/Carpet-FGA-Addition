@@ -1,3 +1,4 @@
+//#if MC >= 1.20.5
 package carpet.fga.mixin;
 
 import carpet.fga.FGAModDetector;
@@ -48,3 +49,4 @@ public abstract class ServerGamePacketListenerImplMixin {
         }
     }
 }
+//#endif

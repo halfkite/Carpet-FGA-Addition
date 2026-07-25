@@ -21,8 +21,13 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.commands.CommandSourceStack;
+//#if MC >= 1.17
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+//#else
+//$$ import org.apache.logging.log4j.LogManager;
+//$$ import org.apache.logging.log4j.Logger;
+//#endif
 
 import java.util.Locale;
 import java.util.Map;
@@ -42,7 +47,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * BatchSpawnFakePlayerTask, with a bounded executor and Carpet command/API hooks.
  */
 public final class FakePlayerProfilePreloadManager {
+    //#if MC >= 1.17
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/fake-player-profile-preload");
+    //#else
+    //$$ private static final Logger LOGGER = LogManager.getLogger("carpet-fga-addition/fake-player-profile-preload");
+    //#endif
     private static final long SECOND_ATTEMPT_WINDOW_NANOS = TimeUnit.SECONDS.toNanos(30);
     private static final long ADAPTIVE_ACTIVE_NANOS = TimeUnit.MINUTES.toNanos(2);
     private static final long PROFILE_TIMEOUT_SECONDS = 60L;

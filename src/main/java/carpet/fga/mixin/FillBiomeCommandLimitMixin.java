@@ -1,3 +1,4 @@
+//#if MC >= 1.19.4
 //#if MC <= 26.2
 package carpet.fga.mixin;
 
@@ -26,7 +27,7 @@ public abstract class FillBiomeCommandLimitMixin {
     //$$ private static Object carpetFga$unlimitedFillBiomeVolume(GameRules rules, GameRule<?> rule) {
     //$$     return FGASettings.unlimitedFillCommands ? Integer.MAX_VALUE : rules.get(rule);
     //$$ }
-    //#else
+    //#elseif MC >= 1.20.2
     @Redirect(
             method = "fill(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Holder;Ljava/util/function/Predicate;Ljava/util/function/Consumer;)Lcom/mojang/datafixers/util/Either;",
             at = @At(
@@ -38,6 +39,19 @@ public abstract class FillBiomeCommandLimitMixin {
                                                               GameRules.Key<GameRules.IntegerValue> key) {
         return FGASettings.unlimitedFillCommands ? Integer.MAX_VALUE : rules.getInt(key);
     }
+    //#else
+    //$$ @Redirect(
+    //$$         method = "fill(Lnet/minecraft/commands/CommandSourceStack;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Holder$Reference;Ljava/util/function/Predicate;)I",
+    //$$         at = @At(
+    //$$                 value = "INVOKE",
+    //$$                 target = "Lnet/minecraft/world/level/GameRules;getInt(Lnet/minecraft/world/level/GameRules$Key;)I"
+    //$$         )
+    //$$ )
+    //$$ private static int carpetFga$unlimitedFillBiomeVolume(GameRules rules,
+    //$$                                                           GameRules.Key<GameRules.IntegerValue> key) {
+    //$$     return FGASettings.unlimitedFillCommands ? Integer.MAX_VALUE : rules.getInt(key);
+    //$$ }
     //#endif
 }
+//#endif
 //#endif

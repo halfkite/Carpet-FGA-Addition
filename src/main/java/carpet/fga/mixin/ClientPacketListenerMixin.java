@@ -1,3 +1,4 @@
+//#if MC >= 1.20.5
 package carpet.fga.mixin;
 
 import carpet.fga.FGAPayloads;
@@ -20,3 +21,4 @@ public abstract class ClientPacketListenerMixin {
         }
     }
 }
+//#endif

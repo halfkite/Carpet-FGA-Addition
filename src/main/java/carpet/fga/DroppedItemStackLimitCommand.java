@@ -2,7 +2,7 @@
 package carpet.fga;
 
 import carpet.CarpetSettings;
-//#if MC >= 1.18
+//#if MC >= 1.19
 import carpet.utils.CommandHelper;
 //#else
 //$$ import carpet.settings.SettingsManager;
@@ -50,7 +50,7 @@ public final class DroppedItemStackLimitCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("droppedItemStackLimit")
                 .requires(source ->
-                        //#if MC >= 1.18
+                        //#if MC >= 1.19
                         CommandHelper.canUseCommand(source, CarpetSettings.carpetCommandPermissionLevel)
                         //#else
                         //$$ SettingsManager.canUseCommand(source, CarpetSettings.commandPlayer)
