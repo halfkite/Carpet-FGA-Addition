@@ -1,52 +1,147 @@
 # Carpet FGA Addition
 
-Carpet FGA Addition is a server-focused Fabric Carpet extension for fake players, item drops, villagers, commands, and cross-version compatibility. Features are opt-in and disabled by default.
+Carpet FGA Addition is a server-focused Fabric Carpet extension for fake players, item drops, villagers, command compatibility, and performance utilities. Features are opt-in and disabled by default.
 
 ## Supported builds
 
-Version `1.4.0` is built for Minecraft `1.16.5`, `1.17.1`, `1.18.2`, `1.19.2`, `1.19.4`, `1.20.1`, `1.20.4`, `1.20.6`, `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, and `26.2`.
+Version `1.4.0` is available for Minecraft `1.16.5`, `1.17.1`, `1.18.2`, `1.19.2`, `1.19.4`, `1.20.1`, `1.20.4`, `1.20.6`, `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, and `26.2`.
 
-Install the JAR matching the server's Minecraft version. Most features are server-side and do not require the client mod. Long fake-player names display fully when both sides have the mod.
+## Rules
 
-## Features
+### General
 
-- Fake-player name length limits, client-safe aliases, profile preloading, and range actions.
-- Full fake-player inventory sorting on Minecraft `1.21.1`, including `summon`, `quickopen`, offline playerdata access, shulker-box routing, rebuild tasks, dashboard snapshots, and API access to cached data.
-- Unified entity, block, container, and hopper-minecart drop pre-stacking with per-entry ranges.
-- Configurable ground-item stack limits with all, blacklist, and whitelist modes.
-- Cross-version `/fill` and `/fillbiome` limit compatibility.
-- Villager breeding and performance controls, gifts, and hostile-mob equipment access.
-- Wandering-trader protection, end-gateway regeneration, spectator self-teleport, and other server utilities.
-- Unicode command arguments, client-visible dimension IDs, dialog-warning controls, and the pre-26.2 bee collision box.
+- `fakePlayerNameLength=-1|1-128`: fake-player name length; `-1` keeps vanilla limits. 1.18+.
+- `fakePlayerRangeControl=false|true`: enables fake-player range placing, interaction, breaking, and continuous tasks.
+- `endGatewayRegeneration=false|true`: regenerates destroyed vanilla End gateways without changing nearby blocks. 1.16.5+.
+- `wanderingTraderNoDespawn=false|true|controlled`: vanilla behavior, protect all traders, or protect only configured names/foot blocks. 1.16.5-26.1.2.
+- `fakePlayerProfilePreload=false|always|adaptive`: asynchronous fake-player profile preload. 1.21.1 only.
+- `fgaUnicodeArgumentsSupport=false|true`: allow unquoted Unicode command arguments.
+- `recipeBookAlwaysUnlocked=false|true`: keep all registered recipes available. 1.19.4+.
+- `inventoryAdvancementOptimization=false|exact`: index `inventory_changed` advancement candidates. 1.19.4+.
+- `playerHealthDisplay=true|false|nofake`: append health to the far right of the player list. 1.19.4+.
+- `spectatorFreeTeleport=false|true`: let non-OP spectators teleport themselves only. 1.21.1-1.21.5.
+- `clientDimensionIds=[overworld,the_nether,the_end]`: replace client-visible dimension IDs. 1.21.1+.
+- `removeDialogWarning=false|true`: remove server command/dialog confirmation warnings. 1.21.8+.
+- `restorePre26BeeCollisionBox=false|true`: restore the pre-26.2 bee collision box. 26.2 only.
 
-## Examples
+### Villagers and drops
+
+- `villagerBreedingAnimalization=false|true|only`: control direct villager feeding.
+- `villagerPerformanceOptimization=false|true|ops|1|2|3|4`: enable villager trade/gift optimization and command access. 1.21.1+.
+- `hostileMobInventoryAccess=false|true`: open hostile-mob equipment with an empty-handed sneak right-click.
+- `droppedItemStackLimit=false|true|ops|0|1|2|3|4`: enable configurable ground-item stack limits. 1.21.1+.
+- `droppedItemMergeDistance=-1|0-16`: configure horizontal ground-item merge distance. 1.21.1+.
+- `unlimitedFillCommands=false|true`: remove `/fill` and `/fillbiome` volume limits while keeping vanilla safety checks. 1.21.8+.
+- `preStackDroppedItems=false|true`: enable `/dropPreStack` entity, block, and container pre-stacking. 1.21.1-26.1.2.
+- `zombifiedPiglinDropReduction=false|goldEquipment|rottenFlesh|all`: remove selected zombified-piglin drops.
+- `piglinBarterItemExclusions=false|ironBoots|potions|[item ids]`: exclude selected piglin barter results.
+
+The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hidden. Use `/dropPreStack entity ...` instead.
+
+### Fake-player sorting, Minecraft 1.21.1 only
+
+- `fakePlayerItemSortMode=false|summon|quickopen`
+- `fakePlayerItemSortWhitelist=false|vanillaWhitelist|modWhitelist`
+- `fakePlayerItemSortQuickShulker=false|true`
+- `fakePlayerItemSortNameFormat=false|autoDetect|prefix|suffix`
+- `fakePlayerItemSortTargetLanguage=english|chinese|custom`
+- `fakePlayerItemSortShulkerRestock=false|true`
+- `fakePlayerItemSortCleanOpenedTarget=false|true`
+- `fakePlayerItemSortInventoryRebuild=false|true|opall`
+- `fakePlayerItemSortDashboard=false|true`
+- `fakePlayerItemSortCpuThreads=0|1|2`
+- `fakePlayerItemSortSpeed=4|8|16`
+
+`quickopen` edits offline playerdata without spawning a fake player. `summon` uses Carpet's online fake player. Armor slots are never read or written by the sorter.
+
+## Commands
+
+### Range actions
 
 ```text
-/carpet unlimitedFillCommands true
-/carpet preStackDroppedItems true
-/dropPreStack entity add minecraft:zombified_piglin 1.5
-/dropPreStack block add minecraft:stone 1
-/dropPreStack entity list
+/player <fake> use range <from> to <to> [options]
+/player <fake> use continuous range <from> to <to> [options]
+/player <fake> attack range <from> to <to> [options]
+/player <fake> attack continuous range <from> to <to> [options]
+/player <fake> stop
+/player <fake> use|attack range help
 ```
 
-The drop-pre-stack configuration is stored in `carpet/carpetfgaaddition/drop-pre-stack.json` inside the world directory. Lists show the localized name, stable ID, and configured range.
+Options are `pathfinding`, `reach <0.1-64>`, `airPlace`, `ignoreObstruction`, `placeBlock`, `interactBlock`, and `interactSpeed <1-64>`.
 
-## Fake-player sorting on 1.21.1
+### Ground-item stack limits
 
 ```text
-/carpet fakePlayerItemSortMode quickopen
-/player <fake-player> bot_sort
+/droppedItemStackLimit mode all <count>
+/droppedItemStackLimit mode black <count>
+/droppedItemStackLimit mode whitelist
+/droppedItemStackLimit set black <item>
+/droppedItemStackLimit remove black <item>
+/droppedItemStackLimit set whitelist <item> <count>
+/droppedItemStackLimit remove whitelist <item>
+/droppedItemStackLimit list [black|whitelist] [page]
+/droppedItemStackLimit clear
 ```
 
-`quickopen` reads and writes offline playerdata without spawning a fake player just to access its inventory. `summon` uses Carpet's online fake-player inventory. The sorter keeps loose items in the primary target, routes box contents according to the configured rules, and never reads or writes armor slots.
+### Drop pre-stacking
 
-## Build
-
-```powershell
-.\gradlew.bat buildAllVersions --no-daemon
+```text
+/dropPreStack help|status
+/dropPreStack entity add|remove|set <entity id> [range]
+/dropPreStack entity list [page]
+/dropPreStack block add|remove|set <item id> [range]
+/dropPreStack block list [page]
+/dropPreStack container add|remove|set <block or entity id> [range]
+/dropPreStack container list [page]
 ```
 
-Build helpers and local logs are organized under `scripts/`. Build outputs under `build/` and `mod-builds/` are ignored by Git.
+Ranges are `0-16` and default to `1.0`. IDs accept `minecraft:stone` and `stone` forms. On 1.21.1, the same command is available through `/fga dropPreStack`.
+
+### Villager performance
+
+```text
+/villagerPerformance help|status
+/villagerPerformance trade false|ai|static
+/villagerPerformance trade name|block add|remove <value>
+/villagerPerformance trade name|block list [page]
+/villagerPerformance gift false|true
+/villagerPerformance gift name|block add|remove <value>
+/villagerPerformance gift list [page]
+/villagerPerformance wanderingTrader false|true|controlled
+/villagerPerformance wanderingTrader name|block add|remove|list <value>
+```
+
+### Inventory optimization
+
+```text
+/inventoryAdvancementOptimization status
+/inventoryAdvancementOptimization stats
+/inventoryAdvancementOptimization verify
+/inventoryAdvancementOptimization resetStats
+```
+
+### Fake-player sorting on 1.21.1
+
+```text
+/fakePlayerItemSort status
+/fakePlayerItemSort whitelist add|remove <player>
+/fakePlayerItemSort whitelist list [page]
+/fakePlayerItemSort format prefix|suffix <text>
+/fakePlayerItemSort format status
+/fakePlayerItemSort name set <item id> <name>
+/fakePlayerItemSort name remove <item id>
+/fakePlayerItemSort name list [page]
+/fakePlayerItemSort name reload
+/fakePlayerItemSort workers <initial> <cached>
+/fakePlayerItemSort dashboard status
+/fakePlayerItemSort dashboard port <1024-65535>
+/player <fake> bot_sort|continuous|stop
+/player <fake> bot_sort restart <item name>
+/player <fake> bot_sort restart all
+/player <fake> bot_sort restart all confirm
+```
+
+`restart all` requires confirmation. `/log playerHealth` toggles the current player's player-list health subscription. On 1.21.1, `/fga help` and `/fga status` provide the FGA command index and sorter status; `/fga` also redirects the FGA-owned command roots.
 
 ## Credits
 
