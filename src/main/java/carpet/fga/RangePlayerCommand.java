@@ -39,6 +39,9 @@ public final class RangePlayerCommand {
                 )
                 .then(Commands.argument("player", StringArgumentType.word())
                         .then(Commands.literal("stop").executes(RangePlayerCommand::stop))
+                        //#if MC == 1.21.1
+                        .then(FakePlayerItemSortCommand.playerSort())
+                        //#endif
                         .then(rangeAction("use", RangeActionManager.Mode.USE))
                         .then(rangeAction("attack", RangeActionManager.Mode.ATTACK))));
     }

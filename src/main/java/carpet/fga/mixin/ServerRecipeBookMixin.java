@@ -1,0 +1,42 @@
+//#if MC >= 1.20.5
+package carpet.fga.mixin;
+
+import carpet.fga.FGASettings;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.stats.ServerRecipeBook;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.Collection;
+
+@Mixin(ServerRecipeBook.class)
+public abstract class ServerRecipeBookMixin {
+    @Inject(method = "addRecipes", at = @At("HEAD"), cancellable = true, require = 0)
+    private void carpetFga$skipRecipeUnlocks(Collection<RecipeHolder<?>> recipes, ServerPlayer player,
+                                              CallbackInfoReturnable<Integer> cir) {
+        if (FGASettings.recipeBookAlwaysUnlocked) {
+            cir.setReturnValue(0);
+        }
+    }
+
+    @Inject(method = "toNbt", at = @At("HEAD"), cancellable = true, require = 0)
+    private void carpetFga$skipRecipeBookSave(CallbackInfoReturnable<CompoundTag> cir) {
+        if (FGASettings.recipeBookAlwaysUnlocked) {
+            cir.setReturnValue(new CompoundTag());
+        }
+    }
+
+    @Inject(method = "fromNbt", at = @At("HEAD"), cancellable = true, require = 0)
+    private void carpetFga$skipRecipeBookLoad(CompoundTag tag, RecipeManager recipeManager, CallbackInfo ci) {
+        if (FGASettings.recipeBookAlwaysUnlocked) {
+            ci.cancel();
+        }
+    }
+}
+//#endif

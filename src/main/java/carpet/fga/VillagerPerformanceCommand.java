@@ -42,7 +42,13 @@ public final class VillagerPerformanceCommand {
                                 .then(Commands.argument("page", IntegerArgumentType.integer(1))
                                         .executes(c -> giftList(c, IntegerArgumentType.getInteger(c, "page")))))
                         .then(collection(VillagerPerformanceConfig.Target.GIFT, VillagerPerformanceConfig.Kind.NAME))
-                        .then(collection(VillagerPerformanceConfig.Target.GIFT, VillagerPerformanceConfig.Kind.BLOCK))));
+                        .then(collection(VillagerPerformanceConfig.Target.GIFT, VillagerPerformanceConfig.Kind.BLOCK)))
+                .then(Commands.literal("wanderingTrader")
+                        .then(Commands.literal("false").executes(c -> setWanderingTraderMode(c, "false")))
+                        .then(Commands.literal("true").executes(c -> setWanderingTraderMode(c, "true")))
+                        .then(Commands.literal("controlled").executes(c -> setWanderingTraderMode(c, "controlled")))
+                        .then(wanderingTraderCollection(VillagerPerformanceConfig.Kind.NAME))
+                        .then(wanderingTraderCollection(VillagerPerformanceConfig.Kind.BLOCK))));
     }
 
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> collection(
@@ -74,6 +80,29 @@ public final class VillagerPerformanceCommand {
         }
         catch (IOException e) { return error(c,e.getMessage()); }
     }
+    private static int setWanderingTraderMode(CommandContext<CommandSourceStack> c, String value) {
+        FGASettings.wanderingTraderNoDespawn = value;
+        return ok(c, "流浪商人不消失模式已设置为 " + value);
+    }
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> wanderingTraderCollection(VillagerPerformanceConfig.Kind kind) {
+        String literal = kind == VillagerPerformanceConfig.Kind.NAME ? "name" : "block";
+        return Commands.literal(literal)
+                .then(Commands.literal("add").then(Commands.argument("value", StringArgumentType.greedyString()).executes(c -> changeWanderingTrader(c, kind, true))))
+                .then(Commands.literal("remove").then(Commands.argument("value", StringArgumentType.greedyString()).executes(c -> changeWanderingTrader(c, kind, false))))
+                .then(Commands.literal("list").executes(c -> listWanderingTrader(c, kind)));
+    }
+    private static int changeWanderingTrader(CommandContext<CommandSourceStack> c, VillagerPerformanceConfig.Kind kind, boolean add) {
+        String value = StringArgumentType.getString(c, "value");
+        try {
+            boolean changed = add ? VillagerPerformanceConfig.addWanderingTrader(kind, value) : VillagerPerformanceConfig.removeWanderingTrader(kind, value);
+            return changed ? ok(c, (add ? "已添加：" : "已移除：") + value) : error(c, (add ? "已存在：" : "未找到：") + value);
+        } catch (RuntimeException | IOException exception) { return error(c, exception.getMessage()); }
+    }
+    private static int listWanderingTrader(CommandContext<CommandSourceStack> c, VillagerPerformanceConfig.Kind kind) {
+        Collection<String> values = kind == VillagerPerformanceConfig.Kind.NAME ? VillagerPerformanceConfig.wanderingTraderNames() : VillagerPerformanceConfig.wanderingTraderBlocks().stream().map(ResourceLocation::toString).toList();
+        c.getSource().sendSuccess(() -> Component.literal("流浪商人" + (kind == VillagerPerformanceConfig.Kind.NAME ? "名称" : "方块") + "名单：" + String.join(", ", values)).withStyle(ChatFormatting.GRAY), false);
+        return 1;
+    }
     private static int change(CommandContext<CommandSourceStack> c, VillagerPerformanceConfig.Target target,
                               VillagerPerformanceConfig.Kind kind, boolean add) {
         String value=StringArgumentType.getString(c,"value");
@@ -91,6 +120,8 @@ public final class VillagerPerformanceCommand {
                 .append(line("交易方块名单",s.tradeBlocks().size()+""));
         m.append(line("村庄英雄赠礼",s.giftEnabled()?"开启":"关闭")).append(line("赠礼名称名单",s.giftNames().size()+""))
                 .append(line("赠礼方块名单",s.giftBlocks().size()+""));
+        m.append(line("流浪商人不消失",FGASettings.wanderingTraderNoDespawn)).append(line("流浪商人名称名单",s.wanderingTraderNames().size()+""))
+                .append(line("流浪商人方块名单",s.wanderingTraderBlocks().size()+""));
         c.getSource().sendSuccess(() -> m,false); return 1;
     }
 
@@ -103,6 +134,8 @@ public final class VillagerPerformanceCommand {
         m.append(helpLine("/villagerPerformance gift false|true","开启或关闭村庄英雄赠礼专用模式；完全跳过 AI，每 60 tick 检查，玩家需靠近约 5 格"));
         m.append(helpLine("/villagerPerformance gift name add ","添加可赠礼村民的命名牌名称条件"));
         m.append(helpLine("/villagerPerformance gift block add minecraft:","添加可赠礼村民的脚下方块条件"));
+        m.append(helpLine("/villagerPerformance wanderingTrader false|true|controlled","设置流浪商人不消失模式"));
+        m.append(helpLine("/villagerPerformance wanderingTrader name|block add ","添加 controlled 模式的流浪商人名称或脚下方块条件"));
         m.append(helpLine("/villagerPerformance trade name|block list","分页查看交易优化名单"));
         m.append(helpLine("/villagerPerformance gift list","分页查看全部赠礼名单"));
         c.getSource().sendSuccess(() -> m,false); return 1;

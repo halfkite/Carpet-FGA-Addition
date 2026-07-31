@@ -89,6 +89,22 @@ public class FGASettings {
     public static boolean fakePlayerRangeControl = false;
 
     @Rule(
+        desc = "Regenerates destroyed vanilla End gateways without changing surrounding blocks",
+        category = {FGA, FEATURE},
+        condition = FGASettings.Minecraft1_16OrNewerCondition.class
+    )
+    public static boolean endGatewayRegeneration = false;
+
+    @Rule(
+        desc = "Controls wandering trader despawning: false, true, or controlled",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "controlled"},
+        strict = false,
+        condition = Minecraft1_16OrNewerCondition.class
+    )
+    public static String wanderingTraderNoDespawn = "false";
+
+    @Rule(
         desc = "Asynchronously preloads fake-player profiles before spawning",
         category = {FGA, FEATURE},
         options = {"false", "always", "adaptive"},
@@ -143,11 +159,135 @@ public class FGASettings {
         }
     }
 
+    public static class Minecraft1_21_1OrNewerCondition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
+                //#else
+                //$$ isTrue() {
+                //#endif
+            //#if MC >= 1.21.1
+            return true;
+            //#else
+            //$$ return false;
+            //#endif
+        }
+    }
+
+    public static class Minecraft1_16OrNewerCondition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
+                //#else
+                //$$ isTrue() {
+                //#endif
+            return true;
+        }
+    }
+
     @Rule(
         desc = "Allows unquoted command arguments to contain Unicode characters",
         category = {FGA, FEATURE}
     )
-    public static boolean unicodeArgumentsSupport = false;
+    public static boolean fgaUnicodeArgumentsSupport = false;
+
+    /** Category used by the inventory sorter rules so they can be filtered together in /carpet. */
+    public static final String FAKE_PLAYER_ITEM_SORT = "假人分类";
+
+    //#if MC >= 1.19.4
+    @Rule(
+        desc = "Keeps the recipe book functional without storing per-player recipe unlock data; all registered recipes are available",
+        category = {FGA, FEATURE}
+    )
+    public static boolean recipeBookAlwaysUnlocked = false;
+
+    @Rule(
+        desc = "Accelerates inventory_changed advancements with exact candidate indexing; false preserves vanilla behavior",
+        category = {FGA, FEATURE},
+        options = {"false", "exact"},
+        strict = false
+    )
+    public static String inventoryAdvancementOptimization = "false";
+
+    @Rule(
+        desc = "Shows player health at the right side of the player list: true, false, or nofake",
+        category = {FGA, FEATURE},
+        options = {"true", "false", "nofake"},
+        strict = false
+    )
+    public static String playerHealthDisplay = "true";
+
+    @Rule(desc = "Enables fake-player inventory sorting: false, summon, or quickopen", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            options = {"false", "summon", "quickopen"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
+    public static String fakePlayerItemSortMode = "false";
+
+    @Rule(desc = "Fake-player sorter whitelist mode: false, vanillaWhitelist, or modWhitelist", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            options = {"false", "vanillaWhitelist", "modWhitelist"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
+    public static String fakePlayerItemSortWhitelist = "false";
+
+    @Rule(desc = "Uses plain shulker boxes for fake-player inventory sorting", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            condition = Minecraft1_21_1OnlyCondition.class)
+    public static boolean fakePlayerItemSortQuickShulker = false;
+
+    @Rule(desc = "Fake-player sorter target-name format: false, autoDetect, prefix, or suffix", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            options = {"false", "autoDetect", "prefix", "suffix"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
+    public static String fakePlayerItemSortNameFormat = "false";
+
+    @Rule(desc = "Fake-player sorter target language: english, chinese, or custom", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            options = {"english", "chinese", "custom"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
+    public static String fakePlayerItemSortTargetLanguage = "english";
+
+    @Rule(desc = "Lets box_restock craft plain shulker boxes for fake-player sorting", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            condition = Minecraft1_21_1OnlyCondition.class)
+    public static boolean fakePlayerItemSortShulkerRestock = false;
+
+    @Rule(desc = "When sorting opens a target fake-player inventory, route foreign main-inventory and offhand items", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            condition = Minecraft1_21_1OnlyCondition.class)
+    public static boolean fakePlayerItemSortCleanOpenedTarget = false;
+
+    @Rule(desc = "Allows sorter inventory rebuild commands: false, true, or opall", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            options = {"false", "true", "opall"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
+    public static String fakePlayerItemSortInventoryRebuild = "false";
+
+    @Rule(desc = "Enables the local fake-player sorter dashboard", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            condition = Minecraft1_21_1OnlyCondition.class)
+    public static boolean fakePlayerItemSortDashboard = false;
+
+    @Rule(desc = "Async CPU preset for fake-player sorting: 0, 1, or 2", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            options = {"0", "1", "2"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
+    public static String fakePlayerItemSortCpuThreads = "0";
+
+    @Rule(desc = "Fake-player sorter speed preset: 4, 8, or 16", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            options = {"4", "8", "16"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
+    public static String fakePlayerItemSortSpeed = "8";
+
+    public static boolean isFakePlayerItemSortEnabled() {
+        return !"false".equals(fakePlayerItemSortMode);
+    }
+    //#endif
+
+    //#if MC >= 1.21.1 && MC <= 1.21.5
+    @Rule(
+        desc = "Allows non-OP spectators to use /tp and /teleport on themselves only",
+        category = {FGA, FEATURE},
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static boolean spectatorFreeTeleport = false;
+    //#endif
+
+
 
     @Rule(
         desc = "Restores the bee collision box used before Minecraft 26.2",
@@ -265,7 +405,6 @@ public class FGASettings {
                 return null;
             }
             VillagerTradeOnlyManager.clear();
-            FGAExtension.requestVillagerPerformanceCommandTreeRefresh();
             return newValue;
         }
     }
@@ -277,12 +416,42 @@ public class FGASettings {
     )
     public static boolean hostileMobInventoryAccess = false;
 
+    //#if MC >= 1.21.1
     @Rule(
-        desc = "Enables configurable ground item entity stack limits",
+        desc = "Enables configurable ground item entity stack limits and controls access to /droppedItemStackLimit",
         category = {FGA, FEATURE},
+        options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        validate = FGASettings.DroppedItemStackLimitValidator.class,
         condition = FGASettings.Minecraft1_21_1Condition.class
     )
-    public static boolean droppedItemStackLimit = false;
+    public static String droppedItemStackLimit = "false";
+
+    public static boolean isDroppedItemStackLimitEnabled() {
+        return !"false".equals(droppedItemStackLimit);
+    }
+
+    public static class DroppedItemStackLimitValidator extends Validator<String> {
+        @Override public String validate(CommandSourceStack source,
+                CarpetRule<String> currentRule, String newValue, String userInput) {
+            if (!Set.of("false", "true", "ops", "0", "1", "2", "3", "4").contains(newValue)) {
+                Messenger.m(source, "r droppedItemStackLimit must be false, true, ops, or 0-4");
+                return null;
+            }
+            return newValue;
+        }
+    }
+    //#else
+    //$$ @Rule(
+    //$$     desc = "Enables configurable ground item entity stack limits",
+    //$$     category = {FGA, FEATURE},
+    //$$     condition = FGASettings.Minecraft1_21_1Condition.class
+    //$$ )
+    //$$ public static boolean droppedItemStackLimit = false;
+
+    //$$ public static boolean isDroppedItemStackLimitEnabled() {
+    //$$     return droppedItemStackLimit;
+    //$$ }
+    //#endif
 
     @Rule(
         desc = "Removes the volume limit from /fill and /fillbiome while retaining vanilla safety checks",
@@ -303,34 +472,83 @@ public class FGASettings {
 
     private static volatile Set<ResourceLocation> preStackMobTypes = Set.of();
 
+    //#if MC >= 1.21.1 && MC < 26.2
+    @Rule(
+        desc = "Enables unified entity-death and block-drop pre-stacking configured by /dropPreStack",
+        category = {FGA, FEATURE},
+        options = {"false", "true"},
+        strict = false,
+        condition = FGASettings.Minecraft1_21_1OrNewerCondition.class
+    )
+    public static boolean preStackDroppedItems = false;
+    //#endif
+
     @Rule(
         desc = "Pre-stacks compatible death drops from selected mob entity types",
         category = {FGA, FEATURE},
         options = {"false", "[zombified_piglin]"},
         strict = false,
         validate = FGASettings.PreStackMobDeathDropsValidator.class,
-        condition = FGASettings.Minecraft1_21_1Condition.class
+        condition = FGASettings.HiddenLegacyPreStackCondition.class
     )
     public static String preStackMobDeathDrops = "false";
 
     @Rule(
-        desc = "Sets the three-dimensional range for same-tick selected mob death drop pre-stacking",
+        desc = "Sets the legacy three-dimensional range for same-tick selected mob death drop pre-stacking",
         category = {FGA, FEATURE},
         options = {"0", "1", "3", "8", "16"},
         strict = false,
         validate = FGASettings.PreStackMobDeathDropsRangeValidator.class,
-        condition = FGASettings.Minecraft1_21_1Condition.class
+        condition = FGASettings.HiddenLegacyPreStackCondition.class
     )
-    public static double preStackMobDeathDropsRange = 3.0D;
+    public static double preStackMobDeathDropsRange = 1.5D;
 
-    public static boolean shouldPreStackDeathDrops(Mob mob) {
-        return preStackMobTypes.contains(
-                //#if MC >= 1.19.3
-                BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType())
+    /** Retains the old fields for source/config compatibility without registering old Carpet rules. */
+    public static class HiddenLegacyPreStackCondition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
                 //#else
-                //$$ Registry.ENTITY_TYPE.getKey(mob.getType())
+                //$$ isTrue() {
                 //#endif
-        );
+            return false;
+        }
+    }
+
+    public static ResourceLocation preStackEntityId(Entity entity) {
+        return
+                //#if MC >= 1.19.3
+                BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+                //#else
+                //$$ Registry.ENTITY_TYPE.getKey(entity.getType());
+                //#endif
+    }
+
+    public static Double preStackEntityRange(Entity entity) {
+        ResourceLocation id = preStackEntityId(entity);
+        //#if MC >= 1.21.1 && MC < 26.2
+        if (preStackDroppedItems) {
+            Double containerConfigured = DropPreStackConfig.containerEntityRange(id);
+            if (containerConfigured != null) return containerConfigured;
+            Double configured = DropPreStackConfig.entityRange(id);
+            if (configured != null) return configured;
+        }
+        //#endif
+        return entity instanceof Mob && preStackMobTypes.contains(id) ? preStackMobDeathDropsRange : null;
+    }
+
+    public static boolean hasLegacyPreStackConfiguration() {
+        return !preStackMobTypes.isEmpty() || !"false".equalsIgnoreCase(preStackMobDeathDrops);
+    }
+
+    public static boolean shouldPreStackDeathDrops(Entity entity) {
+        return preStackEntityRange(entity) != null;
     }
 
     private static Set<ResourceLocation> parsePreStackMobTypes(String value, CommandSourceStack source) {
@@ -401,6 +619,9 @@ public class FGASettings {
                 //#if MC <= 26.2
                 DeathDropPreStackManager.clear();
                 //#endif
+                if (source != null && !parsed.isEmpty()) {
+                    Messenger.m(source, "y Legacy preStackMobDeathDrops is configured; migrate to /dropPreStack entity ... / 旧版生物掉落规则已配置，请迁移到 /dropPreStack entity ...");
+                }
                 return newValue;
             } catch (RuntimeException exception) {
                 Messenger.m(source, "r " + exception.getMessage());
@@ -422,6 +643,9 @@ public class FGASettings {
                 //#if MC <= 26.2
                 DeathDropPreStackManager.clear();
                 //#endif
+                if (source != null) {
+                    Messenger.m(source, "y Legacy preStackMobDeathDropsRange is deprecated; migrate to per-entity ranges / 旧版生物掉落范围已弃用，请迁移到逐实体范围配置。");
+                }
                 return newValue;
             }
             Messenger.m(source, "r preStackMobDeathDropsRange must be between 0 and 16");

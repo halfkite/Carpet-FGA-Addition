@@ -1,8 +1,10 @@
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
-//#if MC >= 1.19.3
+//#if MC >= 1.19
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+//#endif
+//#if MC >= 1.19.3
 import net.minecraft.core.registries.BuiltInRegistries;
 //#else
 //$$ import net.minecraft.core.Registry;
@@ -44,13 +46,16 @@ public abstract class PiglinAiMixin {
             value = "INVOKE",
             //#if MC >= 1.20
             target = "Lnet/minecraft/world/level/storage/loot/LootTable;getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;)Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"
+            //#elseif MC >= 1.19
+            //$$ target = "Lnet/minecraft/world/level/storage/loot/LootTable;getRandomItems(Lnet/minecraft/world/level/storage/loot/LootContext;)Lit/unimi/dsi/fastutil/objects/ObjectArrayList;"
             //#else
             //$$ target = "Lnet/minecraft/world/level/storage/loot/LootTable;getRandomItems(Lnet/minecraft/world/level/storage/loot/LootContext;)Ljava/util/List;"
             //#endif
-        )
+        ),
+        require = 0
     )
     private static
-            //#if MC >= 1.20
+            //#if MC >= 1.19
             ObjectArrayList<ItemStack>
             //#else
             //$$ java.util.List<ItemStack>
@@ -68,7 +73,7 @@ public abstract class PiglinAiMixin {
         }
 
         for (int attempt = 0; attempt < MAX_REROLLS; attempt++) {
-            //#if MC >= 1.20
+            //#if MC >= 1.19
             ObjectArrayList<ItemStack> result = lootTable.getRandomItems(lootParams);
             //#else
             //$$ java.util.List<ItemStack> result = lootTable.getRandomItems(lootParams);
@@ -87,7 +92,7 @@ public abstract class PiglinAiMixin {
         }
 
         LOGGER.warn("猪灵交易连续 {} 次未抽到允许物品，请检查交易战利品表和排除规则", MAX_REROLLS);
-        //#if MC >= 1.20
+        //#if MC >= 1.19
         return new ObjectArrayList<>();
         //#else
         //$$ return java.util.List.of();

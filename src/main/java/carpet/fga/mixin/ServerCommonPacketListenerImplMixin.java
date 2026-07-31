@@ -2,6 +2,7 @@ package carpet.fga.mixin;
 
 import carpet.fga.FGAModDetector;
 import carpet.fga.FakePlayerNameAlias;
+import carpet.fga.PlayerHealthDisplay;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.server.MinecraftServer;
@@ -23,16 +24,16 @@ public abstract class ServerCommonPacketListenerImplMixin {
     private MinecraftServer server;
 
     @Unique
-    private boolean fga$sendingFullNames;
+    private boolean fga$sendingCustomizedPlayerInfo;
 
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;)V", at = @At("HEAD"), cancellable = true)
     private void sendFullNamesToModdedClient(Packet<?> packet, CallbackInfo ci) {
-        if (fga$sendingFullNames || !(packet instanceof ClientboundPlayerInfoUpdatePacket infoPacket)) {
+        if (fga$sendingCustomizedPlayerInfo || !(packet instanceof ClientboundPlayerInfoUpdatePacket infoPacket)) {
             return;
         }
         ServerCommonPacketListenerImpl listener = (ServerCommonPacketListenerImpl) (Object) this;
         ServerPlayer receiver = server.getPlayerList().getPlayer(listener.getOwner().getId());
-        if (receiver == null || !FGAModDetector.hasMod(receiver)) {
+        if (receiver == null) {
             return;
         }
 
@@ -45,17 +46,23 @@ public abstract class ServerCommonPacketListenerImplMixin {
                 hasLongName |= player.getGameProfile().getName().length() > 16;
             }
         }
-        if (!hasLongName || players.size() != infoPacket.entries().size()) {
+        boolean sendFullNames = FGAModDetector.hasMod(receiver) && hasLongName;
+        boolean decorateHealth = PlayerHealthDisplay.shouldDecorate(receiver);
+        if ((!sendFullNames && !decorateHealth) || players.size() != infoPacket.entries().size()) {
             return;
         }
 
-        ClientboundPlayerInfoUpdatePacket fullPacket = FakePlayerNameAlias.withFullNames(
-                () -> new ClientboundPlayerInfoUpdatePacket(infoPacket.actions(), players));
-        fga$sendingFullNames = true;
+        java.util.function.Supplier<ClientboundPlayerInfoUpdatePacket> packetFactory =
+                () -> PlayerHealthDisplay.forReceiver(receiver,
+                        () -> new ClientboundPlayerInfoUpdatePacket(infoPacket.actions(), players));
+        ClientboundPlayerInfoUpdatePacket customizedPacket = sendFullNames
+                ? FakePlayerNameAlias.withFullNames(packetFactory)
+                : packetFactory.get();
+        fga$sendingCustomizedPlayerInfo = true;
         try {
-            listener.send(fullPacket);
+            listener.send(customizedPacket);
         } finally {
-            fga$sendingFullNames = false;
+            fga$sendingCustomizedPlayerInfo = false;
         }
         ci.cancel();
     }

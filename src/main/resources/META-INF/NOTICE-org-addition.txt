@@ -1,0 +1,10 @@
+The offline fake-player inventory access layer in Carpet FGA Addition is informed by
+the playerdata inventory handling design used by Org Addition.
+
+Org Addition:
+https://github.com/orgs-zz/OrgAddition
+
+Copyright (c) Org Addition contributors.
+Org Addition is licensed under the MIT License.
+
+Carpet FGA Addition does not depend on Org Addition at runtime.

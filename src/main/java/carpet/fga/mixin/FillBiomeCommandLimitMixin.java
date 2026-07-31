@@ -22,7 +22,8 @@ public abstract class FillBiomeCommandLimitMixin {
     //$$         at = @At(
     //$$                 value = "INVOKE",
     //$$                 target = "Lnet/minecraft/world/level/gamerules/GameRules;get(Lnet/minecraft/world/level/gamerules/GameRule;)Ljava/lang/Object;"
-    //$$         )
+    //$$         ),
+    //$$         require = 0
     //$$ )
     //$$ private static Object carpetFga$unlimitedFillBiomeVolume(GameRules rules, GameRule<?> rule) {
     //$$     return FGASettings.unlimitedFillCommands ? Integer.MAX_VALUE : rules.get(rule);
@@ -33,7 +34,8 @@ public abstract class FillBiomeCommandLimitMixin {
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/level/GameRules;getInt(Lnet/minecraft/world/level/GameRules$Key;)I"
-            )
+            ),
+            require = 0
     )
     private static int carpetFga$unlimitedFillBiomeVolume(GameRules rules,
                                                               GameRules.Key<GameRules.IntegerValue> key) {
@@ -45,7 +47,8 @@ public abstract class FillBiomeCommandLimitMixin {
     //$$         at = @At(
     //$$                 value = "INVOKE",
     //$$                 target = "Lnet/minecraft/world/level/GameRules;getInt(Lnet/minecraft/world/level/GameRules$Key;)I"
-    //$$         )
+    //$$         ),
+    //$$         require = 0
     //$$ )
     //$$ private static int carpetFga$unlimitedFillBiomeVolume(GameRules rules,
     //$$                                                           GameRules.Key<GameRules.IntegerValue> key) {

@@ -3,12 +3,18 @@ package carpet.fga;
 
 import carpet.fga.mixin.ItemEntityAccessor;
 import net.minecraft.core.BlockPos;
+//#if MC >= 1.19.3
+import net.minecraft.core.registries.BuiltInRegistries;
+//#else
+//$$ import net.minecraft.core.Registry;
+//#endif
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -27,8 +33,25 @@ public final class DeathDropPreStackManager {
     private DeathDropPreStackManager() {
     }
 
-    public static void begin(Mob mob, ServerLevel level) {
-        CONTEXTS.get().push(new CaptureContext(mob, level));
+    public static void begin(Entity entity, ServerLevel level) {
+        Double range = FGASettings.preStackEntityRange(entity);
+        if (range == null) {
+            throw new IllegalArgumentException("entity is not configured for pre-stacking: " + entity.getType());
+        }
+        CONTEXTS.get().push(CaptureContext.entity(entity, level, range));
+    }
+
+    public static void beginBlock(ServerLevel level, BlockPos position, BlockState state) {
+        CONTEXTS.get().push(CaptureContext.block(level, position, state));
+    }
+
+    public static boolean blockPreStackConfigured() {
+        //#if MC >= 1.21.1 && MC < 26.2
+        return !DropPreStackConfig.snapshot().blocks().isEmpty()
+                || !DropPreStackConfig.snapshot().containerBlocks().isEmpty();
+        //#else
+        //$$ return false;
+        //#endif
     }
 
     public static boolean capture(ServerLevel level, Entity entity) {
@@ -43,11 +66,29 @@ public final class DeathDropPreStackManager {
         if (context.level != level) {
             return false;
         }
-        context.drops.add(itemEntity);
+            ResourceLocation itemId =
+                    //#if MC >= 1.19.3
+                    BuiltInRegistries.ITEM.getKey(itemEntity.getItem().getItem());
+                    //#else
+                    //$$ Registry.ITEM.getKey(itemEntity.getItem().getItem());
+                    //#endif
+        double range = context.rangeFor(itemId);
+        if (!Double.isFinite(range)) {
+            return false;
+        }
+        context.drops.add(new CapturedDrop(itemEntity, range));
         return true;
     }
 
-    public static void finish(Mob mob, boolean completedNormally) {
+    public static void finish(Entity entity, boolean completedNormally) {
+        finishSource(entity, completedNormally);
+    }
+
+    public static void finishBlock(ServerLevel level, BlockPos position, boolean completedNormally) {
+        finishSource(new BlockSource(level, position), completedNormally);
+    }
+
+    private static void finishSource(Object source, boolean completedNormally) {
         Deque<CaptureContext> contexts = CONTEXTS.get();
         if (contexts.isEmpty()) {
             return;
@@ -56,14 +97,14 @@ public final class DeathDropPreStackManager {
         if (contexts.isEmpty()) {
             CONTEXTS.remove();
         }
-        if (context.mob != mob) {
+        if (!context.matches(source)) {
             clear();
-            throw new IllegalStateException("Mismatched mob death drop capture context");
+            throw new IllegalStateException("Mismatched drop pre-stack capture context");
         }
 
         if (!completedNormally) {
             CACHED_DROPS.clear();
-            context.drops.forEach(drop -> addDirectly(context.level, drop));
+            context.drops.forEach(drop -> addDirectly(context.level, drop.entity()));
             return;
         }
         flush(context);
@@ -81,7 +122,8 @@ public final class DeathDropPreStackManager {
 
     private static void flush(CaptureContext context) {
         List<CachedDrop> cache = CACHED_DROPS.computeIfAbsent(context.level, ignored -> new ArrayList<>());
-        for (ItemEntity source : context.drops) {
+        for (CapturedDrop captured : context.drops) {
+            ItemEntity source = captured.entity();
             ItemStack sourceStack = source.getItem();
             if (sourceStack.isEmpty()) {
                 continue;
@@ -95,7 +137,7 @@ public final class DeathDropPreStackManager {
 
             int remaining = sourceStack.getCount();
             for (CachedDrop cached : cache) {
-                if (remaining == 0 || !cached.isEligible(context.deathPosition, FGASettings.preStackMobDeathDropsRange)) {
+                if (remaining == 0 || !cached.isEligible(context.position, captured.range())) {
                     continue;
                 }
                 ItemEntity destination = cached.entity;
@@ -126,7 +168,7 @@ public final class DeathDropPreStackManager {
                     spawned = copyForOverflow(source, FGACompat.copyWithCount(sourceStack, count));
                 }
                 addDirectly(context.level, spawned);
-                cache.add(new CachedDrop(spawned, context.deathPosition));
+                cache.add(new CachedDrop(spawned, context.position));
                 remaining -= count;
             }
         }
@@ -154,10 +196,61 @@ public final class DeathDropPreStackManager {
         }
     }
 
-    private record CaptureContext(Mob mob, ServerLevel level, Vec3 deathPosition, List<ItemEntity> drops) {
-        private CaptureContext(Mob mob, ServerLevel level) {
-            this(mob, level, mob.position(), new ArrayList<>());
+    private record CaptureContext(Object source, ServerLevel level, Vec3 position, double entityRange,
+                                  double containerBlockRange, boolean blockSource, List<CapturedDrop> drops) {
+        private static CaptureContext entity(Entity entity, ServerLevel level, double range) {
+            return new CaptureContext(entity, level, entity.position(), range, Double.NaN, false, new ArrayList<>());
         }
+
+        private static CaptureContext block(ServerLevel level, BlockPos position, BlockState state) {
+            //#if MC >= 1.21.1 && MC < 26.2
+            ResourceLocation blockId =
+                    //#if MC >= 1.19.3
+                    BuiltInRegistries.BLOCK.getKey(state.getBlock());
+                    //#else
+                    //$$ Registry.BLOCK.getKey(state.getBlock());
+                    //#endif
+            Double range = DropPreStackConfig.containerBlockRange(blockId);
+            if (range == null) {
+                ResourceLocation itemId =
+                        //#if MC >= 1.19.3
+                        BuiltInRegistries.ITEM.getKey(state.getBlock().asItem());
+                        //#else
+                        //$$ Registry.ITEM.getKey(state.getBlock().asItem());
+                        //#endif
+                range = DropPreStackConfig.blockRange(itemId);
+            }
+            return new CaptureContext(new BlockSource(level, position), level, Vec3.atCenterOf(position), Double.NaN,
+                    range == null ? Double.NaN : range, true, new ArrayList<>());
+            //#else
+            //$$ return new CaptureContext(new BlockSource(level, position), level, Vec3.atCenterOf(position), Double.NaN,
+            //$$         Double.NaN, true, new ArrayList<>());
+            //#endif
+        }
+
+        private double rangeFor(ResourceLocation itemId) {
+            if (!blockSource) return entityRange;
+            //#if MC >= 1.21.1 && MC < 26.2
+            if (Double.isFinite(containerBlockRange)) return containerBlockRange;
+            Double range = DropPreStackConfig.blockRange(itemId);
+            return range == null ? Double.NaN : range;
+            //#else
+            //$$ return Double.NaN;
+            //#endif
+        }
+
+        private boolean matches(Object candidate) {
+            return source == candidate || (source instanceof BlockSource expected
+                    && candidate instanceof BlockSource actual
+                    && expected.level() == actual.level()
+                    && expected.position().equals(actual.position()));
+        }
+    }
+
+    private record CapturedDrop(ItemEntity entity, double range) {
+    }
+
+    private record BlockSource(ServerLevel level, BlockPos position) {
     }
 
     private record CachedDrop(ItemEntity entity, Vec3 deathPosition) {

@@ -9,6 +9,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Mob;
 //#endif
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.monster.ZombifiedPiglin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -49,7 +50,7 @@ public abstract class LivingEntityMixin {
         //#if MC < 1.21
         //$$ ServerLevel level = (ServerLevel) FGACompat.level(entity);
         //#endif
-        if (!(entity instanceof Mob mob) || !FGASettings.shouldPreStackDeathDrops(mob)) {
+        if (entity instanceof Player || !FGASettings.shouldPreStackDeathDrops(entity)) {
             this.dropAllDeathLoot(
                     //#if MC >= 1.21
                     level,
@@ -58,7 +59,7 @@ public abstract class LivingEntityMixin {
             return;
         }
 
-        DeathDropPreStackManager.begin(mob, level);
+        DeathDropPreStackManager.begin(entity, level);
         boolean completedNormally = false;
         try {
             this.dropAllDeathLoot(
@@ -68,7 +69,7 @@ public abstract class LivingEntityMixin {
                     damageSource);
             completedNormally = true;
         } finally {
-            DeathDropPreStackManager.finish(mob, completedNormally);
+            DeathDropPreStackManager.finish(entity, completedNormally);
         }
     }
     //#endif

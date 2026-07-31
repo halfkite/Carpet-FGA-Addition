@@ -123,7 +123,7 @@ public final class DroppedItemStackLimitConfig {
 
     public static int effectiveLimit(ItemStack stack) {
         int vanillaLimit = stack.getMaxStackSize();
-        if (!FGASettings.droppedItemStackLimit || vanillaLimit <= 1 || loadFailed) {
+        if (!FGASettings.isDroppedItemStackLimitEnabled() || vanillaLimit <= 1 || loadFailed) {
             return vanillaLimit;
         }
         ResourceLocation itemId =

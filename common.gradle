@@ -106,7 +106,13 @@ if (mcVersion < 1_19_03) {
 
 if (mcVersion < 1_19_04) {
     sourceSets.main.java.exclude(
-            'carpet/fga/mixin/FillBiomeCommandLimitMixin.java'
+            'carpet/fga/mixin/FillBiomeCommandLimitMixin.java',
+            'carpet/fga/mixin/FillCommandLimitMixin.java',
+            'carpet/fga/mixin/CarpetFillCommandLimitMixin.java'
+    )
+} else {
+    sourceSets.main.java.exclude(
+            'carpet/fga/mixin/CarpetFillCommandLimitMixin.java'
     )
 }
 

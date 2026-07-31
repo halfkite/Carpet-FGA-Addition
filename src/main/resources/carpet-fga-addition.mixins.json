@@ -1,6 +1,9 @@
 {
     "required": true,
     "package": "carpet.fga.mixin",
+    //#if MC >= 1.20.5
+    "plugin": "carpet.fga.mixin.InventoryAdvancementMixinPlugin",
+    //#endif
     "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
     "mixins": [
         //#if MC >= 1.20
@@ -32,6 +35,48 @@
         //#if MC >= 1.21.1
         ,"EntityPlayerMPFakeMixin"
         //#endif
+        //#if MC == 1.21.1
+        ,"RecipeBookMixin",
+        "ServerPlaceRecipeMixin",
+        "ServerRecipeBookMixin",
+        "SimpleCriterionTriggerAccessor",
+        "SimpleCriterionTriggerMixin",
+        "InventoryChangeTriggerMixin",
+        "ItemPredicateMixin",
+        "MinecraftServerReloadMixin",
+        "BlockDropPreStackMixin",
+        "VehicleEntityMixin",
+        "AbstractMinecartContainerMixin"
+        //#endif
+        //#if MC >= 1.21.1 && MC < 26.2 && MC != 1.21.1
+        ,"BlockDropPreStackMixin",
+        "VehicleEntityMixin",
+        "AbstractMinecartContainerMixin"
+        //#endif
+        //#if MC >= 1.16.5 && MC < 26.0
+        ,"EndDragonFightGatewayMixin",
+        "WanderingTraderNoDespawnMixin",
+        //#endif
+        //#if MC >= 1.21.1 && MC <= 26.2
+        ,"EndGatewayBlockEntityMixin"
+        //#endif
+        //#if MC >= 1.21.1 && MC < 26.2 && MC != 1.21.1
+        ,"WanderingTraderNoDespawnMixin"
+        //#endif
+        //#if MC >= 1.20.5 && MC < 26.2 && MC != 1.21.1
+        ,"RecipeBookMixin",
+        "ServerPlaceRecipeMixin",
+        "ServerRecipeBookMixin",
+        "SimpleCriterionTriggerAccessor",
+        "SimpleCriterionTriggerMixin",
+        "InventoryChangeTriggerMixin",
+        "ItemPredicateMixin",
+        "MinecraftServerReloadMixin"
+        //#endif
+        //#if MC >= 26.2
+        ,"InventoryChangeTriggerMixin",
+        "MinecraftServerReloadMixin"
+        //#endif
         //#if MC < 1.18
         ,"ChunkMapCompatMixin"
         //#endif
@@ -42,8 +87,8 @@
         "ServerLevelMixin"
         //#endif
         //#if MC <= 26.2
-        ,"FillCommandLimitMixin"
         //#if MC >= 1.19.4
+        ,"FillCommandLimitMixin"
         ,"FillBiomeCommandLimitMixin"
         //#endif
         //#endif
@@ -55,8 +100,12 @@
         //$$ "DialogWarningServerCommonPacketListenerMixin",
         //$$ "DialogWarningServerConfigurationPacketListenerMixin"
         //#endif
-        //#if MC >= 1.21.1
-        ,"ClientDimensionIdPacketMixin"
+        //#if MC >= 1.21.1 && MC <= 1.21.5
+        ,"ClientDimensionIdPacketMixin",
+        "TeleportCommandMixin",
+        "ServerPlayerSpectatorTeleportMixin",
+        "EntitySelectorParserSpectatorTeleportMixin",
+        "EntitySelectorSpectatorTeleportMixin"
         //#endif
     ],
     "client": [
@@ -71,4 +120,3 @@
         "defaultRequire": 1
     }
 }
-

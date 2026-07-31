@@ -2,6 +2,9 @@ package carpet.fga;
 
 import carpet.CarpetExtension;
 import carpet.CarpetServer;
+//#if MC >= 1.21.1
+import carpet.utils.CommandHelper;
+//#endif
 //#if MC >= 1.19
 import carpet.api.settings.SettingsManager;
 //#else
@@ -24,28 +27,28 @@ import java.util.Map;
 public class FGAExtension implements CarpetExtension {
 
     private static final String MOD_ID = "carpet-fga-addition";
-    private static volatile boolean villagerPerformanceCommandTreeRefreshRequested;
     private boolean previousBeeCollisionBoxRule;
-
-    public static void requestVillagerPerformanceCommandTreeRefresh() {
-        villagerPerformanceCommandTreeRefreshRequested = true;
-    }
+    //#if MC >= 1.21.1 && MC <= 1.21.5
+    private boolean previousSpectatorFreeTeleportRule;
+    //#endif
 
     @Override
     public void onGameStarted() {
         VillagerBreedingAnimalization.registerRuleObserver();
-        //#if MC < 1.19
-        //$$ carpet.settings.SettingsManager.addGlobalRuleObserver((source, rule, userInput) -> {
-        //$$     if (rule.name.equals("unlimitedFillCommands")) {
-        //$$         carpet.CarpetSettings.fillLimit = Boolean.TRUE.equals(rule.get()) ? Integer.MAX_VALUE : 32768;
-        //$$     }
-        //$$ });
-        //#endif
-        // 将 FGA 规则注册到 carpet 主 SettingsManager，这样规则出现在 /carpet 下
+        registerFgaCommandTreeRefreshObserver();
+        registerUnlimitedFillLegacyBridge();
+        // Register FGA rules into carpet's main SettingsManager so they appear under /carpet.
         carpet.settings.SettingsManager carpetManager = CarpetServer.settingsManager;
         if (carpetManager != null) {
             carpetManager.parseSettingsClass(FGASettings.class);
         }
+    }
+
+    @Override
+    public void registerLoggers() {
+        //#if MC >= 1.19.4
+        PlayerHealthDisplay.registerLogger();
+        //#endif
     }
 
     /**
@@ -66,10 +69,21 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.21.1
         VillagerPerformanceConfig.load(server);
         //#endif
+        //#if MC >= 1.20.5
+        carpet.fga.inventoryadvancement.InventoryAdvancementManager.RUNTIME.startupSelfCheck();
+        //#endif
+        //#if MC >= 1.21.1 && MC < 26.2
+        DropPreStackConfig.load(server);
+        //#if MC == 1.21.1
+        FakePlayerItemSortConfig.load(server);
+        FakePlayerItemSortManager.load(server);
+        //#endif
+        //#endif
         //#if MC <= 26.2
         DroppedItemStackLimitConfig.load(server);
         DroppedItemStackLimitConfig.warnLegacyRule(server);
         //#endif
+        syncCarpetFillLimitForLegacyVersions(FGASettings.unlimitedFillCommands);
     }
 
     @Override
@@ -85,42 +99,92 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.21.1
         VillagerPerformanceCommand.register(dispatcher);
         //#endif
+        //#if MC >= 1.20.5
+        InventoryAdvancementCommand.register(dispatcher);
+        //#endif
+        //#if MC >= 1.21.1 && MC < 26.2
+        DropPreStackCommand.register(dispatcher);
+        //#if MC == 1.21.1
+        FakePlayerItemSortCommand.register(dispatcher);
+        FGACommand.register(dispatcher);
+        //#endif
+        //#endif
     }
 
     @Override
     public void onTick(MinecraftServer server) {
-        //#if MC >= 1.21.1
-        if (villagerPerformanceCommandTreeRefreshRequested) {
-            villagerPerformanceCommandTreeRefreshRequested = false;
-            server.getPlayerList().getPlayers().forEach(player -> server.getCommands().sendCommands(player));
-        }
-        //#endif
         //#if MC <= 26.2
         DeathDropPreStackManager.clearTickCache();
         //#endif
         RangeActionManager.tick(server);
+        //#if MC == 1.21.1
+        FakePlayerItemSortManager.tick(server);
+        //#endif
+        //#if MC >= 1.16.5 && MC <= 26.2
+        EndGatewayRegenerationManager.tick(server);
+        //#endif
+        //#if MC >= 1.19.4
+        PlayerHealthDisplay.tick(server);
+        //#endif
         if (previousBeeCollisionBoxRule != FGASettings.restorePre26BeeCollisionBox) {
             previousBeeCollisionBoxRule = FGASettings.restorePre26BeeCollisionBox;
             BeeDimensions.refreshLoadedBees(server);
         }
+        //#if MC >= 1.21.1 && MC <= 1.21.5
+        if (previousSpectatorFreeTeleportRule != FGASettings.spectatorFreeTeleport) {
+            previousSpectatorFreeTeleportRule = FGASettings.spectatorFreeTeleport;
+            server.getPlayerList().getPlayers().forEach(player -> server.getCommands().sendCommands(player));
+        }
+        //#endif
     }
 
     @Override
     public void onServerClosed(MinecraftServer server) {
         //#if MC >= 1.21.1
         FakePlayerProfilePreloadManager.close(server);
+        //#if MC >= 1.21.1 && MC < 26.2
+        DropPreStackConfig.clear();
+        //#if MC == 1.21.1
+        FakePlayerItemSortManager.close();
+        //#endif
+        //#endif
         VillagerTradeOnlyManager.clear();
+        //#endif
+        //#if MC >= 1.16.5 && MC <= 26.2
+        EndGatewayRegenerationManager.clear();
+        //#endif
+        //#if MC >= 1.20.5
+        carpet.fga.inventoryadvancement.InventoryAdvancementManager.RUNTIME.clear();
+        //#endif
+        //#if MC >= 1.19.4
+        PlayerHealthDisplay.clear(server);
         //#endif
         //#if MC <= 26.2
         DeathDropPreStackManager.clear();
         //#endif
         RangeActionManager.clear();
         previousBeeCollisionBoxRule = false;
+        //#if MC >= 1.21.1 && MC <= 1.21.5
+        previousSpectatorFreeTeleportRule = false;
+        //#endif
     }
 
     @Override
     public void onPlayerLoggedOut(net.minecraft.server.level.ServerPlayer player) {
         FGAModDetector.remove(player);
+        //#if MC == 1.21.1
+        if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();
+        //#endif
+        //#if MC >= 1.19.4
+        PlayerHealthDisplay.remove(player);
+        //#endif
+    }
+
+    @Override
+    public void onPlayerLoggedIn(net.minecraft.server.level.ServerPlayer player) {
+        //#if MC == 1.21.1
+        if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();
+        //#endif
     }
 
     /**
@@ -129,6 +193,56 @@ public class FGAExtension implements CarpetExtension {
     @Override
     public Map<String, String> canHasTranslations(String lang) {
         return FGATranslations.getTranslations(lang);
+    }
+
+
+    /**
+     * Pre-1.19.4 Carpet already owns the /fill 32768 constant via fillLimit.
+     * Sync that value instead of fighting Carpet's FillCommandMixin.
+     */
+    private static void registerUnlimitedFillLegacyBridge() {
+        //#if MC < 1.19.4
+        //#if MC >= 1.19
+        carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
+            if ("unlimitedFillCommands".equals(rule.name())) {
+                syncCarpetFillLimitForLegacyVersions(Boolean.TRUE.equals(rule.value()));
+            }
+        });
+        //#else
+        //$$ carpet.settings.SettingsManager.addGlobalRuleObserver((source, rule, userInput) -> {
+        //$$     if ("unlimitedFillCommands".equals(rule.name)) {
+        //$$         syncCarpetFillLimitForLegacyVersions(Boolean.TRUE.equals(rule.get()));
+        //$$     }
+        //$$ });
+        //#endif
+        //#endif
+    }
+
+    private static void registerFgaCommandTreeRefreshObserver() {
+        //#if MC >= 1.21.1
+        carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
+            if (!"droppedItemStackLimit".equals(rule.name())
+                    && !"villagerPerformanceOptimization".equals(rule.name())) {
+                return;
+            }
+            MinecraftServer server = CarpetServer.minecraft_server;
+            if (server != null) {
+                CommandHelper.notifyPlayersCommandsChanged(server);
+            }
+        });
+        //#endif
+    }
+
+    private static void syncCarpetFillLimitForLegacyVersions(boolean unlimited) {
+        //#if MC < 1.19.4
+        //$$ try {
+        //$$     // Direct field write bypasses /carpet validators; 20M is Carpet's documented max,
+        //$$     // but MAX_VALUE is accepted by the fill mixin path and keeps parity with newer gamerule unlock.
+        //$$     carpet.CarpetSettings.fillLimit = unlimited ? Integer.MAX_VALUE : 32768;
+        //$$ } catch (Throwable ignored) {
+        //$$     // Carpet version without fillLimit should not break startup.
+        //$$ }
+        //#endif
     }
 
     @Override

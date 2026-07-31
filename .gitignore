@@ -25,9 +25,12 @@ versions/mainProject
 # Temp / backups
 .source-push-*/
 .tmp/
+.tmp-yarn/
 gradle-local.bat
 *.log
 git-push-*
+scripts/logs/
+scripts/**/*.bak
 _build_*.cmd
 _build_*.ps1
 _smoke_*.cmd
@@ -38,6 +41,12 @@ _fix_*.py
 _mk_*.py
 _write_*.py
 testwrite.txt
+
+# Keep reusable project helpers, but never publish local logs/backups.
+!scripts/cmd/*.cmd
+!scripts/cmd/*.bat
+!scripts/powershell/*.ps1
+!scripts/python/*.py
 
 # OS
 .DS_Store

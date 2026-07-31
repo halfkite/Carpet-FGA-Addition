@@ -1,0 +1,10 @@
+InventoryAdvancementAccelerator functionality attribution
+
+This mod includes a Fabric adaptation of inventory_changed advancement indexing
+from InventoryAdvancementAccelerator by vicuna.
+
+Original copyright:
+Copyright (c) 2026 vicuna
+
+Original project license: MIT License.
+The original MIT license applies to the adapted portions.

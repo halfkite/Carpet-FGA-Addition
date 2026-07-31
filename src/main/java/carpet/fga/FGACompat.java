@@ -52,6 +52,10 @@ public final class FGACompat {
         //#endif
     }
 
+    public static net.minecraft.server.MinecraftServer server(ServerPlayer player) {
+        return serverLevel(player).getServer();
+    }
+
     public static ItemStack copyWithCount(ItemStack stack, int count) {
         //#if MC >= 1.20.5
         return stack.copyWithCount(count);
@@ -83,6 +87,14 @@ public final class FGACompat {
         source.sendSuccess(() -> message, broadcastToOps);
         //#else
         //$$ source.sendSuccess(message, broadcastToOps);
+        //#endif
+    }
+
+    public static boolean hasPermission(CommandSourceStack source, int level) {
+        //#if MC >= 1.21.11
+        //$$ return source.permissions().hasPermission(new net.minecraft.server.permissions.Permission.HasCommandLevel(net.minecraft.server.permissions.PermissionLevel.byId(level)));
+        //#else
+        return source.hasPermission(level);
         //#endif
     }
 

@@ -1,49 +1,53 @@
 # Carpet FGA Addition
 
-Carpet FGA Addition is a Fabric extension for [Carpet](https://github.com/gnembon/fabric-carpet). It adds focused server-side utilities for fake players, villages, mobs, commands, and loot configuration while keeping every feature opt-in through `/carpet` rules.
+Carpet FGA Addition is a server-focused Fabric Carpet extension for fake players, item drops, villagers, commands, and cross-version compatibility. Features are opt-in and disabled by default.
 
-## Highlights
+## Supported builds
 
-- **Fake-player utilities**: configurable fake-player name lengths, client-safe aliases for long names, and range-based placing, breaking, and block interaction commands.
-- **Fake-player profile preload**: on Minecraft 1.21.1, move authentication profile lookup off the server thread with always-on or adaptive burst detection.
-- **Unicode command arguments**: allow unquoted command arguments to contain Chinese and other Unicode characters.
-- **Villager interaction**: feed adult villagers while sneaking to grant breeding willingness, or feed baby villagers to speed up growth. Bread provides the same growth boost as four vegetable feedings.
-- **Hostile mob equipment access**: sneak-right-click a hostile mob with empty hands to inspect and edit its six vanilla equipment slots.
-- **Loot controls**: remove selected zombified piglin drops and exclude selected piglin-bartering results.
-- **Ground-item controls**: configure all, blacklist, and per-item whitelist stack limits up to 8192, with lossless hopper and hopper-minecart handling.
-- **Mob death pre-stacking**: immediately merge compatible drops from selected nearby mobs that die in the same tick.
-- **Unlimited fill commands**: remove `/fill` and `/fillbiome` volume limits while retaining chunk-loading, world-border, and permission checks.
-- **Bee collision-box option**: restore the pre-26.2 bee collision box on Minecraft 26.2.
+Version `1.4.0` is built for Minecraft `1.16.5`, `1.17.1`, `1.18.2`, `1.19.2`, `1.19.4`, `1.20.1`, `1.20.4`, `1.20.6`, `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, and `26.2`.
 
-## Requirements
+Install the JAR matching the server's Minecraft version. Most features are server-side and do not require the client mod. Long fake-player names display fully when both sides have the mod.
 
-- Fabric Loader 0.15.11 or newer
-- Fabric Carpet
-- Java 16 or newer for Minecraft 1.17.1, Java 21 for Minecraft 1.21.x, or Java 25 for Minecraft 26.1.2 and 26.2
+## Features
 
-Install the version of this mod that matches your Minecraft version. Features are disabled by default and can be configured with `/carpet`.
+- Fake-player name length limits, client-safe aliases, profile preloading, and range actions.
+- Full fake-player inventory sorting on Minecraft `1.21.1`, including `summon`, `quickopen`, offline playerdata access, shulker-box routing, rebuild tasks, dashboard snapshots, and API access to cached data.
+- Unified entity, block, container, and hopper-minecart drop pre-stacking with per-entry ranges.
+- Configurable ground-item stack limits with all, blacklist, and whitelist modes.
+- Cross-version `/fill` and `/fillbiome` limit compatibility.
+- Villager breeding and performance controls, gifts, and hostile-mob equipment access.
+- Wandering-trader protection, end-gateway regeneration, spectator self-teleport, and other server utilities.
+- Unicode command arguments, client-visible dimension IDs, dialog-warning controls, and the pre-26.2 bee collision box.
 
-## Main Rules
+## Examples
 
-| Rule | What it does |
-| --- | --- |
-| `fakePlayerNameLength` | Sets the maximum fake-player name length from 1 to 128, with client-safe aliases for players without the mod. |
-| `fakePlayerRangeControl` | Enables range placement, block interaction, breaking, continuous tasks, and optional pathfinding for fake players. |
-| `fakePlayerProfilePreload` | On Minecraft 1.21.1, asynchronously preloads profiles before fake-player spawning; supports `false`, `always`, and `adaptive`. |
-| `unicodeArgumentsSupport` | Allows unquoted Unicode characters in command arguments. |
-| `villagerBreedingAnimalization` | Enables direct villager feeding. `true` retains vanilla breeding; `only` requires direct feeding. |
-| `hostileMobInventoryAccess` | Opens hostile mob equipment slots with an empty-handed sneak-right-click. |
-| `zombifiedPiglinDropReduction` | Removes configured zombified piglin drops. |
-| `piglinBarterItemExclusions` | Excludes configured items from piglin bartering results. |
-| `droppedItemStackLimit` | Enables configurable all, blacklist, and whitelist ground-item stack limits up to 8192 on every supported version. |
-| `preStackMobDeathDrops` | Pre-stacks compatible same-tick death drops from selected mobs on every supported version. |
-| `preStackMobDeathDropsRange` | Sets the three-dimensional death-drop merge range from 0 to 16 blocks. |
-| `unlimitedFillCommands` | Removes `/fill` and `/fillbiome` volume limits while preserving vanilla safety checks on every supported version. |
-| `restorePre26BeeCollisionBox` | Restores the older bee collision box; available only on Minecraft 26.2. |
-| `clientDimensionIds` | Maps client-visible Overworld, Nether, and End IDs for minimap/Voxy data separation on Minecraft 1.21.1 and 26.2 without changing server dimensions. |
+```text
+/carpet unlimitedFillCommands true
+/carpet preStackDroppedItems true
+/dropPreStack entity add minecraft:zombified_piglin 1.5
+/dropPreStack block add minecraft:stone 1
+/dropPreStack entity list
+```
 
-## Villager Feeding
+The drop-pre-stack configuration is stored in `carpet/carpetfgaaddition/drop-pre-stack.json` inside the world directory. Lists show the localized name, stable ID, and configured range.
 
-With `villagerBreedingAnimalization` enabled, sneak-right-click an adult villager with either 3 bread or 12 carrots, potatoes, or beetroot to grant breeding willingness. Baby villagers consume one supported food item per feeding and use the same percentage-based growth acceleration as vanilla baby animals. Bread counts as four vegetable feedings.
+## Fake-player sorting on 1.21.1
 
-This mod is designed for servers. Clients do not need it for the server-side rules, although installing it on both sides enables full long fake-player name display.
+```text
+/carpet fakePlayerItemSortMode quickopen
+/player <fake-player> bot_sort
+```
+
+`quickopen` reads and writes offline playerdata without spawning a fake player just to access its inventory. `summon` uses Carpet's online fake-player inventory. The sorter keeps loose items in the primary target, routes box contents according to the configured rules, and never reads or writes armor slots.
+
+## Build
+
+```powershell
+.\gradlew.bat buildAllVersions --no-daemon
+```
+
+Build helpers and local logs are organized under `scripts/`. Build outputs under `build/` and `mod-builds/` are ignored by Git.
+
+## Credits
+
+Designs inspired by MIT-licensed Org Addition, SaveMyRecipeBook, and InventoryAdvancementAccelerator are credited in the bundled `META-INF/NOTICE-*` files.

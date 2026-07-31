@@ -1,7 +1,9 @@
 //#if MC <= 26.2
 package carpet.fga;
 
-import carpet.CarpetSettings;
+//#if MC < 1.21.1
+//$$ import carpet.CarpetSettings;
+//#endif
 //#if MC >= 1.19
 import carpet.utils.CommandHelper;
 //#else
@@ -50,8 +52,10 @@ public final class DroppedItemStackLimitCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("droppedItemStackLimit")
                 .requires(source ->
-                        //#if MC >= 1.19
-                        CommandHelper.canUseCommand(source, CarpetSettings.carpetCommandPermissionLevel)
+                        //#if MC >= 1.21.1
+                        CommandHelper.canUseCommand(source, FGASettings.droppedItemStackLimit)
+                        //#elseif MC >= 1.19
+                        //$$ CommandHelper.canUseCommand(source, CarpetSettings.carpetCommandPermissionLevel)
                         //#else
                         //$$ SettingsManager.canUseCommand(source, CarpetSettings.commandPlayer)
                         //#endif
@@ -207,7 +211,13 @@ public final class DroppedItemStackLimitCommand {
     private static int showSummary(CommandContext<CommandSourceStack> context) {
         DroppedItemStackLimitConfig.State current = DroppedItemStackLimitConfig.snapshot();
         MutableComponent message = Component.literal("掉落物堆叠配置\n")
-                .append(Component.literal("规则：" + (FGASettings.droppedItemStackLimit ? "true" : "false") + "\n"))
+                .append(Component.literal("规则：" +
+                        //#if MC >= 1.21.1
+                        FGASettings.droppedItemStackLimit
+                        //#else
+                        //$$ (FGASettings.droppedItemStackLimit ? "true" : "false")
+                        //#endif
+                        + "\n"))
                 .append(Component.literal("模式：" + current.mode().serializedName() + "\n"))
                 .append(Component.literal("all 数量：" + current.allLimit() + "\n"))
                 .append(Component.literal("black 数量：" + current.blackLimit() + "，黑名单 "

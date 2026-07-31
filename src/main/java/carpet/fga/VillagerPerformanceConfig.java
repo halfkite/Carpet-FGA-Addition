@@ -69,7 +69,7 @@ public final class VillagerPerformanceConfig {
                 else if (trimmed.startsWith("villagerTradeOnlyBlocks ")) blocks = value(trimmed);
                 else if (trimmed.startsWith("villagerTradeOnlyNames ")) names = value(trimmed);
             }
-            State migrated = new State(parseMode(mode), parseBlocks(blocks), parseNames(names), false, Set.of(), Set.of());
+            State migrated = new State(parseMode(mode), parseBlocks(blocks), parseNames(names), false, Set.of(), Set.of(), Set.of(), Set.of());
             if (!migrated.equals(State.defaults())) LOGGER.warn("Migrated legacy villagerTradeOnly rules; use /villagerPerformance");
             return migrated;
         } catch (RuntimeException | IOException e) {
@@ -83,10 +83,10 @@ public final class VillagerPerformanceConfig {
     public static boolean isLoadFailed() { return loadFailed; }
 
     public static synchronized void setTradeMode(TradeMode mode) throws IOException {
-        update(s -> new State(mode, s.tradeBlocks(), s.tradeNames(), s.giftEnabled(), s.giftBlocks(), s.giftNames()));
+        update(s -> new State(mode, s.tradeBlocks(), s.tradeNames(), s.giftEnabled(), s.giftBlocks(), s.giftNames(), s.wanderingTraderBlocks(), s.wanderingTraderNames()));
     }
     public static synchronized void setGiftEnabled(boolean enabled) throws IOException {
-        update(s -> new State(s.tradeMode(), s.tradeBlocks(), s.tradeNames(), enabled, s.giftBlocks(), s.giftNames()));
+        update(s -> new State(s.tradeMode(), s.tradeBlocks(), s.tradeNames(), enabled, s.giftBlocks(), s.giftNames(), s.wanderingTraderBlocks(), s.wanderingTraderNames()));
     }
     public static synchronized boolean add(Target target, Kind kind, String raw) throws IOException {
         if (kind == Kind.BLOCK) {
@@ -113,10 +113,26 @@ public final class VillagerPerformanceConfig {
                 target == Target.TRADE && kind == Kind.BLOCK ? newBlocks : s.tradeBlocks(),
                 target == Target.TRADE && kind == Kind.NAME ? newNames : s.tradeNames(), s.giftEnabled(),
                 target == Target.GIFT && kind == Kind.BLOCK ? newBlocks : s.giftBlocks(),
-                target == Target.GIFT && kind == Kind.NAME ? newNames : s.giftNames()));
+                target == Target.GIFT && kind == Kind.NAME ? newNames : s.giftNames(), s.wanderingTraderBlocks(), s.wanderingTraderNames()));
     }
     public static Set<ResourceLocation> blocks(Target target) { return target == Target.TRADE ? state.tradeBlocks() : state.giftBlocks(); }
     public static Set<String> names(Target target) { return target == Target.TRADE ? state.tradeNames() : state.giftNames(); }
+    public static Set<ResourceLocation> wanderingTraderBlocks() { return state.wanderingTraderBlocks(); }
+    public static Set<String> wanderingTraderNames() { return state.wanderingTraderNames(); }
+    public static synchronized boolean addWanderingTrader(Kind kind, String raw) throws IOException { return updateWanderingTrader(kind, raw, true); }
+    public static synchronized boolean removeWanderingTrader(Kind kind, String raw) throws IOException { return updateWanderingTrader(kind, raw, false); }
+    private static boolean updateWanderingTrader(Kind kind, String raw, boolean add) throws IOException {
+        if (kind == Kind.BLOCK) {
+            Set<ResourceLocation> values = new LinkedHashSet<>(state.wanderingTraderBlocks());
+            if (!(add ? values.add(parseBlock(raw)) : values.remove(parseBlock(raw)))) return false;
+            update(s -> new State(s.tradeMode(), s.tradeBlocks(), s.tradeNames(), s.giftEnabled(), s.giftBlocks(), s.giftNames(), values, s.wanderingTraderNames()));
+        } else {
+            Set<String> values = new LinkedHashSet<>(state.wanderingTraderNames());
+            if (!(add ? values.add(parseName(raw)) : values.remove(parseName(raw)))) return false;
+            update(s -> new State(s.tradeMode(), s.tradeBlocks(), s.tradeNames(), s.giftEnabled(), s.giftBlocks(), s.giftNames(), s.wanderingTraderBlocks(), values));
+        }
+        return true;
+    }
 
     private static void update(UnaryOperator<State> operation) throws IOException {
         if (loadFailed) throw new IOException("configuration is invalid; repair or move " + path);
@@ -131,12 +147,12 @@ public final class VillagerPerformanceConfig {
     private static State parse(JsonElement element) {
         JsonObject o = element.getAsJsonObject();
         return new State(parseMode(get(o, "tradeMode", "false")), readBlocks(o, "tradeBlocks"), readNames(o, "tradeNames"),
-                o.has("giftEnabled") && o.get("giftEnabled").getAsBoolean(), readBlocks(o, "giftBlocks"), readNames(o, "giftNames"));
+                o.has("giftEnabled") && o.get("giftEnabled").getAsBoolean(), readBlocks(o, "giftBlocks"), readNames(o, "giftNames"), readBlocks(o, "wanderingTraderBlocks"), readNames(o, "wanderingTraderNames"));
     }
     private static JsonObject toJson(State s) {
         JsonObject o = new JsonObject(); o.addProperty("tradeMode", s.tradeMode().serialized()); o.addProperty("giftEnabled", s.giftEnabled());
         write(o, "tradeBlocks", s.tradeBlocks()); write(o, "tradeNames", s.tradeNames());
-        write(o, "giftBlocks", s.giftBlocks()); write(o, "giftNames", s.giftNames()); return o;
+        write(o, "giftBlocks", s.giftBlocks()); write(o, "giftNames", s.giftNames()); write(o, "wanderingTraderBlocks", s.wanderingTraderBlocks()); write(o, "wanderingTraderNames", s.wanderingTraderNames()); return o;
     }
     private static void write(JsonObject o, String key, Collection<?> values) { JsonArray a = new JsonArray(); values.stream().map(Object::toString).sorted().forEach(a::add); o.add(key, a); }
     private static Set<ResourceLocation> readBlocks(JsonObject o, String key) { Set<ResourceLocation> r=new LinkedHashSet<>();if(o.has(key))for(JsonElement e:o.getAsJsonArray(key)){ResourceLocation id=parseBlock(e.getAsString());if(!r.add(id))throw new IllegalArgumentException("duplicate block: "+id);}return Set.copyOf(r); }
@@ -152,9 +168,9 @@ public final class VillagerPerformanceConfig {
     public enum Target { TRADE, GIFT }
     public enum Kind { BLOCK, NAME }
     public record State(TradeMode tradeMode, Set<ResourceLocation> tradeBlocks, Set<String> tradeNames,
-                        boolean giftEnabled, Set<ResourceLocation> giftBlocks, Set<String> giftNames) {
-        public State { tradeBlocks=Set.copyOf(tradeBlocks);tradeNames=Set.copyOf(tradeNames);giftBlocks=Set.copyOf(giftBlocks);giftNames=Set.copyOf(giftNames); }
-        public static State defaults(){return new State(TradeMode.FALSE,Set.of(),Set.of(),false,Set.of(),Set.of());}
+                        boolean giftEnabled, Set<ResourceLocation> giftBlocks, Set<String> giftNames, Set<ResourceLocation> wanderingTraderBlocks, Set<String> wanderingTraderNames) {
+        public State { tradeBlocks=Set.copyOf(tradeBlocks);tradeNames=Set.copyOf(tradeNames);giftBlocks=Set.copyOf(giftBlocks);giftNames=Set.copyOf(giftNames);wanderingTraderBlocks=Set.copyOf(wanderingTraderBlocks);wanderingTraderNames=Set.copyOf(wanderingTraderNames); }
+        public static State defaults(){return new State(TradeMode.FALSE,Set.of(),Set.of(),false,Set.of(),Set.of(),Set.of(),Set.of());}
     }
 }
 //#endif

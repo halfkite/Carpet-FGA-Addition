@@ -1,0 +1,10 @@
+SaveMyRecipeBook functionality attribution
+
+This mod includes a Fabric adaptation of the recipe-book behavior from
+SaveMyRecipeBook by MoePus.
+
+Original copyright:
+Copyright (c) 2026 MoePus
+
+Original project license: MIT License.
+The original MIT license applies to the adapted portions.

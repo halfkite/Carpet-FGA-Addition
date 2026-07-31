@@ -1,3 +1,4 @@
+//#if MC >= 1.19.4
 //#if MC <= 26.2
 package carpet.fga.mixin;
 
@@ -11,22 +12,14 @@ import net.minecraft.world.level.GameRules;
 //#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(FillCommand.class)
 public abstract class FillCommandLimitMixin {
-    // 1.16.5-1.19.2: hard-coded fill limit 32768
-    //#if MC < 1.19.4
-    //$$ @ModifyConstant(method = "fillBlocks", constant = @Constant(intValue = 32768))
-    //$$ private static int carpetFga$unlimitedFillVolume(int vanillaLimit) {
-    //$$     return FGASettings.unlimitedFillCommands ? Integer.MAX_VALUE : vanillaLimit;
-    //$$ }
     // 1.19.4-1.21.1: gamerule limit stored into local 6
-    //#elseif MC <= 1.21.1
-    @ModifyVariable(method = "fillBlocks", at = @At(value = "STORE"), index = 6)
+    //#if MC <= 1.21.1
+    @ModifyVariable(method = "fillBlocks", at = @At(value = "STORE"), index = 6, require = 0)
     private static int carpetFga$unlimitedFillVolume(int effectiveLimit) {
         return FGASettings.unlimitedFillCommands ? Integer.MAX_VALUE : effectiveLimit;
     }
@@ -36,7 +29,8 @@ public abstract class FillCommandLimitMixin {
     //$$         at = @At(
     //$$                 value = "INVOKE",
     //$$                 target = "Lnet/minecraft/world/level/gamerules/GameRules;get(Lnet/minecraft/world/level/gamerules/GameRule;)Ljava/lang/Object;"
-    //$$         )
+    //$$         ),
+    //$$         require = 0
     //$$ )
     //$$ private static Object carpetFga$unlimitedFillVolume(GameRules rules, GameRule<?> rule) {
     //$$     return FGASettings.unlimitedFillCommands ? Integer.MAX_VALUE : rules.get(rule);
@@ -47,7 +41,8 @@ public abstract class FillCommandLimitMixin {
     //$$         at = @At(
     //$$                 value = "INVOKE",
     //$$                 target = "Lnet/minecraft/world/level/GameRules;getInt(Lnet/minecraft/world/level/GameRules$Key;)I"
-    //$$         )
+    //$$         ),
+    //$$         require = 0
     //$$ )
     //$$ private static int carpetFga$unlimitedFillVolume(GameRules rules,
     //$$                                                    GameRules.Key<GameRules.IntegerValue> key) {
@@ -55,4 +50,5 @@ public abstract class FillCommandLimitMixin {
     //$$ }
     //#endif
 }
+//#endif
 //#endif

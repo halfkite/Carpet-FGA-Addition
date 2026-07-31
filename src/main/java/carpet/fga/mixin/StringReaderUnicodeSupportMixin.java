@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class StringReaderUnicodeSupportMixin {
     @Inject(method = "isAllowedInUnquotedString", at = @At("RETURN"), remap = false, cancellable = true)
     private static void carpetFga$allowUnicodeArguments(char character, CallbackInfoReturnable<Boolean> cir) {
-        if (FGASettings.unicodeArgumentsSupport && !cir.getReturnValueZ()) {
+        if (FGASettings.fgaUnicodeArgumentsSupport && !cir.getReturnValueZ()) {
             cir.setReturnValue(Character.isLetterOrDigit(character) || character > 0x7F);
         }
     }

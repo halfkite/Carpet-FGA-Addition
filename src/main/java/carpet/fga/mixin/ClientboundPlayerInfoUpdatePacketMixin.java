@@ -2,8 +2,14 @@
 package carpet.fga.mixin;
 
 import carpet.fga.FakePlayerNameAlias;
+//#if MC >= 1.19.4
+import carpet.fga.PlayerHealthDisplay;
+//#endif
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+//#if MC >= 1.19.4
+import net.minecraft.server.level.ServerPlayer;
+//#endif
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -29,11 +35,19 @@ public abstract class ClientboundPlayerInfoUpdatePacketMixin {
         for (ClientboundPlayerInfoUpdatePacket.Entry entry : entries) {
             GameProfile profile = entry.profile();
             GameProfile networkProfile = profile == null ? null : FakePlayerNameAlias.networkProfile(profile);
-            if (networkProfile != profile) {
+            //#if MC >= 1.19.4
+            ServerPlayer player = PlayerHealthDisplay.getOnlinePlayer(entry.profileId());
+            net.minecraft.network.chat.Component displayName = player == null
+                    ? entry.displayName()
+                    : PlayerHealthDisplay.tabDisplayName(player, entry.displayName());
+            //#else
+            //$$ net.minecraft.network.chat.Component displayName = entry.displayName();
+            //#endif
+            if (networkProfile != profile || displayName != entry.displayName()) {
                 changed = true;
                 aliases.add(new ClientboundPlayerInfoUpdatePacket.Entry(
                         entry.profileId(), networkProfile, entry.listed(), entry.latency(), entry.gameMode(),
-                        entry.displayName(),
+                        displayName,
                         //#if MC >= 1.21.4
                         //$$ entry.showHat(),
                         //#endif
