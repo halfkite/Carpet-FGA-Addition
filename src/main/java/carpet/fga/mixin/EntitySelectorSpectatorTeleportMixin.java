@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(value = EntitySelector.class, priority = 50)
 public abstract class EntitySelectorSpectatorTeleportMixin {
-    @Inject(method = "checkPermissions", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "checkPermissions", at = @At("HEAD"), cancellable = true, require = 0)
     private void carpetFga$bypassSpectatorSelectorPermission(CommandSourceStack source, CallbackInfo ci) {
         if (SpectatorFreeTeleport.bypassSelectorPermissionCheck(source)) {
             ci.cancel();

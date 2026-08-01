@@ -31,7 +31,8 @@ public abstract class TeleportCommandMixin {
                     target = "Lcom/mojang/brigadier/builder/LiteralArgumentBuilder;requires(Ljava/util/function/Predicate;)Lcom/mojang/brigadier/builder/ArgumentBuilder;",
                     remap = false
             ),
-            index = 0
+            index = 0,
+            require = 0
     )
     private static Predicate<CommandSourceStack> carpetFga$allowSpectatorFreeTeleport(
             Predicate<CommandSourceStack> original) {
@@ -51,7 +52,7 @@ public abstract class TeleportCommandMixin {
         };
     }
 
-    @Inject(method = "teleportToEntity", at = @At("HEAD"))
+    @Inject(method = "teleportToEntity", at = @At("HEAD"), require = 0)
     private static void carpetFga$restrictSpectatorTeleportToEntity(
             CommandSourceStack source,
             Collection<? extends Entity> targets,
@@ -60,7 +61,7 @@ public abstract class TeleportCommandMixin {
         SpectatorFreeTeleport.ensureSelfOnlyTargets(source, targets);
     }
 
-    @Inject(method = "teleportToPos", at = @At("HEAD"))
+    @Inject(method = "teleportToPos", at = @At("HEAD"), require = 0)
     private static void carpetFga$restrictSpectatorTeleportToPos(
             CommandSourceStack source,
             Collection<? extends Entity> targets,

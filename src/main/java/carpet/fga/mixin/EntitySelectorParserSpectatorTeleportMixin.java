@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(value = EntitySelectorParser.class, priority = 50)
 public abstract class EntitySelectorParserSpectatorTeleportMixin {
-    @Inject(method = "allowSelectors", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "allowSelectors", at = @At("RETURN"), cancellable = true, require = 0)
     private static void carpetFga$allowSpectatorSelectors(Object source, CallbackInfoReturnable<Boolean> cir) {
         if (!cir.getReturnValueZ() && SpectatorFreeTeleport.allowEntitySelectors(source)) {
             cir.setReturnValue(true);

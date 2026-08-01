@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerSpectatorTeleportMixin {
-    @Inject(method = "setGameMode", at = @At("RETURN"))
+    @Inject(method = "setGameMode", at = @At("RETURN"), require = 0)
     private void carpetFga$refreshCommandsAfterGameModeChange(
             GameType gameType, CallbackInfoReturnable<Boolean> cir) {
         if (!Boolean.TRUE.equals(cir.getReturnValue()) || !FGASettings.spectatorFreeTeleport) {
