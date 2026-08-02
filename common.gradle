@@ -40,6 +40,12 @@ dependencies {
     }
 }
 
+if (mcVersion >= 1_21_10 && mcVersion < 26_00_00) {
+    configurations.configureEach {
+        resolutionStrategy.force 'io.github.llamalad7:mixinextras-fabric:0.5.0'
+    }
+}
+
 def javaVersion = mcVersion >= 26_00_00
         ? JavaVersion.VERSION_25
         : (mcVersion >= 1_20_05 ? JavaVersion.VERSION_21 : JavaVersion.VERSION_16)
@@ -127,4 +133,3 @@ if (mcVersion < 1_20_05) {
             'carpet/fga/mixin/FriendlyByteBufMixin.java'
     )
 }
-

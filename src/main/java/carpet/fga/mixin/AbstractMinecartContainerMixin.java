@@ -15,43 +15,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** Captures inventory and vehicle drops from container minecarts. */
 @Mixin(AbstractMinecartContainer.class)
 public abstract class AbstractMinecartContainerMixin {
-    //#if MC >= 1.21.4
-    @Inject(method = "destroy(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"))
-    private void carpetFga$beginContainerMinecartDrop(ServerLevel level, DamageSource source, CallbackInfo callback) {
-        AbstractMinecartContainer minecart = (AbstractMinecartContainer) (Object) this;
-        if (FGASettings.shouldPreStackDeathDrops(minecart)) {
-            DeathDropPreStackManager.begin(minecart, level);
-        }
-    }
-
-    @Inject(method = "destroy(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("RETURN"))
-    private void carpetFga$finishContainerMinecartDrop(ServerLevel level, DamageSource source, CallbackInfo callback) {
-        AbstractMinecartContainer minecart = (AbstractMinecartContainer) (Object) this;
-        if (FGASettings.shouldPreStackDeathDrops(minecart)) {
-            DeathDropPreStackManager.finish(minecart, true);
-        }
-    }
-    //#else
-    //$$ @Inject(method = "destroy(Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"))
-    //$$ private void carpetFga$beginContainerMinecartDrop(DamageSource source, CallbackInfo callback) {
+    //#if MC >= 1.21.3
+    //$$ @Inject(method = "destroy(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"))
+    //$$ private void carpetFga$beginContainerMinecartDrop(ServerLevel level, DamageSource source, CallbackInfo callback) {
     //$$     AbstractMinecartContainer minecart = (AbstractMinecartContainer) (Object) this;
-    //$$     if (FGACompat.level(minecart) instanceof ServerLevel level
-    //$$             && FGASettings.shouldPreStackDeathDrops(minecart)) {
+    //$$     if (FGASettings.shouldPreStackDeathDrops(minecart)) {
     //$$         DeathDropPreStackManager.begin(minecart, level);
     //$$     }
     //$$ }
 
-    //$$ @Inject(method = "destroy(Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("RETURN"))
-    //$$ private void carpetFga$finishContainerMinecartDrop(DamageSource source, CallbackInfo callback) {
+    //$$ @Inject(method = "destroy(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("RETURN"))
+    //$$ private void carpetFga$finishContainerMinecartDrop(ServerLevel level, DamageSource source, CallbackInfo callback) {
     //$$     AbstractMinecartContainer minecart = (AbstractMinecartContainer) (Object) this;
-    //$$     if (FGACompat.level(minecart) instanceof ServerLevel level
-    //$$             && FGASettings.shouldPreStackDeathDrops(minecart)) {
+    //$$     if (FGASettings.shouldPreStackDeathDrops(minecart)) {
     //$$         DeathDropPreStackManager.finish(minecart, true);
     //$$     }
     //$$ }
-    //#endif
-
-    /*
+    //#else
     @Inject(method = "destroy(Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"))
     private void carpetFga$beginContainerMinecartDrop(DamageSource source, CallbackInfo callback) {
         AbstractMinecartContainer minecart = (AbstractMinecartContainer) (Object) this;
@@ -69,6 +49,6 @@ public abstract class AbstractMinecartContainerMixin {
             DeathDropPreStackManager.finish(minecart, true);
         }
     }
-    */
+    //#endif
 }
 //#endif

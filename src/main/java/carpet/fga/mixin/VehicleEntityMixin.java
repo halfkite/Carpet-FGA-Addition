@@ -7,6 +7,7 @@ import carpet.fga.FGASettings;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.vehicle.VehicleEntity;
+import net.minecraft.world.item.Item;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,45 +16,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** Captures configured vehicle destruction drops, including hopper minecarts. */
 @Mixin(VehicleEntity.class)
 public abstract class VehicleEntityMixin {
-    //#if MC >= 1.21.4
-    @Inject(method = "destroy(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"))
-    private void carpetFga$beginVehicleDrop(ServerLevel level, DamageSource source, CallbackInfo callback) {
-        VehicleEntity vehicle = (VehicleEntity) (Object) this;
-        if (FGASettings.shouldPreStackDeathDrops(vehicle)) {
-            DeathDropPreStackManager.begin(vehicle, level);
-        }
-    }
-
-    @Inject(method = "destroy(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("RETURN"))
-    private void carpetFga$finishVehicleDrop(ServerLevel level, DamageSource source, CallbackInfo callback) {
-        VehicleEntity vehicle = (VehicleEntity) (Object) this;
-        if (FGASettings.shouldPreStackDeathDrops(vehicle)) {
-            DeathDropPreStackManager.finish(vehicle, true);
-        }
-    }
-    //#else
-    //$$ @Inject(method = "destroy(Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"))
-    //$$ private void carpetFga$beginVehicleDrop(DamageSource source, CallbackInfo callback) {
+    //#if MC >= 1.21.3
+    //$$ @Inject(method = "destroy(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/Item;)V", at = @At("HEAD"))
+    //$$ private void carpetFga$beginVehicleDrop(ServerLevel level, Item item, CallbackInfo callback) {
     //$$     VehicleEntity vehicle = (VehicleEntity) (Object) this;
-    //$$     if (FGACompat.level(vehicle) instanceof ServerLevel level
-    //$$             && FGASettings.shouldPreStackDeathDrops(vehicle)) {
+    //$$     if (FGASettings.shouldPreStackDeathDrops(vehicle)) {
     //$$         DeathDropPreStackManager.begin(vehicle, level);
     //$$     }
     //$$ }
 
-    //$$ @Inject(method = "destroy(Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("RETURN"))
-    //$$ private void carpetFga$finishVehicleDrop(DamageSource source, CallbackInfo callback) {
+    //$$ @Inject(method = "destroy(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/Item;)V", at = @At("RETURN"))
+    //$$ private void carpetFga$finishVehicleDrop(ServerLevel level, Item item, CallbackInfo callback) {
     //$$     VehicleEntity vehicle = (VehicleEntity) (Object) this;
-    //$$     if (FGACompat.level(vehicle) instanceof ServerLevel level
-    //$$             && FGASettings.shouldPreStackDeathDrops(vehicle)) {
+    //$$     if (FGASettings.shouldPreStackDeathDrops(vehicle)) {
     //$$         DeathDropPreStackManager.finish(vehicle, true);
     //$$     }
     //$$ }
-    //#endif
-
-    /*
-    @Inject(method = "destroy(Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"))
-    private void carpetFga$beginVehicleDrop(DamageSource source, CallbackInfo callback) {
+    //#else
+    @Inject(method = "destroy(Lnet/minecraft/world/item/Item;)V", at = @At("HEAD"))
+    private void carpetFga$beginVehicleDrop(Item item, CallbackInfo callback) {
         VehicleEntity vehicle = (VehicleEntity) (Object) this;
         if (FGACompat.level(vehicle) instanceof ServerLevel level
                 && FGASettings.shouldPreStackDeathDrops(vehicle)) {
@@ -61,14 +42,14 @@ public abstract class VehicleEntityMixin {
         }
     }
 
-    @Inject(method = "destroy(Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("RETURN"))
-    private void carpetFga$finishVehicleDrop(DamageSource source, CallbackInfo callback) {
+    @Inject(method = "destroy(Lnet/minecraft/world/item/Item;)V", at = @At("RETURN"))
+    private void carpetFga$finishVehicleDrop(Item item, CallbackInfo callback) {
         VehicleEntity vehicle = (VehicleEntity) (Object) this;
         if (FGACompat.level(vehicle) instanceof ServerLevel level
                 && FGASettings.shouldPreStackDeathDrops(vehicle)) {
             DeathDropPreStackManager.finish(vehicle, true);
         }
     }
-    */
+    //#endif
 }
 //#endif

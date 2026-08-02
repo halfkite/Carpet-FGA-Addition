@@ -20,7 +20,7 @@
         "CustomPacketPayloadMixin",
         "ServerGamePacketListenerImplMixin",
         //#endif
-        //#if MC >= 1.20.2
+        //#if MC >= 1.20.5
         "ServerCommonPacketListenerAccessor",
         "ServerCommonPacketListenerImplMixin",
         //#endif
@@ -83,7 +83,7 @@
         //#endif
     ],
     "client": [
-        //#if MC >= 1.20.2
+        //#if MC >= 1.20.5
         "FriendlyByteBufMixin"
         //#endif
         //#if MC >= 1.20.5
