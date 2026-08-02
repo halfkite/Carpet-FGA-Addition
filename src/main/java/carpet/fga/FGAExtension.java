@@ -66,13 +66,10 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onServerLoaded(MinecraftServer server) {
-        //#if MC >= 1.21.1
+        //#if MC >= 1.20.1
         VillagerPerformanceConfig.load(server);
         //#endif
-        //#if MC >= 1.20.5
-        carpet.fga.inventoryadvancement.InventoryAdvancementManager.RUNTIME.startupSelfCheck();
-        //#endif
-        //#if MC >= 1.21.1 && MC < 26.2
+        //#if MC >= 1.20.5 && MC < 26.2
         DropPreStackConfig.load(server);
         //#if MC == 1.21.1
         FakePlayerItemSortConfig.load(server);
@@ -96,13 +93,10 @@ public class FGAExtension implements CarpetExtension {
         //#if MC <= 26.2
         DroppedItemStackLimitCommand.register(dispatcher);
         //#endif
-        //#if MC >= 1.21.1
+        //#if MC >= 1.20.1
         VillagerPerformanceCommand.register(dispatcher);
         //#endif
-        //#if MC >= 1.20.5
-        InventoryAdvancementCommand.register(dispatcher);
-        //#endif
-        //#if MC >= 1.21.1 && MC < 26.2
+        //#if MC >= 1.20.5 && MC < 26.2
         DropPreStackCommand.register(dispatcher);
         //#if MC == 1.21.1
         FakePlayerItemSortCommand.register(dispatcher);
@@ -148,13 +142,12 @@ public class FGAExtension implements CarpetExtension {
         FakePlayerItemSortManager.close();
         //#endif
         //#endif
+        //#endif
+        //#if MC >= 1.20.1
         VillagerTradeOnlyManager.clear();
         //#endif
         //#if MC >= 1.16.5 && MC <= 26.2
         EndGatewayRegenerationManager.clear();
-        //#endif
-        //#if MC >= 1.20.5
-        carpet.fga.inventoryadvancement.InventoryAdvancementManager.RUNTIME.clear();
         //#endif
         //#if MC >= 1.19.4
         PlayerHealthDisplay.clear(server);

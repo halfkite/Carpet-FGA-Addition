@@ -1,4 +1,4 @@
-//#if MC >= 1.21.1 && MC < 26.2
+//#if MC >= 1.20.5 && MC < 26.2
 package carpet.fga;
 
 import com.google.gson.Gson;
@@ -42,8 +42,13 @@ public final class DropPreStackConfig {
     }
 
     public static synchronized void load(MinecraftServer server) {
-        path = server.getWorldPath(LevelResource.ROOT).resolve("carpet")
-                .resolve("carpetfgaaddition").resolve("drop-pre-stack.json");
+        Path current = FGAWorldConfigPaths.current(server, "drop-pre-stack.json");
+        Path legacy = FGAWorldConfigPaths.legacy(server, "drop-pre-stack.json");
+        try {
+            path = FGAWorldConfigPaths.migrate(current, legacy, DropPreStackConfig::validFile);
+        } catch (IOException exception) {
+            path = legacy;
+        }
         if (!Files.exists(path)) {
             state = State.defaults();
             loadFailed = false;
@@ -59,6 +64,15 @@ public final class DropPreStackConfig {
             state = State.defaults();
             loadFailed = true;
             LOGGER.error("Invalid drop pre-stack configuration at {}; preserving it and disabling new configuration", path, exception);
+        }
+    }
+
+    private static boolean validFile(Path candidate) {
+        try (Reader reader = Files.newBufferedReader(candidate, StandardCharsets.UTF_8)) {
+            parse(JsonParser.parseReader(reader));
+            return true;
+        } catch (Exception exception) {
+            return false;
         }
     }
 

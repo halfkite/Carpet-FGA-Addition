@@ -1,4 +1,4 @@
-//#if MC >= 1.21.1
+//#if MC >= 1.20.1
 package carpet.fga;
 
 import com.google.gson.*;
@@ -34,8 +34,13 @@ public final class VillagerPerformanceConfig {
     private VillagerPerformanceConfig() {}
 
     public static synchronized void load(MinecraftServer server) {
-        path = server.getWorldPath(LevelResource.ROOT).resolve("carpet")
-                .resolve("carpetfgaaddition").resolve("villager-performance.json");
+        Path current = FGAWorldConfigPaths.current(server, "villager-performance.json");
+        Path legacy = FGAWorldConfigPaths.legacy(server, "villager-performance.json");
+        try {
+            path = FGAWorldConfigPaths.migrate(current, legacy, VillagerPerformanceConfig::validFile);
+        } catch (IOException exception) {
+            path = legacy;
+        }
         if (!Files.exists(path)) {
             state = migrateLegacy(server);
             loadFailed = false;
@@ -132,6 +137,15 @@ public final class VillagerPerformanceConfig {
             update(s -> new State(s.tradeMode(), s.tradeBlocks(), s.tradeNames(), s.giftEnabled(), s.giftBlocks(), s.giftNames(), s.wanderingTraderBlocks(), values));
         }
         return true;
+    }
+
+    private static boolean validFile(Path candidate) {
+        try (Reader reader = Files.newBufferedReader(candidate, StandardCharsets.UTF_8)) {
+            parse(JsonParser.parseReader(reader));
+            return true;
+        } catch (Exception exception) {
+            return false;
+        }
     }
 
     private static void update(UnaryOperator<State> operation) throws IOException {

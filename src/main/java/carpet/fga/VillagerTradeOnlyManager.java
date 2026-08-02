@@ -1,4 +1,4 @@
-//#if MC >= 1.21.1
+//#if MC >= 1.20.1
 package carpet.fga;
 
 import net.minecraft.core.BlockPos;
@@ -50,7 +50,7 @@ public final class VillagerTradeOnlyManager {
     //$$         Map.entry(VillagerProfession.TOOLSMITH, BuiltInLootTables.TOOLSMITH_GIFT),
     //$$         Map.entry(VillagerProfession.WEAPONSMITH, BuiltInLootTables.WEAPONSMITH_GIFT)
     //$$ );
-    //#else
+    //#elseif MC >= 1.20.5
     private static final Map<VillagerProfession, ResourceKey<LootTable>> GIFTS = Map.ofEntries(
             Map.entry(VillagerProfession.ARMORER, BuiltInLootTables.ARMORER_GIFT),
             Map.entry(VillagerProfession.BUTCHER, BuiltInLootTables.BUTCHER_GIFT),
@@ -66,6 +66,22 @@ public final class VillagerTradeOnlyManager {
             Map.entry(VillagerProfession.TOOLSMITH, BuiltInLootTables.TOOLSMITH_GIFT),
             Map.entry(VillagerProfession.WEAPONSMITH, BuiltInLootTables.WEAPONSMITH_GIFT)
     );
+    //#else
+    //$$ private static final Map<VillagerProfession, net.minecraft.resources.ResourceLocation> GIFTS = Map.ofEntries(
+    //$$         Map.entry(VillagerProfession.ARMORER, BuiltInLootTables.ARMORER_GIFT),
+    //$$         Map.entry(VillagerProfession.BUTCHER, BuiltInLootTables.BUTCHER_GIFT),
+    //$$         Map.entry(VillagerProfession.CARTOGRAPHER, BuiltInLootTables.CARTOGRAPHER_GIFT),
+    //$$         Map.entry(VillagerProfession.CLERIC, BuiltInLootTables.CLERIC_GIFT),
+    //$$         Map.entry(VillagerProfession.FARMER, BuiltInLootTables.FARMER_GIFT),
+    //$$         Map.entry(VillagerProfession.FISHERMAN, BuiltInLootTables.FISHERMAN_GIFT),
+    //$$         Map.entry(VillagerProfession.FLETCHER, BuiltInLootTables.FLETCHER_GIFT),
+    //$$         Map.entry(VillagerProfession.LEATHERWORKER, BuiltInLootTables.LEATHERWORKER_GIFT),
+    //$$         Map.entry(VillagerProfession.LIBRARIAN, BuiltInLootTables.LIBRARIAN_GIFT),
+    //$$         Map.entry(VillagerProfession.MASON, BuiltInLootTables.MASON_GIFT),
+    //$$         Map.entry(VillagerProfession.SHEPHERD, BuiltInLootTables.SHEPHERD_GIFT),
+    //$$         Map.entry(VillagerProfession.TOOLSMITH, BuiltInLootTables.TOOLSMITH_GIFT),
+    //$$         Map.entry(VillagerProfession.WEAPONSMITH, BuiltInLootTables.WEAPONSMITH_GIFT)
+    //$$ );
     //#endif
     private static final Map<Villager, Vec3> ANCHORS = new WeakHashMap<>();
     private static final Map<Villager, Long> NEXT_RESTOCK_CHECKS = new WeakHashMap<>();
@@ -208,14 +224,22 @@ public final class VillagerTradeOnlyManager {
 
     private static List<ItemStack> getGiftItems(ServerLevel level, Villager villager) {
         if (villager.isBaby()) return List.of(new ItemStack(Items.POPPY));
+        //#if MC >= 1.20.5
         ResourceKey<LootTable> giftTable;
+        //#else
+        //$$ net.minecraft.resources.ResourceLocation giftTable;
+        //#endif
         //#if MC >= 1.21.5
         //$$ giftTable = GIFTS.get(villager.getVillagerData().profession().unwrapKey().orElse(null));
         //#else
         giftTable = GIFTS.get(villager.getVillagerData().getProfession());
         //#endif
         if (giftTable == null) return List.of(new ItemStack(Items.WHEAT_SEEDS));
+        //#if MC >= 1.20.5
         LootTable lootTable = level.getServer().reloadableRegistries().getLootTable(giftTable);
+        //#else
+        //$$ LootTable lootTable = level.getServer().getLootData().getLootTable(giftTable);
+        //#endif
         LootParams lootParams = new LootParams.Builder(level)
                 .withParameter(LootContextParams.ORIGIN, villager.position())
                 .withParameter(LootContextParams.THIS_ENTITY, villager)

@@ -90,8 +90,13 @@ public final class FakePlayerItemSortManager {
     public static void load(MinecraftServer value) {
         server = value;
         loadLocalProfileUuids(value);
-        cachePath = value.getWorldPath(LevelResource.ROOT).resolve("carpet").resolve("carpetfgaaddition")
-                .resolve("fake-player-item-sort-cache.json");
+        Path currentCache = FGAWorldConfigPaths.current(value, "fake-player-item-sort-cache.json");
+        Path legacyCache = FGAWorldConfigPaths.legacy(value, "fake-player-item-sort-cache.json");
+        try {
+            cachePath = FGAWorldConfigPaths.migrate(currentCache, legacyCache, FakePlayerItemSortManager::validCacheFile);
+        } catch (IOException exception) {
+            cachePath = legacyCache;
+        }
         try {
             if (Files.exists(cachePath)) {
                 @SuppressWarnings("unchecked")
@@ -104,6 +109,15 @@ public final class FakePlayerItemSortManager {
         recreateWorkers();
         refreshDashboardSnapshot(value);
         syncDashboard(value);
+    }
+
+    private static boolean validCacheFile(Path candidate) {
+        try {
+            Map<?, ?> map = GSON.fromJson(Files.readString(candidate, StandardCharsets.UTF_8), Map.class);
+            return map == null || map.keySet().stream().allMatch(key -> key instanceof String);
+        } catch (Exception exception) {
+            return false;
+        }
     }
 
     public static void close() {

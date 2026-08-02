@@ -206,19 +206,14 @@ public class FGASettings {
     /** Category used by the inventory sorter rules so they can be filtered together in /carpet. */
     public static final String FAKE_PLAYER_ITEM_SORT = "假人分类";
 
-    //#if MC >= 1.19.4
+    //#if MC >= 1.16.5
     @Rule(
         desc = "Keeps the recipe book functional without storing per-player recipe unlock data; all registered recipes are available",
         category = {FGA, FEATURE}
     )
     public static boolean recipeBookAlwaysUnlocked = false;
 
-    @Rule(
-        desc = "Accelerates inventory_changed advancements with exact candidate indexing; false preserves vanilla behavior",
-        category = {FGA, FEATURE},
-        options = {"false", "exact"},
-        strict = false
-    )
+    // Kept for binary/source compatibility with the disabled progress optimizer; it is not a Carpet rule.
     public static String inventoryAdvancementOptimization = "false";
 
     @Rule(
@@ -382,13 +377,13 @@ public class FGASettings {
     )
     public static String villagerBreedingAnimalization = "false";
 
-    //#if MC >= 1.21.1
+    //#if MC >= 1.20.1
     @Rule(
         desc = "Enables villager performance optimization and controls access to /villagerPerformance",
         category = {FGA, FEATURE},
         options = {"false", "true", "ops", "1", "2", "3", "4"},
         validate = FGASettings.VillagerPerformanceOptimizationValidator.class,
-        condition = FGASettings.Minecraft1_21_1Condition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String villagerPerformanceOptimization = "false";
 
@@ -472,13 +467,13 @@ public class FGASettings {
 
     private static volatile Set<ResourceLocation> preStackMobTypes = Set.of();
 
-    //#if MC >= 1.21.1 && MC < 26.2
+    //#if MC >= 1.20.5 && MC < 26.2
     @Rule(
         desc = "Enables unified entity-death and block-drop pre-stacking configured by /dropPreStack",
         category = {FGA, FEATURE},
         options = {"false", "true"},
         strict = false,
-        condition = FGASettings.Minecraft1_21_1OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_5OrNewerCondition.class
     )
     public static boolean preStackDroppedItems = false;
     //#endif
@@ -532,7 +527,7 @@ public class FGASettings {
 
     public static Double preStackEntityRange(Entity entity) {
         ResourceLocation id = preStackEntityId(entity);
-        //#if MC >= 1.21.1 && MC < 26.2
+        //#if MC >= 1.20.5 && MC < 26.2
         if (preStackDroppedItems) {
             Double containerConfigured = DropPreStackConfig.containerEntityRange(id);
             if (containerConfigured != null) return containerConfigured;
@@ -686,6 +681,48 @@ public class FGASettings {
             //$$ return false;
             //#else
             return true;
+            //#endif
+        }
+    }
+
+    public static class Minecraft1_20_1OrNewerCondition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
+                //#else
+                //$$ isTrue() {
+                //#endif
+            //#if MC >= 1.20.1
+            return true;
+            //#else
+            //$$ return false;
+            //#endif
+        }
+    }
+
+    public static class Minecraft1_20_5OrNewerCondition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
+                //#else
+                //$$ isTrue() {
+                //#endif
+            //#if MC >= 1.20.5
+            return true;
+            //#else
+            //$$ return false;
             //#endif
         }
     }

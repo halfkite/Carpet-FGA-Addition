@@ -1,9 +1,6 @@
 {
     "required": true,
     "package": "carpet.fga.mixin",
-    //#if MC >= 1.20.5
-    "plugin": "carpet.fga.mixin.InventoryAdvancementMixinPlugin",
-    //#endif
     "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
     "mixins": [
         //#if MC >= 1.20
@@ -22,60 +19,37 @@
         //#if MC >= 1.20.5
         "CustomPacketPayloadMixin",
         "ServerGamePacketListenerImplMixin",
+        //#endif
+        //#if MC >= 1.20.2
         "ServerCommonPacketListenerAccessor",
         "ServerCommonPacketListenerImplMixin",
+        //#endif
+        //#if MC >= 1.19.4 && MC < 1.20.2
+        "ServerGamePacketListenerHealthMixin",
         //#endif
         "StringReaderUnicodeSupportMixin",
         "EntityTypeDimensionsMixin",
         "VillagerBreedingMixin"
-        //#if MC >= 1.21.1
+        //#if MC >= 1.20.1
         ,"VillagerTradeOnlyMixin",
         "BrainVillagerPerformanceMixin"
         //#endif
-        //#if MC >= 1.21.1
+        //#if MC == 1.21.1
         ,"EntityPlayerMPFakeMixin"
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.16.5
         ,"RecipeBookMixin",
         "ServerPlaceRecipeMixin",
-        "ServerRecipeBookMixin",
-        "SimpleCriterionTriggerAccessor",
-        "SimpleCriterionTriggerMixin",
-        "InventoryChangeTriggerMixin",
-        "ItemPredicateMixin",
-        "MinecraftServerReloadMixin",
-        "BlockDropPreStackMixin",
-        "VehicleEntityMixin",
-        "AbstractMinecartContainerMixin"
+        "ServerRecipeBookMixin"
         //#endif
-        //#if MC >= 1.21.1 && MC < 26.2 && MC != 1.21.1
+        //#if MC >= 1.20.5 && MC < 26.2
         ,"BlockDropPreStackMixin",
         "VehicleEntityMixin",
         "AbstractMinecartContainerMixin"
         //#endif
         //#if MC >= 1.16.5 && MC < 26.0
         ,"EndDragonFightGatewayMixin",
-        "WanderingTraderNoDespawnMixin",
-        //#endif
-        //#if MC >= 1.21.1 && MC <= 26.2
-        ,"EndGatewayBlockEntityMixin"
-        //#endif
-        //#if MC >= 1.21.1 && MC < 26.2 && MC != 1.21.1
-        ,"WanderingTraderNoDespawnMixin"
-        //#endif
-        //#if MC >= 1.20.5 && MC < 26.2 && MC != 1.21.1
-        ,"RecipeBookMixin",
-        "ServerPlaceRecipeMixin",
-        "ServerRecipeBookMixin",
-        "SimpleCriterionTriggerAccessor",
-        "SimpleCriterionTriggerMixin",
-        "InventoryChangeTriggerMixin",
-        "ItemPredicateMixin",
-        "MinecraftServerReloadMixin"
-        //#endif
-        //#if MC >= 26.2
-        ,"InventoryChangeTriggerMixin",
-        "MinecraftServerReloadMixin"
+        "WanderingTraderNoDespawnMixin"
         //#endif
         //#if MC < 1.18
         ,"ChunkMapCompatMixin"

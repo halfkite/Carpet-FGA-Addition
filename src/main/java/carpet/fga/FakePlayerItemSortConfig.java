@@ -21,14 +21,28 @@ public final class FakePlayerItemSortConfig {
     private FakePlayerItemSortConfig() {}
 
     public static synchronized void load(MinecraftServer server) {
-        path = server.getWorldPath(LevelResource.ROOT).resolve("carpet").resolve("carpetfgaaddition")
-                .resolve("fake-player-item-sort.json");
+        Path current = FGAWorldConfigPaths.current(server, "fake-player-item-sort.json");
+        Path legacy = FGAWorldConfigPaths.legacy(server, "fake-player-item-sort.json");
+        try {
+            path = FGAWorldConfigPaths.migrate(current, legacy, FakePlayerItemSortConfig::validFile);
+        } catch (IOException exception) {
+            path = legacy;
+        }
         if (!Files.exists(path)) { state = State.defaults(); invalid = false; return; }
         try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             state = read(JsonParser.parseReader(reader).getAsJsonObject());
             invalid = false;
         } catch (Exception exception) {
             state = State.defaults(); invalid = true;
+        }
+    }
+
+    private static boolean validFile(Path candidate) {
+        try (Reader reader = Files.newBufferedReader(candidate, StandardCharsets.UTF_8)) {
+            read(JsonParser.parseReader(reader).getAsJsonObject());
+            return true;
+        } catch (Exception exception) {
+            return false;
         }
     }
 

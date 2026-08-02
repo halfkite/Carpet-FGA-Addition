@@ -2,7 +2,7 @@
 package carpet.fga;
 
 import net.minecraft.world.entity.npc.WanderingTrader;
-//#if MC >= 1.21.1
+//#if MC >= 1.20.1
 import net.minecraft.core.registries.BuiltInRegistries;
 //#endif
 
@@ -12,7 +12,7 @@ public final class WanderingTraderNoDespawn {
     public static boolean preventsDespawn(WanderingTrader trader) {
         String mode = FGASettings.wanderingTraderNoDespawn;
         if ("true".equals(mode)) return true;
-        //#if MC < 1.21.1
+        //#if MC < 1.20.1
         //$$ return false;
         //#else
         if (!"controlled".equals(mode)) return false;

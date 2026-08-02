@@ -1,4 +1,4 @@
-//#if MC >= 1.21.1 && MC < 26.2
+//#if MC >= 1.20.5 && MC < 26.2
 package carpet.fga;
 
 import carpet.CarpetSettings;
@@ -24,7 +24,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+//#if MC >= 1.21.3
 //$$ import net.minecraft.world.entity.EntitySpawnReason;
+//#endif
 import net.minecraft.world.entity.vehicle.AbstractMinecartContainer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;

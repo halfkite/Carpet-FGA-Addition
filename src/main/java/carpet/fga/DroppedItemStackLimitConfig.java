@@ -7,7 +7,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.fabricmc.loader.api.FabricLoader;
 //#if MC >= 1.19.3
 import net.minecraft.core.registries.BuiltInRegistries;
 //#else
@@ -51,10 +50,7 @@ public final class DroppedItemStackLimitConfig {
     //$$ private static final Logger LOGGER = LogManager.getLogger("carpet-fga-addition/dropped-item-stack-limit");
     //#endif
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path LEGACY_CONFIG_PATH = FabricLoader.getInstance().getConfigDir()
-            .resolve("carpet-fga-addition")
-            .resolve("dropped-item-stack-limit.json");
-    private static volatile Path configPath = LEGACY_CONFIG_PATH;
+    private static volatile Path configPath;
 
     private static volatile State state = State.defaults();
     private static volatile boolean loadFailed;
@@ -63,17 +59,13 @@ public final class DroppedItemStackLimitConfig {
     }
 
     public static synchronized void load(MinecraftServer server) {
-        configPath = server.getWorldPath(LevelResource.ROOT).resolve("carpet")
-                .resolve("carpetfgaaddition").resolve("dropped-item-stack-limit.json");
-        if (!Files.exists(configPath) && Files.isRegularFile(LEGACY_CONFIG_PATH)) {
-            try {
-                Files.createDirectories(configPath.getParent());
-                Files.copy(LEGACY_CONFIG_PATH, configPath);
-                LOGGER.info("Copied legacy dropped item stack configuration from {} to {}",
-                        LEGACY_CONFIG_PATH, configPath);
-            } catch (IOException exception) {
-                LOGGER.error("Could not migrate dropped item stack configuration to {}", configPath, exception);
-            }
+        Path current = FGAWorldConfigPaths.current(server, "dropped-item-stack-limit.json");
+        Path legacy = FGAWorldConfigPaths.legacy(server, "dropped-item-stack-limit.json");
+        try {
+            configPath = FGAWorldConfigPaths.migrate(current, legacy, DroppedItemStackLimitConfig::validFile);
+        } catch (IOException exception) {
+            configPath = legacy;
+            LOGGER.error("Could not migrate dropped item stack configuration to {}", current, exception);
         }
         if (!Files.exists(configPath)) {
             state = State.defaults();
@@ -95,6 +87,21 @@ public final class DroppedItemStackLimitConfig {
             loadFailed = true;
             LOGGER.error("Invalid dropped item stack configuration at {}; using vanilla limits and preserving the file",
                     configPath, exception);
+        }
+    }
+
+    private static boolean validFile(Path candidate) {
+        try (Reader reader = Files.newBufferedReader(candidate, StandardCharsets.UTF_8)) {
+            parse(
+                    //#if MC >= 1.18
+                    JsonParser.parseReader(reader)
+                    //#else
+                    //$$ new JsonParser().parse(reader)
+                    //#endif
+            );
+            return true;
+        } catch (Exception exception) {
+            return false;
         }
     }
 
