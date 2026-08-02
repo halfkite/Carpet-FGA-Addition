@@ -16,10 +16,10 @@ Version `1.4.2` is available for Minecraft `1.16.5`, `1.17.1`, `1.18.2`, `1.19.2
 
 ## Documentation
 
-- [Chinese rules](docs/rules.md)
-- [English rules](docs/rules_en.md)
-- [Chinese commands](docs/commands.md)
-- [English commands](docs/commands_en.md)
+- [Chinese rules](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/rules.md)
+- [English rules](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/rules_en.md)
+- [Chinese commands](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/commands.md)
+- [English commands](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/commands_en.md)
 
 The documentation is the source of truth for rule defaults, version gates, command syntax, permissions, pagination, clickable help, and world configuration migration.
 
@@ -33,7 +33,7 @@ The documentation is the source of truth for rule defaults, version gates, comma
 /fga help
 ```
 
-The complete command reference is available in [English command documentation](docs/commands_en.md).
+The complete command reference is available in [English command documentation](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/commands_en.md).
 
 ## Credits
 

@@ -8,10 +8,10 @@ Carpet FGA Addition 是一个面向服务器的 Fabric Carpet 扩展，提供假
 
 ## 文档
 
-- [中文规则说明](docs/rules.md)
-- [English rules](docs/rules_en.md)
-- [中文命令说明](docs/commands.md)
-- [English commands](docs/commands_en.md)
+- [中文规则说明](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/rules.md)
+- [English rules](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/rules_en.md)
+- [中文命令说明](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/commands.md)
+- [English commands](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/commands_en.md)
 
 ## 功能概览
 
