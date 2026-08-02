@@ -42,4 +42,4 @@ Carpet FGA Addition 是一个面向服务器的 Fabric Carpet 扩展，提供假
 
 ## 许可证与致谢
 
-项目按仓库许可证发布。部分设计参考了 MIT 许可的 Org Addition、SaveMyRecipeBook 和 InventoryAdvancementAccelerator，归属说明随 JAR 的 `META-INF/NOTICE-*` 文件分发。
+项目主体按 [MIT License](LICENSE) 发布。来自 LGPL 项目的适配部分继续遵守对应 LGPL 条款。部分设计参考了 MIT 许可的 Org Addition、SaveMyRecipeBook 和 InventoryAdvancementAccelerator，归属说明随 JAR 的 `META-INF/NOTICE-*` 文件分发。

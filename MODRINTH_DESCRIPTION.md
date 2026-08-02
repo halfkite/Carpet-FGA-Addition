@@ -37,4 +37,4 @@ The complete command reference is available in [English command documentation](d
 
 ## Credits
 
-Designs inspired by MIT-licensed Org Addition, SaveMyRecipeBook, and InventoryAdvancementAccelerator are credited in the bundled `META-INF/NOTICE-*` files.
+The project is distributed under the [MIT License](LICENSE). Adapted LGPL portions remain under their applicable LGPL terms. Designs inspired by MIT-licensed Org Addition, SaveMyRecipeBook, and InventoryAdvancementAccelerator are credited in the bundled `META-INF/NOTICE-*` files.
