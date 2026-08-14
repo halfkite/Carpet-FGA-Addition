@@ -20,29 +20,89 @@
         "CustomPacketPayloadMixin",
         "ServerGamePacketListenerImplMixin",
         //#endif
-        //#if MC >= 1.20.5
+        //#if MC >= 1.20.2
         "ServerCommonPacketListenerAccessor",
         "ServerCommonPacketListenerImplMixin",
         //#endif
+        //#if MC >= 1.16.5 && MC < 1.20.2
+        //$$ "LegacyCustomPayloadAccessor",
+        //$$ "LegacyServerGamePacketListenerImplMixin",
+        //#endif
         //#if MC >= 1.19.4 && MC < 1.20.2
-        "ServerGamePacketListenerHealthMixin",
+        //$$ "ServerGamePacketListenerHealthMixin",
         //#endif
         "StringReaderUnicodeSupportMixin",
         "EntityTypeDimensionsMixin",
         "VillagerBreedingMixin"
+        //#if MC >= 1.16.5
+        ,"VehicleStopDismountMixin",
+        "NoiseBasedChunkGeneratorVoidMixin",
+        "ChunkGeneratorVoidDecorationMixin"
+        //#endif
         //#if MC >= 1.20.1
         ,"VillagerTradeOnlyMixin",
         "BrainVillagerPerformanceMixin"
         //#endif
+        //#if MC >= 1.21 && MC <= 26.2
+        ,"AgeableMobNoGrowthMixin",
+        "TadpoleNoGrowthMixin",
+        "AbstractContainerMenuFullShulkerMixin",
+        "MinecraftServerTerrainRegenerationMixin",
+        "ChunkMapTrialStopAccessor",
+        "TrialSpawnerDataAccessor",
+        "TrialSpawnerDataMultiplierMixin",
+        "TrialSpawnerStateRewardMultiplierMixin",
+        "TrialSpawnerStateStopRefreshMixin",
+        "WorkAtComposterNoBreadMixin",
+        "VillagerUpgradeWhileTradingMixin"
+        //#endif
+        //#if MC >= 1.21 && MC <= 1.21.11
+        ,"ClientboundUpdateRecipesDeepslateMixin",
+        "StonecutterMenuDeepslateMixin"
+        //#endif
         //#if MC == 1.21.1
-        ,"EntityPlayerMPFakeMixin"
+        ,"ChunkMapPlayerLoadDistanceAccessor",
+        "ChunkMapPlayerLoadDistanceMixin",
+        "DistanceManagerPlayerLoadDistanceAccessor",
+        "ServerGamePacketListenerPlayerLoadDistanceMixin",
+        "EntityPlayerMPFakeMixin",
+        "AbstractMinecartFeatureMixin",
+        "BlockAttachedEntityItemFrameMixin",
+        "EntityMinecartFeatureCleanupMixin",
+        "EntityTickListItemFrameMixin",
+        "EntityItemFrameIndexMixin",
+        "FireworkRocketMinecartMixin",
+        "LevelItemFrameSupportMixin",
+        "MinecartChainInteractionMixin",
+        "ServerLevelEntityTickListAccessor"
+        //#endif
+        //#if MC >= 1.16.5 && MC <= 26.2
+        ,"MinecraftServerFullShulkerReloadMixin",
+        "CraftingMenuFullShulkerMixin",
+        "ResultSlotCraftingAccessor",
+        "ResultSlotFullShulkerMixin",
+        "SlotFullShulkerMixin"
+        //#endif
+        //#if MC <= 26.2
+        ,"InventoryStackLimitSlotMixin",
+        "InventoryStackLimitInventoryMixin",
+        "ContainerStackLimitMixin"
+        //#endif
+        //#if MC >= 1.20.5 && MC < 26.0
+        ,"ItemStackCountCodecMixin"
+        //#endif
+        //#if MC >= 26.0 && MC <= 26.2
+        //$$ ,"ItemStackCountCodec26Mixin"
+        //#endif
+        //#if MC < 1.20.5
+        //$$ ,"ItemStackLegacyCountNbtMixin"
         //#endif
         //#if MC >= 1.16.5
         ,"RecipeBookMixin",
         "ServerPlaceRecipeMixin",
         "ServerRecipeBookMixin"
         //#endif
-        //#if MC >= 1.20.5 && MC < 26.2
+        //#if MC >= 1.20.5 && MC <= 26.2
         ,"BlockDropPreStackMixin",
         "VehicleEntityMixin",
         "AbstractMinecartContainerMixin"
@@ -52,7 +112,7 @@
         "WanderingTraderNoDespawnMixin"
         //#endif
         //#if MC < 1.18
-        ,"ChunkMapCompatMixin"
+        //$$ ,"ChunkMapCompatMixin"
         //#endif
         //#if MC <= 26.2
         ,"ItemEntityMixin",
@@ -86,8 +146,11 @@
         //#if MC >= 1.20.5
         "FriendlyByteBufMixin"
         //#endif
-        //#if MC >= 1.20.5
+        //#if MC >= 1.20.2
         ,"ClientPacketListenerMixin"
+        //#endif
+        //#if MC >= 1.16.5 && MC < 1.20.2
+        //$$ ,"LegacyClientPacketListenerMixin"
         //#endif
     ],
     "injectors": {

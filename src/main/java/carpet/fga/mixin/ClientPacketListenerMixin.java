@@ -1,4 +1,4 @@
-//#if MC >= 1.20.5
+//#if MC >= 1.20.2
 package carpet.fga.mixin;
 
 import carpet.fga.FGAPayloads;
@@ -17,8 +17,13 @@ public abstract class ClientPacketListenerMixin {
     private void sendHandshake(ClientboundLoginPacket packet, CallbackInfo ci) {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         if (connection != null) {
+//#if MC >= 1.20.5
             connection.send(new ServerboundCustomPayloadPacket(new FGAPayloads.HandshakePayload(1)));
+//#else
+//$$         connection.send(new ServerboundCustomPayloadPacket(new FGAPayloads.HandshakePayload()));
+//#endif
         }
     }
+
 }
 //#endif

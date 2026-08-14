@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.4.3`
+> Documentation version: `1.4.8`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default.
 
@@ -16,6 +16,14 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `fgaUnicodeArgumentsSupport` | Boolean | `false` | `false`, `true` | All supported versions | Allows unquoted command arguments to contain Unicode characters. |
 | `recipeBookAlwaysUnlocked` | Boolean | `false` | `false`, `true` | 1.16.5+ | Keeps registered recipes available without per-player unlock progress storage. |
 | `playerHealthDisplay` | Enum | `true` | `true`, `false`, `nofake` | 1.16.5+ | Shows health only at the far right of the multiplayer player list. No scoreboard or nametag display is created. |
+| `itemFrameBlockification` | Boolean | `false` | `false`, `true` | 1.21.1 | Removes normal and glowing item frames from server entity tick scheduling and validates support-block changes while preserving vanilla clients, interaction, drops, maps, and comparator behavior. |
+| `fireworkMinecartBoost` | Boolean | `false` | `false`, `true` | 1.21.1 | Lets a player riding a normal minecart consume a firework for a configurable full-speed boost followed by linear deceleration. |
+| `chainMinecartBinding` | Boolean | `false` | `false`, `true` | 1.21.1 | Uses chains to connect normal minecarts into persistent linear trains. |
+| `minecartFeatureCommandPermission` | Permission | `false` | `false`, `true`, `ops`, `0-4` | 1.21.1 | Controls `/minecart` and `/fga minecart`; `false` hides them and `true`/`0` allows all players. |
+| `vehicleStopOnDismount` | Enum | `false` | `false`, `minecart`, `boat`, `all`, `custom` | All supported versions | Clears horizontal vehicle speed when the controlling player dismounts; `custom` uses per-player `/vehicleStop` settings. |
+| `voidWorldGeneration` | Boolean | `false` | `false`, `true` | All supported versions | Makes newly generated chunks empty while retaining biome and structure-location data; existing chunks are unchanged. |
+| `terrainRegenerationCommandPermission` | Permission | `ops` | `false`, `true`, `ops`, `0-4` | 1.21-26.2 | Controls `/regenerateTerrain` and `/fga regenerateTerrain`, including destructive clear and regeneration tasks. |
+| `fullShulkerBoxCrafting` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Uses the server's current ordinary recipes for full shulker boxes, including multi-material, tag, data-pack, Shift/Q refill, and soft AMS 54-slot support. |
 | `spectatorFreeTeleport` | Boolean | `false` | `false`, `true` | 1.21.1-1.21.5 | Lets non-OP spectators teleport themselves only. |
 | `clientDimensionIds` | List | `[overworld,the_nether,the_end]` | Three client dimension IDs | 1.21.1+ | Changes client-visible dimension IDs without changing server dimensions. |
 | `removeDialogWarning` | Boolean | `false` | `false`, `true` | 1.21.8+ | Removes server-sent command/dialog confirmation warnings. |
@@ -26,32 +34,49 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | Rule | Type | Default | Values | Versions | Description |
 |---|---|---|---|---|---|
 | `villagerBreedingAnimalization` | Enum | `false` | `false`, `true`, `only` | All supported versions | Controls direct player feeding of villagers. |
+| `babyMobNoGrowth` | String | `false` | `false`, `true`, `mini`, custom name | 1.21-26.2 | `true` freezes every normally growing baby; `mini` is a name-mode preset; a custom value freezes only babies whose full custom-name text matches exactly and case-sensitively, including tadpoles. |
+| `farmerVillagersDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
+| `villagerUpgradeWhileTrading` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Lets villagers finish upgrading while the trading screen remains open and immediately refreshes their level, XP, and offers |
 | `villagerPerformanceOptimization` | Enum | `false` | `false`, `true`, `ops`, `1-4` | 1.20.1+ | Enables villager trade/gift optimization and controls `/villagerPerformance` access. |
 | `hostileMobInventoryAccess` | Boolean | `false` | `false`, `true` | All supported versions | Opens hostile-mob equipment with an empty-handed sneak right-click. |
-| `droppedItemStackLimit` | Enum | `false` | `false`, `true`, `ops`, `0-4` | 1.21.1+ | Enables configurable ground-item stack limits. |
+| `droppedItemStackLimit` | Enum | `false` | `false`, `true`, `ops`, `0-4` | All supported versions | Configures independent ground, inventory, and container stack limits. Inventory or container limits require the FGA client; ground-only limits remain server-only. |
 | `droppedItemMergeDistance` | Decimal | `-1` | `-1`, `0-16` | 1.21.1+ | Sets the horizontal ground-item merge distance; `-1` keeps vanilla behavior. |
 | `unlimitedFillCommands` | Boolean | `false` | `false`, `true` | 1.21.8+ | Removes `/fill` and `/fillbiome` volume limits while keeping vanilla safety checks. |
-| `preStackDroppedItems` | Boolean | `false` | `false`, `true` | 1.20.5-26.1.2 | Enables entity, block, and container pre-stacking configured by `/dropPreStack`. |
+| `preStackDroppedItems` | Boolean | `false` | `false`, `true` | 1.20.5-26.2 | Enables entity, block, and container pre-stacking configured by `/dropPreStack`. |
 | `zombifiedPiglinDropReduction` | Enum | `false` | `false`, `goldEquipment`, `rottenFlesh`, `all` | All supported versions | Removes selected zombified-piglin drops. |
 | `piglinBarterItemExclusions` | List | `false` | `false`, presets, or item IDs | All supported versions | Excludes selected piglin barter results. |
 
+`babyMobNoGrowth` is server-side only. The `mini` preset matches only babies whose full custom name is lowercase `mini`; `Mini` does not match. Other name values read only an explicitly assigned custom name and compare its complete `Component#getString()` text case-sensitively. Quote names containing spaces, for example `/carpet babyMobNoGrowth "Forever Young"`. The rule blocks natural growth and feeding acceleration, while direct administrator changes through `/data` or NBT remain available. Disabling the rule lets frozen babies continue from their current age.
+
 The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hidden and retained only for save compatibility. Use `/dropPreStack entity ...` for new configuration.
 
-## Fake-player item sorting, Minecraft 1.21.1 only
+## Deepslate stonecutting and player loading
+
+| Rule | Type | Default | Values | Effective versions | Description |
+|---|---|---|---|---|---|
+| `deepslateStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.17.1-1.21.11` | Makes deepslate behave in the stonecutter like it does in 26.1+. Only FGA recipes are controlled; vanilla, data-pack, and mod recipes are unchanged. The rule is not registered on `1.16.5`, `26.1.2`, or `26.2`. |
+| `playerLoadDistance` | Permission string | `false` | `false`, `true`, `ops`, `0-4` | `1.21.1` | Enables per-player chunk sending and tracking overrides without changing simulation distance. `false` disables the command. |
+| `trialSpawnerPlayerMultiplier` | Integer | `100` | `1-10000` | `1.21-26.2` | Counts each matching player as this many participants for normal and ominous trial mob and reward scale; `1` is vanilla |
+| `trialSpawnerPlayerFilter` | String | `false` | `false`, `true`, `bot_`, custom prefix | `1.21-26.2` | `false` disables scaling; `true` matches everyone; other values use a case-sensitive player-name prefix, with `bot_` as a preset |
+| `trialStopCommandPermission` | Permission string | `false` | `false`, `true`, `ops`, `0-4` | `1.21-26.2` | Controls `/trialStop` access |
+
+`playerLoadDistance` uses `/playerLoadDistance` and `/fga playerLoadDistance`. Distances are `-1`, `0`, `1-32`, or `none`. `-1` weakly loads only the center chunk, `0` strongly loads the center and weakly keeps a 3x3 area available, `1-32` is a per-player radius capped by the client's requested view distance for real players, and `none` removes the player's loading view. `set` is temporary; append `persistent` to save by UUID in `world/config/carpetfgaaddition/player-load-distance.json`. `reset` restores a persistent value, while `reset ... persistent` removes it. Active overrides are shown as a leftmost Tab-list prefix. This is server-side only
+
+`trialSpawnerPlayerMultiplier` and `trialSpawnerPlayerFilter` apply to normal and ominous trial spawners without creating fake players or writing fake UUIDs. Each matching real participant contributes its own equivalent count, and rewards scale per real participant. The in-game display name of `trialSpawnerPlayerFilter` is “试炼刷怪笼多倍触发” in both language files
+
+`trialStopCommandPermission` both enables and controls `/trialStop` and `/fga trialStop`. The command scans only loaded chunks. `range <radius>` uses the command source as a horizontal center and ignores Y, while `range from` uses a full XYZ box. `clear` removes only loaded mobs tracked by each spawner. `none` and `fast` refresh immediately; `reward` refreshes immediately after vanilla-paced ejection; all modes skip the full cooldown
+
+## Fake-player item sorting, Minecraft 1.21+
 
 | Rule | Type | Default | Values | Description |
 |---|---|---|---|---|
-| `fakePlayerItemSortMode` | Enum | `false` | `false`, `summon`, `quickopen` | Enables sorting. `quickopen` edits offline playerdata; `summon` uses online Carpet fake players. |
-| `fakePlayerItemSortWhitelist` | Enum | `false` | `false`, `vanillaWhitelist`, `modWhitelist` | Selects whitelist behavior. |
-| `fakePlayerItemSortQuickShulker` | Boolean | `false` | `false`, `true` | Enables quick shulker-box sorting. Armor slots are never read or written. |
-| `fakePlayerItemSortNameFormat` | Enum | `false` | `false`, `autoDetect`, `prefix`, `suffix` | Controls target fake-player naming. |
-| `fakePlayerItemSortTargetLanguage` | Enum | `english` | `english`, `chinese`, `custom` | Selects target-name language. |
-| `fakePlayerItemSortShulkerRestock` | Boolean | `false` | `false`, `true` | Allows `box_restock` to craft plain empty shulker boxes. |
-| `fakePlayerItemSortCleanOpenedTarget` | Boolean | `false` | `false`, `true` | Routes foreign main-inventory and offhand items when opening a target. |
-| `fakePlayerItemSortInventoryRebuild` | Enum | `false` | `false`, `true`, `opall` | Controls inventory rebuild commands and OP-only all rebuilds. |
-| `fakePlayerItemSortDashboard` | Boolean | `false` | `false`, `true` | Enables the local sorter dashboard and cache API. |
-| `fakePlayerItemSortCpuThreads` | Enum | `0` | `0`, `1`, `2` | Selects the asynchronous worker preset. |
-| `fakePlayerItemSortSpeed` | Enum | `8` | `4`, `8`, `16` | Selects the number of main-thread submissions per batch. |
+| `fakePlayerItemSort` | Boolean | `false` | `false`, `true` | Enables the fake-player sorter core on `1.21-26.2`; restock, rebuild, disk cache, dashboard, and worker tuning remain exclusive to `1.21.1`. |
+
+Sorter settings are stored in `world/config/carpetfgaaddition/fake-player-item-sort.json`. `/fakePlayerItemSort mode summon` uses online Carpet fake players; `mode quickopen` edits offline playerdata directly. Legacy `fakePlayerItemSort*` Carpet settings are migrated once at startup and are no longer registered as rules.
+
+## Full shulker box crafting
+
+`fullShulkerBoxCrafting` provides the complex recipe implementation on Minecraft `1.21-26.2` and is server-side only. Place full shulker boxes of the required materials in the ordinary recipe shape in the player 2x2 grid or a crafting table. Recipes are resolved from the server's current recipe manager, including multi-material, tag, data-pack, and mod recipes. Identical full boxes may be stacked in recipe slots; each craft consumes one box per occupied slot, and stacked empty boxes in the inventory are consumed by count. Every input must be stackable, have the same per-box capacity, and be fully consumed; the main output and all remaining recipe items must each form whole full boxes. Box colors, custom names, and other box components are preserved. When Carpet AMS Addition is present and `largeShulkerBox` is enabled, FGA uses 54 slots for validation, conversion, and filled output boxes; disabled or absent AMS keeps the vanilla 27 slots. After a QuickCraft `Alt+C`, result-slot Shift move, or Q result drop finishes, matching full boxes that existed in the inventory before the click are distributed once and evenly across the corresponding recipe slots. Shift-left-click first completes every full-box transaction available from the original crafting-grid materials; the refill does not join that same crafting loop. Normal left-click pickup does not refill, and the client does not need FGA.
 
 ## Configuration files
 

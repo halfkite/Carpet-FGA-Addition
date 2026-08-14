@@ -46,7 +46,7 @@ public final class DeathDropPreStackManager {
     }
 
     public static boolean blockPreStackConfigured() {
-        //#if MC >= 1.20.5 && MC < 26.2
+        //#if MC >= 1.20.5 && MC <= 26.2
         return !DropPreStackConfig.snapshot().blocks().isEmpty()
                 || !DropPreStackConfig.snapshot().containerBlocks().isEmpty();
         //#else
@@ -203,7 +203,7 @@ public final class DeathDropPreStackManager {
         }
 
         private static CaptureContext block(ServerLevel level, BlockPos position, BlockState state) {
-            //#if MC >= 1.20.5 && MC < 26.2
+            //#if MC >= 1.20.5 && MC <= 26.2
             ResourceLocation blockId =
                     //#if MC >= 1.19.3
                     BuiltInRegistries.BLOCK.getKey(state.getBlock());
@@ -230,7 +230,7 @@ public final class DeathDropPreStackManager {
 
         private double rangeFor(ResourceLocation itemId) {
             if (!blockSource) return entityRange;
-            //#if MC >= 1.20.5 && MC < 26.2
+            //#if MC >= 1.20.5 && MC <= 26.2
             if (Double.isFinite(containerBlockRange)) return containerBlockRange;
             Double range = DropPreStackConfig.blockRange(itemId);
             return range == null ? Double.NaN : range;

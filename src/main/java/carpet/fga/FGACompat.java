@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 //#if MC < 1.19
 //$$ import net.minecraft.network.chat.TextComponent;
+//$$ import net.minecraft.network.chat.TranslatableComponent;
 //#endif
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -19,6 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -33,6 +35,38 @@ public final class FGACompat {
         return Component.literal(text);
         //#else
         //$$ return new TextComponent(text);
+        //#endif
+    }
+
+    public static MutableComponent translatable(String key, Object... args) {
+        //#if MC >= 1.19
+        return Component.translatable(key, args);
+        //#else
+        //$$ return new TranslatableComponent(key, args);
+        //#endif
+    }
+
+    public static Inventory inventory(Player player) {
+        //#if MC >= 1.17
+        return player.getInventory();
+        //#else
+        //$$ return player.inventory;
+        //#endif
+    }
+
+    public static boolean isClientSide(Level level) {
+        //#if MC >= 1.21.6
+        //$$ return level.isClientSide();
+        //#else
+        return level.isClientSide;
+        //#endif
+    }
+
+    public static void displayClientMessage(Player player, Component message, boolean actionBar) {
+        //#if MC >= 26.0
+        //$$ ((ServerPlayer) player).sendSystemMessage(message, actionBar);
+        //#else
+        player.displayClientMessage(message, actionBar);
         //#endif
     }
 

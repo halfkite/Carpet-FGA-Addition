@@ -76,6 +76,9 @@ public final class PlayerHealthDisplay {
     public static Component tabDisplayName(ServerPlayer subject, Component vanilla) {
         ServerPlayer viewer = PACKET_RECEIVER.get();
         Component base = vanilla != null ? vanilla : subject.getDisplayName();
+        //#if MC == 1.21.1
+        base = PlayerLoadDistanceManager.decorate(subject, base);
+        //#endif
         if (viewer == null || !shouldDecorate(viewer)) return base;
         if ("nofake".equals(FGASettings.playerHealthDisplay)
                 && subject instanceof carpet.patches.EntityPlayerMPFake) return base;

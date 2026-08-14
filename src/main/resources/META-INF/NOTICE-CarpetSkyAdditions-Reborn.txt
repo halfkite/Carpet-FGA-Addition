@@ -1,0 +1,3 @@
+Terrain void-generation behavior was designed with reference to CarpetSkyAdditions-Reborn
+https://github.com/TreeOfSelf/CarpetSkyAdditions-Reborn
+Copyright its contributors, licensed under the MIT License

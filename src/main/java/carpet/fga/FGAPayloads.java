@@ -1,9 +1,12 @@
-//#if MC >= 1.20.5
 package carpet.fga;
 
+//#if MC >= 1.20.2
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//#if MC >= 1.20.5
+import net.minecraft.network.codec.StreamCodec;
+//#endif
+//#endif
 import net.minecraft.resources.ResourceLocation;
 
 public final class FGAPayloads {
@@ -17,6 +20,7 @@ public final class FGAPayloads {
     private FGAPayloads() {
     }
 
+//#if MC >= 1.20.5
     public record HandshakePayload(int version) implements CustomPacketPayload {
         public static final Type<HandshakePayload> TYPE = new Type<>(HANDSHAKE_CHANNEL);
         public static final StreamCodec<FriendlyByteBuf, HandshakePayload> STREAM_CODEC =
@@ -35,5 +39,19 @@ public final class FGAPayloads {
             return TYPE;
         }
     }
-}
+//#else
+//#if MC >= 1.20.2
+//$$ public record HandshakePayload() implements CustomPacketPayload {
+//$$     @Override
+//$$     public ResourceLocation id() {
+//$$         return HANDSHAKE_CHANNEL;
+//$$     }
+//$$
+//$$     @Override
+//$$     public void write(FriendlyByteBuf buffer) {
+//$$         buffer.writeVarInt(1);
+//$$     }
+//$$ }
 //#endif
+//#endif
+}

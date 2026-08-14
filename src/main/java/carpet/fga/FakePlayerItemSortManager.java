@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga;
 
 import carpet.patches.EntityPlayerMPFake;
@@ -11,6 +11,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -18,6 +19,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemContainerContents;
@@ -81,6 +83,18 @@ public final class FakePlayerItemSortManager {
 
     private FakePlayerItemSortManager() {}
 
+    private static boolean supportsExtendedFeatures() {
+        //#if MC == 1.21.1
+        return true;
+        //#else
+        //$$ return false;
+        //#endif
+    }
+
+    public static void enableFromLegacyMigration() {
+        FGASettings.fakePlayerItemSort = true;
+    }
+
     private enum MoveKind {
         NORMAL,
         WHOLE_SHULKER,
@@ -90,6 +104,12 @@ public final class FakePlayerItemSortManager {
     public static void load(MinecraftServer value) {
         server = value;
         loadLocalProfileUuids(value);
+        if (!supportsExtendedFeatures()) {
+            cachePath = null;
+            ROUTES.clear();
+            recreateWorkers();
+            return;
+        }
         Path currentCache = FGAWorldConfigPaths.current(value, "fake-player-item-sort-cache.json");
         Path legacyCache = FGAWorldConfigPaths.legacy(value, "fake-player-item-sort-cache.json");
         try {
@@ -130,26 +150,27 @@ public final class FakePlayerItemSortManager {
         dashboardDirty = true;
         if (workers != null) workers.shutdownNow();
         workers = null;
-        FakePlayerItemSortDashboard.stop();
+        if (supportsExtendedFeatures()) FakePlayerItemSortDashboard.stop();
         dashboardRunning = false;
-        persistCache();
+        if (supportsExtendedFeatures()) persistCache();
         server = null;
     }
 
     public static void recreateWorkers() {
         ExecutorService old = workers;
+        FakePlayerItemSortConfig.State config = FakePlayerItemSortConfig.snapshot();
         int cpu = Math.max(1, Runtime.getRuntime().availableProcessors());
-        int size = switch (FGASettings.fakePlayerItemSortCpuThreads) {
+        int size = supportsExtendedFeatures() ? switch (config.cpuThreads()) {
             case "1" -> 1;
             case "2" -> cpu;
             default -> Math.max(1, cpu / 2);
-        };
+        } : 1;
         workers = Executors.newFixedThreadPool(size, r -> {
             Thread t = new Thread(r, "carpet-fga-item-sort");
             t.setDaemon(true);
             return t;
         });
-        activeCpuPreset = FGASettings.fakePlayerItemSortCpuThreads;
+        activeCpuPreset = config.cpuThreads();
         if (old != null) old.shutdownNow();
     }
 
@@ -165,21 +186,21 @@ public final class FakePlayerItemSortManager {
 
     private static boolean preconditions(StringBuilder error) {
         if (!FGASettings.isFakePlayerItemSortEnabled()) {
-            error.append("enable /carpet fakePlayerItemSortMode summon or quickopen");
+            error.append("enable /carpet fakePlayerItemSort true");
             return false;
         }
         if (FGASettings.fakePlayerNameLength < 64) {
             error.append("set /carpet fakePlayerNameLength 64 or higher");
             return false;
         }
-        if (!"quickopen".equals(FGASettings.fakePlayerItemSortMode)
+        if (!"quickopen".equals(FakePlayerItemSortConfig.snapshot().mode())
                 && !"always".equals(FGASettings.fakePlayerProfilePreload)
                 && !"adaptive".equals(FGASettings.fakePlayerProfilePreload)) {
             error.append("set /carpet fakePlayerProfilePreload always or adaptive");
             return false;
         }
-        if (("chinese".equals(FGASettings.fakePlayerItemSortTargetLanguage)
-                || "custom".equals(FGASettings.fakePlayerItemSortTargetLanguage))
+        if (("chinese".equals(FakePlayerItemSortConfig.snapshot().targetLanguage())
+                || "custom".equals(FakePlayerItemSortConfig.snapshot().targetLanguage()))
                 && !FGASettings.fgaUnicodeArgumentsSupport) {
             error.append("set /carpet fgaUnicodeArgumentsSupport true for Chinese/custom target names");
             return false;
@@ -188,8 +209,9 @@ public final class FakePlayerItemSortManager {
     }
 
     public static void tick(MinecraftServer value) {
-        if (!Objects.equals(activeCpuPreset, FGASettings.fakePlayerItemSortCpuThreads)) recreateWorkers();
-        syncDashboard(value);
+        if (supportsExtendedFeatures()
+                && !Objects.equals(activeCpuPreset, FakePlayerItemSortConfig.snapshot().cpuThreads())) recreateWorkers();
+        if (supportsExtendedFeatures()) syncDashboard(value);
         dashboardRefreshTicks++;
         if (!FGASettings.isFakePlayerItemSortEnabled()) {
             JOBS.clear();
@@ -205,7 +227,7 @@ public final class FakePlayerItemSortManager {
             if (move == null) break;
             apply(move);
         }
-        RebuildRequest request = REBUILD_QUEUE.peek();
+        RebuildRequest request = supportsExtendedFeatures() ? REBUILD_QUEUE.peek() : null;
         if (request != null && (!request.all() || dashboardRefreshTicks >= nextAllRebuildTick)) {
             REBUILD_QUEUE.poll();
             rebuildRoute(value, request);
@@ -228,7 +250,8 @@ public final class FakePlayerItemSortManager {
     }
 
     private static void syncDashboard(MinecraftServer minecraftServer) {
-        boolean enabled = FGASettings.fakePlayerItemSortDashboard;
+        boolean enabled = supportsExtendedFeatures() && FGASettings.isFakePlayerItemSortEnabled()
+                && FakePlayerItemSortConfig.snapshot().dashboard();
         if (enabled == dashboardRunning) return;
         if (enabled) FakePlayerItemSortDashboard.start(minecraftServer, FakePlayerItemSortConfig.snapshot().dashboardPort());
         else FakePlayerItemSortDashboard.stop();
@@ -237,7 +260,7 @@ public final class FakePlayerItemSortManager {
 
     public static int queueRebuild(ServerPlayer source, String displayedItem, UUID initiator, StringBuilder error) {
         if (!isInventoryRebuildEnabled()) {
-            error.append("enable /carpet fakePlayerItemSortInventoryRebuild true");
+            error.append("set inventoryRebuild to true or opall with /fakePlayerItemSort");
             return 0;
         }
         List<Map.Entry<String, String>> matches = new ArrayList<>();
@@ -258,7 +281,7 @@ public final class FakePlayerItemSortManager {
 
     public static int queueRebuildAll(ServerPlayer source, UUID initiator, StringBuilder error) {
         if (!isInventoryRebuildEnabled()) {
-            error.append("enable /carpet fakePlayerItemSortInventoryRebuild true");
+            error.append("set inventoryRebuild to true or opall with /fakePlayerItemSort");
             return 0;
         }
         List<Map.Entry<String, String>> routes = new ArrayList<>(ROUTES.entrySet());
@@ -270,12 +293,14 @@ public final class FakePlayerItemSortManager {
     }
 
     public static boolean isInventoryRebuildEnabled() {
-        return !"false".equals(FGASettings.fakePlayerItemSortInventoryRebuild);
+        return supportsExtendedFeatures()
+                && !"false".equals(FakePlayerItemSortConfig.snapshot().inventoryRebuild());
     }
 
     public static boolean canRebuildAll(boolean isOp) {
-        return "true".equals(FGASettings.fakePlayerItemSortInventoryRebuild)
-                || ("opall".equals(FGASettings.fakePlayerItemSortInventoryRebuild) && isOp);
+        if (!supportsExtendedFeatures()) return false;
+        String value = FakePlayerItemSortConfig.snapshot().inventoryRebuild();
+        return "true".equals(value) || ("opall".equals(value) && isOp);
     }
 
     /** Called by explicit lifecycle and sorter inventory-access paths; never scans inventories in tick(). */
@@ -362,8 +387,8 @@ public final class FakePlayerItemSortManager {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         String base = displayName(stack, id.toString());
         FakePlayerItemSortConfig.State cfg = FakePlayerItemSortConfig.snapshot();
-        String logical = FGASettings.fakePlayerItemSortQuickShulker ? base : "bulk_" + base;
-        return switch (FGASettings.fakePlayerItemSortNameFormat) {
+        String logical = cfg.quickShulker() ? base : "bulk_" + base;
+        return switch (cfg.nameFormat()) {
             case "prefix" -> cfg.prefix() + logical;
             case "suffix" -> logical + cfg.suffix();
             default -> logical;
@@ -373,9 +398,9 @@ public final class FakePlayerItemSortManager {
     private static String displayName(ItemStack stack, String id) {
         FakePlayerItemSortConfig.State cfg = FakePlayerItemSortConfig.snapshot();
         String custom = cfg.names().get(id);
-        if ("custom".equals(FGASettings.fakePlayerItemSortTargetLanguage) && custom != null) return normalize(custom);
-        if ("chinese".equals(FGASettings.fakePlayerItemSortTargetLanguage)
-                || "custom".equals(FGASettings.fakePlayerItemSortTargetLanguage)) {
+        if ("custom".equals(cfg.targetLanguage()) && custom != null) return normalize(custom);
+        if ("chinese".equals(cfg.targetLanguage())
+                || "custom".equals(cfg.targetLanguage())) {
             String localized = CHINESE_TRANSLATIONS.get(stack.getItem().getDescriptionId());
             return normalize(localized == null ? stack.getHoverName().getString() : localized);
         }
@@ -385,7 +410,7 @@ public final class FakePlayerItemSortManager {
 
     private static String serverDisplayName(String key) {
         ItemStack stack = stackForKey(key);
-        return stack.isEmpty() ? cleanItemKey(key) : cleanDisplayName(stack, FGASettings.fakePlayerItemSortTargetLanguage);
+        return stack.isEmpty() ? cleanItemKey(key) : cleanDisplayName(stack, FakePlayerItemSortConfig.snapshot().targetLanguage());
     }
 
     private static String cleanDisplayName(ItemStack stack, String mode) {
@@ -402,7 +427,25 @@ public final class FakePlayerItemSortManager {
     private static ItemStack stackForKey(String key) {
         int separator = key.indexOf('|');
         ResourceLocation id = ResourceLocation.tryParse(separator < 0 ? key : key.substring(0, separator));
-        return id == null || !BuiltInRegistries.ITEM.containsKey(id) ? ItemStack.EMPTY : new ItemStack(BuiltInRegistries.ITEM.get(id));
+        Item item = itemAt(id);
+        return item == null ? ItemStack.EMPTY : new ItemStack(item);
+    }
+
+    private static Item itemAt(ResourceLocation id) {
+        if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) return null;
+        //#if MC >= 1.21.3
+        //$$ return BuiltInRegistries.ITEM.get(id).map(holder -> holder.value()).orElse(null);
+        //#else
+        return BuiltInRegistries.ITEM.get(id);
+        //#endif
+    }
+
+    private static void stopFake(ServerPlayer player) {
+        //#if MC >= 1.21.3
+        //$$ player.kill(player.serverLevel());
+        //#else
+        player.kill();
+        //#endif
     }
 
     private static String cleanItemKey(String key) {
@@ -583,29 +626,17 @@ public final class FakePlayerItemSortManager {
     }
 
     private static ItemStack sourceStack(Inventory inventory, int slot) {
-        //#if MC >= 1.21.10
-        //$$ return inventory.getStack(slot);
-        //#else
-        if (slot < MAIN_SIZE) return inventory.getItem(slot);
-        if (slot < SOURCE_OFFHAND_SLOT) return inventory.armor.get(slot - SOURCE_ARMOR_START);
-        return inventory.offhand.get(0);
-        //#endif
+        return inventory.getItem(slot);
     }
 
     private static void setSourceStack(Inventory inventory, int slot, ItemStack stack) {
-        //#if MC >= 1.21.10
-        //$$ inventory.setStack(slot, stack);
-        //#else
-        if (slot < MAIN_SIZE) inventory.setItem(slot, stack);
-        else if (slot < SOURCE_OFFHAND_SLOT) inventory.armor.set(slot - SOURCE_ARMOR_START, stack);
-        else inventory.offhand.set(0, stack);
-        //#endif
+        inventory.setItem(slot, stack);
     }
 
     private static boolean isSortableSourceStack(ItemStack stack) {
         if (stack.isEmpty()) return false;
         if (!isShulkerBox(stack) || !hasShulkerContents(stack)) return true;
-        return isFullSingleItemShulker(stack) || FGASettings.fakePlayerItemSortQuickShulker;
+        return isFullSingleItemShulker(stack) || FakePlayerItemSortConfig.snapshot().quickShulker();
     }
 
     private static SourceMove sourceMove(ItemStack stack) {
@@ -615,7 +646,7 @@ public final class FakePlayerItemSortManager {
             if (!first.isEmpty() && isFullSingleItemShulker(stack)) {
                 return new SourceMove(sourceKey, itemKey(first), first.copyWithCount(1), MoveKind.WHOLE_SHULKER);
             }
-            if (!first.isEmpty() && FGASettings.fakePlayerItemSortQuickShulker) {
+            if (!first.isEmpty() && FakePlayerItemSortConfig.snapshot().quickShulker()) {
                 return new SourceMove(sourceKey, itemKey(first), first.copyWithCount(1), MoveKind.SPLIT_SHULKER);
             }
         }
@@ -635,7 +666,7 @@ public final class FakePlayerItemSortManager {
         if (current.isEmpty() || !itemKey(current).equals(move.sourceKey())) return;
 
         int moved;
-        if ("quickopen".equals(FGASettings.fakePlayerItemSortMode)) {
+        if ("quickopen".equals(FakePlayerItemSortConfig.snapshot().mode())) {
             moved = moveQuickopen(current, move.target(), move.itemKey(), move.kind(), move.source(), move.initiator());
         } else {
             moved = moveSummon(current, source, move.target(), move.batch(), move.itemKey(), move.kind(), move.initiator());
@@ -712,7 +743,7 @@ public final class FakePlayerItemSortManager {
     /** Runs only for an inventory opened by an active sort. Target armor is never read or changed. */
     private static void cleanOpenedTarget(TargetInventory target, String currentTarget, String expectedItemKey,
                                           UUID sourceId, UUID initiator, OverflowContext context, boolean primary) {
-        if (!FGASettings.fakePlayerItemSortCleanOpenedTarget || !OPEN_TARGET_CLEANUPS.add(currentTarget)) return;
+        if (!FakePlayerItemSortConfig.snapshot().cleanOpenedTarget() || !OPEN_TARGET_CLEANUPS.add(currentTarget)) return;
         try {
             for (int slot = 0; slot <= MAIN_SIZE; slot++) {
                 ItemStack stack = slot == MAIN_SIZE ? target.offhand() : target.main(slot);
@@ -752,7 +783,7 @@ public final class FakePlayerItemSortManager {
 
     private static int moveSummon(ItemStack current, ServerPlayer source, String base, String batch, String itemKey,
                                   MoveKind kind, UUID initiator) {
-        if (!FGASettings.fakePlayerItemSortQuickShulker) {
+        if (!FakePlayerItemSortConfig.snapshot().quickShulker()) {
             OnlineInventory target = looseTarget(source, base, batch, itemKey);
             if (target == null) return 0;
             int moved = moveLoose(current, target, itemKey);
@@ -787,7 +818,7 @@ public final class FakePlayerItemSortManager {
             ServerPlayer existing = minecraftServer.getPlayerList().getPlayerByName(name);
             if (existing != null) {
                 if (!(existing instanceof EntityPlayerMPFake) || skipped(minecraftServer, name)) continue;
-                existing.kill();
+                stopFake(existing);
             }
             if (skipped(minecraftServer, name)) continue;
             if (!EntityPlayerMPFake.createFake(name, minecraftServer, source.position(), source.getYRot(), source.getXRot(),
@@ -808,7 +839,7 @@ public final class FakePlayerItemSortManager {
         ServerPlayer existing = minecraftServer.getPlayerList().getPlayerByName(base);
         if (existing != null) {
             if (!(existing instanceof EntityPlayerMPFake)) return null;
-            existing.kill();
+            stopFake(existing);
         }
         if (!EntityPlayerMPFake.createFake(base, minecraftServer, source.position(), source.getYRot(), source.getXRot(),
                 source.serverLevel().dimension(), GameType.SURVIVAL, false)) return null;
@@ -819,7 +850,7 @@ public final class FakePlayerItemSortManager {
     }
 
     private static boolean skipped(MinecraftServer minecraftServer, String name) {
-        String mode = FGASettings.fakePlayerItemSortWhitelist;
+        String mode = FakePlayerItemSortConfig.snapshot().whitelistMode();
         if ("modWhitelist".equals(mode) && FakePlayerItemSortConfig.snapshot().whitelist().contains(name)) return true;
         if (!"vanillaWhitelist".equals(mode)) return false;
         for (String value : minecraftServer.getPlayerList().getWhiteList().getUserList()) {
@@ -1071,10 +1102,16 @@ public final class FakePlayerItemSortManager {
         }
         if (existing != null) {
             if (!(existing instanceof EntityPlayerMPFake)) return null;
-            existing.kill();
+            stopFake(existing);
         }
         if (!EntityPlayerMPFake.createFake(name, minecraftServer, context.source().position(), context.source().getYRot(),
-                context.source().getXRot(), context.source().serverLevel().dimension(), GameType.SURVIVAL, false)) return null;
+                context.source().getXRot(),
+                //#if MC >= 1.21.8
+                //$$ context.source().level().dimension(),
+                //#else
+                context.source().serverLevel().dimension(),
+                //#endif
+                GameType.SURVIVAL, false)) return null;
         ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(name);
         if (!(spawned instanceof EntityPlayerMPFake)) return null;
         AUTO_SPAWNED_BY_BATCH.computeIfAbsent(context.batch(), ignored -> new LinkedHashSet<>()).add(name);
@@ -1320,7 +1357,7 @@ public final class FakePlayerItemSortManager {
     }
 
     private static String depotName() {
-        return "chinese".equals(FGASettings.fakePlayerItemSortTargetLanguage) ? "\u6f5c\u5f71\u76d2\u8865\u8d27" : "box_restock";
+        return "chinese".equals(FakePlayerItemSortConfig.snapshot().targetLanguage()) ? "\u6f5c\u5f71\u76d2\u8865\u8d27" : "box_restock";
     }
 
     private static ItemStack takeEmptyShulkerFromDepot(UUID sourceId, UUID initiator) {
@@ -1328,7 +1365,9 @@ public final class FakePlayerItemSortManager {
         if (minecraftServer == null) return ItemStack.EMPTY;
         ItemStack carried = takeEmptyShulkerFromSource(sourceId);
         if (!carried.isEmpty()) return carried;
-        if (FGASettings.fakePlayerItemSortShulkerRestock) restockDepot(sourceId, initiator);
+        if (supportsExtendedFeatures() && FakePlayerItemSortConfig.snapshot().shulkerRestock()) {
+            restockDepot(sourceId, initiator);
+        }
         try {
             ManagedInventory depot = openDepot(minecraftServer);
             if (depot == null) {
@@ -1340,7 +1379,9 @@ public final class FakePlayerItemSortManager {
                 if (!isOrdinaryEmptyShulker(stack)) continue;
                 depot.inventory().setMain(slot, ItemStack.EMPTY);
                 if (depot.inventory().save()) {
-                    if (FGASettings.fakePlayerItemSortShulkerRestock) restockDepot(sourceId, initiator);
+                    if (supportsExtendedFeatures() && FakePlayerItemSortConfig.snapshot().shulkerRestock()) {
+                        restockDepot(sourceId, initiator);
+                    }
                     return stack.copyWithCount(1);
                 }
                 return ItemStack.EMPTY;
@@ -1484,13 +1525,13 @@ public final class FakePlayerItemSortManager {
 
     private static boolean hasDepotForeignItems(ServerPlayer depot) {
         for (int slot = 0; slot < MAIN_SIZE; slot++) if (!isDepotAllowed(depot.getInventory().getItem(slot))) return true;
-        return !isDepotAllowed(depot.getInventory().offhand.get(0));
+        return !isDepotAllowed(sourceStack(depot.getInventory(), SOURCE_OFFHAND_SLOT));
     }
 
     private static void closeDepotFake(MinecraftServer minecraftServer, ServerPlayer depot) {
         if (depot instanceof EntityPlayerMPFake && depot.getScoreboardName().equals(depotName())) {
             AUTO_SPAWNED_DEPOTS.remove(depot.getUUID());
-            depot.kill();
+            stopFake(depot);
         }
     }
 
@@ -1623,7 +1664,9 @@ public final class FakePlayerItemSortManager {
             boolean matches = logs ? path.endsWith("_log") || path.endsWith("_stem") || path.endsWith("_hyphae")
                     : id.equals(BuiltInRegistries.ITEM.getKey(Items.SHULKER_SHELL));
             if (!matches) continue;
-            ItemStack material = new ItemStack(BuiltInRegistries.ITEM.get(id));
+            Item item = itemAt(id);
+            if (item == null) continue;
+            ItemStack material = new ItemStack(item);
             String name = route(material);
             if (minecraftServer.getPlayerList().getPlayerByName(name) != null) continue;
             OfflineInventory inventory = inventories.get(name);
@@ -1716,7 +1759,7 @@ public final class FakePlayerItemSortManager {
     }
 
     private static void persistCache() {
-        if (cachePath == null) return;
+        if (!supportsExtendedFeatures() || cachePath == null) return;
         try {
             Files.createDirectories(cachePath.getParent());
             Path temp = cachePath.resolveSibling(cachePath.getFileName() + ".tmp");
@@ -1811,7 +1854,7 @@ public final class FakePlayerItemSortManager {
     }
 
     private static long sorterMoveIntervalTicks() {
-        return switch (FGASettings.fakePlayerItemSortSpeed) {
+        return switch (FakePlayerItemSortConfig.snapshot().speed()) {
             case "4" -> 4L;
             case "16" -> 16L;
             default -> 8L;
@@ -1849,12 +1892,12 @@ public final class FakePlayerItemSortManager {
 
         @Override
         public ItemStack offhand() {
-            return player.getInventory().offhand.get(0);
+            return sourceStack(player.getInventory(), SOURCE_OFFHAND_SLOT);
         }
 
         @Override
         public void setOffhand(ItemStack stack) {
-            player.getInventory().offhand.set(0, stack);
+            setSourceStack(player.getInventory(), SOURCE_OFFHAND_SLOT, stack);
         }
 
         @Override
@@ -1913,11 +1956,27 @@ public final class FakePlayerItemSortManager {
 
         private void readInventory() {
             HolderLookup.Provider registry = server.registryAccess();
+            //#if MC >= 1.21.5
+            //$$ ListTag inventory = data.getListOrEmpty("Inventory");
+            //#else
             ListTag inventory = data.getList("Inventory", Tag.TAG_COMPOUND);
+            //#endif
             for (int i = 0; i < inventory.size(); i++) {
+                //#if MC >= 1.21.5
+                //$$ CompoundTag entry = inventory.getCompoundOrEmpty(i);
+                //$$ int slot = entry.getByteOr("Slot", (byte) 0);
+                //#if MC >= 1.21.8
+                //$$ ItemStack stack = ItemStack.OPTIONAL_CODEC
+                //$$         .parse(registry.createSerializationContext(NbtOps.INSTANCE), entry)
+                //$$         .result().orElse(ItemStack.EMPTY);
+                //#else
+                //$$ ItemStack stack = ItemStack.parse(registry, entry).orElse(ItemStack.EMPTY);
+                //#endif
+                //#else
                 CompoundTag entry = inventory.getCompound(i);
                 int slot = entry.getByte("Slot");
                 ItemStack stack = ItemStack.parseOptional(registry, entry);
+                //#endif
                 if (stack.isEmpty()) continue;
                 if (slot >= 0 && slot < MAIN_SIZE) main[slot] = stack;
                 else if (slot == OFFHAND_NBT_SLOT) offhand = stack;
@@ -1949,10 +2008,19 @@ public final class FakePlayerItemSortManager {
             try {
                 HolderLookup.Provider registry = server.registryAccess();
                 ListTag kept = new ListTag();
+                //#if MC >= 1.21.5
+                //$$ ListTag original = data.getListOrEmpty("Inventory");
+                //#else
                 ListTag original = data.getList("Inventory", Tag.TAG_COMPOUND);
+                //#endif
                 for (int i = 0; i < original.size(); i++) {
+                    //#if MC >= 1.21.5
+                    //$$ CompoundTag entry = original.getCompoundOrEmpty(i);
+                    //$$ int slot = entry.getByteOr("Slot", (byte) 0);
+                    //#else
                     CompoundTag entry = original.getCompound(i);
                     int slot = entry.getByte("Slot");
+                    //#endif
                     if ((slot >= 0 && slot < MAIN_SIZE) || slot == OFFHAND_NBT_SLOT) continue;
                     kept.add(entry.copy());
                 }
@@ -1977,7 +2045,14 @@ public final class FakePlayerItemSortManager {
 
         private static void addStack(ListTag list, HolderLookup.Provider registry, int slot, ItemStack stack) {
             if (stack.isEmpty()) return;
+            //#if MC >= 1.21.8
+            //$$ CompoundTag saved = ItemStack.OPTIONAL_CODEC
+            //$$         .encodeStart(registry.createSerializationContext(NbtOps.INSTANCE), stack)
+            //$$         .result().filter(CompoundTag.class::isInstance).map(CompoundTag.class::cast)
+            //$$         .orElseThrow(() -> new IllegalStateException("could not encode sorter item stack"));
+            //#else
             CompoundTag saved = (CompoundTag) stack.save(registry);
+            //#endif
             saved.putByte("Slot", (byte) slot);
             list.add(saved);
         }

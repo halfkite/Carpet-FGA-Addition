@@ -1,4 +1,3 @@
-//#if MC >= 1.19.4
 package carpet.fga;
 
 import net.minecraft.network.chat.ClickEvent;
@@ -23,4 +22,3 @@ public final class FgaClickEvents {
         //#endif
     }
 }
-//#endif

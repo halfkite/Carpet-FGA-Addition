@@ -1,4 +1,4 @@
-//#if MC >= 1.20.5 && MC < 26.2
+//#if MC >= 1.20.5 && MC <= 26.2
 package carpet.fga;
 
 import carpet.CarpetSettings;

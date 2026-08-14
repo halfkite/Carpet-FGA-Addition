@@ -1,6 +1,8 @@
 //#if MC <= 26.2
 package carpet.fga.mixin;
 
+import carpet.fga.DroppedItemStackLimitConfig;
+
 import carpet.fga.FGASettings;
 //#if MC >= 1.20.5 && MC < 1.21.5
 import net.minecraft.core.HolderLookup;
@@ -27,7 +29,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -82,13 +85,16 @@ public abstract class ItemEntityMixin {
         return FGASettings.effectiveDroppedItemStackLimit(stack);
     }
 
-    @ModifyConstant(
+    @ModifyArgs(
             method = "merge(Lnet/minecraft/world/entity/item/ItemEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)V",
-            constant = @org.spongepowered.asm.mixin.injection.Constant(intValue = 64)
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/entity/item/ItemEntity;merge(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;I)Lnet/minecraft/world/item/ItemStack;"
+            )
     )
-    private static int carpetFga$stackLimitForEntityMerge(int vanillaLimit, ItemEntity entity,
-                                                           ItemStack destination, ItemStack source) {
-        return FGASettings.effectiveDroppedItemStackLimit(destination);
+    private static void carpetFga$stackLimitForEntityMerge(Args args) {
+        ItemStack destination = args.get(0);
+        args.set(2, FGASettings.effectiveDroppedItemStackLimit(destination));
     }
 
     //#if MC >= 1.20.5 && MC < 1.21.6
@@ -141,7 +147,7 @@ public abstract class ItemEntityMixin {
                 //#else
                 tag.getInt(EXTENDED_COUNT_KEY);
                 //#endif
-        if (count > VANILLA_SAVED_COUNT_LIMIT && count <= 8192) {
+        if (count > VANILLA_SAVED_COUNT_LIMIT && count <= DroppedItemStackLimitConfig.MAX_LIMIT) {
             ((ItemEntity) (Object) this).getItem().setCount(count);
         }
     }
@@ -170,7 +176,7 @@ public abstract class ItemEntityMixin {
     //$$ private void carpetFga$loadExtendedCount(CompoundTag tag, CallbackInfo ci) {
     //$$     if (tag.contains(EXTENDED_COUNT_KEY)) {
     //$$         int count = tag.getInt(EXTENDED_COUNT_KEY);
-    //$$         if (count > VANILLA_SAVED_COUNT_LIMIT && count <= 8192) {
+    //$$         if (count > VANILLA_SAVED_COUNT_LIMIT && count <= DroppedItemStackLimitConfig.MAX_LIMIT) {
     //$$             ((ItemEntity) (Object) this).getItem().setCount(count);
     //$$         }
     //$$     }
@@ -203,7 +209,7 @@ public abstract class ItemEntityMixin {
     //$$ @org.spongepowered.asm.mixin.injection.Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
     //$$ private void carpetFga$loadExtendedCount(ValueInput input, CallbackInfo ci) {
     //$$     int count = input.getIntOr(EXTENDED_COUNT_KEY, 0);
-    //$$     if (count > VANILLA_SAVED_COUNT_LIMIT && count <= 8192) {
+    //$$     if (count > VANILLA_SAVED_COUNT_LIMIT && count <= DroppedItemStackLimitConfig.MAX_LIMIT) {
     //$$         ((ItemEntity) (Object) this).getItem().setCount(count);
     //$$     }
     //$$ }

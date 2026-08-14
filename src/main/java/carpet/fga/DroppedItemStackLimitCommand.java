@@ -61,6 +61,14 @@ public final class DroppedItemStackLimitCommand {
                         //#endif
                 )
                 .then(Commands.literal("mode")
+                        .then(Commands.literal("inventory")
+                                .then(Commands.argument("count", IntegerArgumentType.integer(1,
+                                                DroppedItemStackLimitConfig.MAX_LIMIT))
+                                        .executes(DroppedItemStackLimitCommand::setInventoryLimit)))
+                        .then(Commands.literal("container")
+                                .then(Commands.argument("count", IntegerArgumentType.integer(1,
+                                                DroppedItemStackLimitConfig.MAX_LIMIT))
+                                        .executes(DroppedItemStackLimitCommand::setContainerLimit)))
                         .then(Commands.literal("all")
                                 .then(Commands.argument("count", IntegerArgumentType.integer(1,
                                                 DroppedItemStackLimitConfig.MAX_LIMIT))
@@ -84,6 +92,9 @@ public final class DroppedItemStackLimitCommand {
                                 .then(itemArgument().executes(DroppedItemStackLimitCommand::removeBlacklist)))
                         .then(Commands.literal("whitelist")
                                 .then(itemArgument().executes(DroppedItemStackLimitCommand::removeWhitelistItem))))
+                .then(Commands.literal("reset")
+                        .then(Commands.literal("inventory").executes(DroppedItemStackLimitCommand::resetInventoryLimit))
+                        .then(Commands.literal("container").executes(DroppedItemStackLimitCommand::resetContainerLimit)))
                 .then(Commands.literal("clear").executes(DroppedItemStackLimitCommand::clearActiveList))
                 .then(Commands.literal("list")
                         .executes(DroppedItemStackLimitCommand::showSummary)
@@ -119,6 +130,28 @@ public final class DroppedItemStackLimitCommand {
         int count = IntegerArgumentType.getInteger(context, "count");
         return mutate(context, () -> DroppedItemStackLimitConfig.setAllMode(count),
                 "掉落物堆叠模式已设为 all，数量：" + count);
+    }
+
+    private static int setInventoryLimit(CommandContext<CommandSourceStack> context) {
+        int count = IntegerArgumentType.getInteger(context, "count");
+        return mutate(context, () -> DroppedItemStackLimitConfig.setInventoryLimit(count),
+                "player inventory stack limit set to " + count);
+    }
+
+    private static int setContainerLimit(CommandContext<CommandSourceStack> context) {
+        int count = IntegerArgumentType.getInteger(context, "count");
+        return mutate(context, () -> DroppedItemStackLimitConfig.setContainerLimit(count),
+                "container stack limit set to " + count);
+    }
+
+    private static int resetInventoryLimit(CommandContext<CommandSourceStack> context) {
+        return mutate(context, DroppedItemStackLimitConfig::resetInventoryLimit,
+                "player inventory stack limit reset to vanilla");
+    }
+
+    private static int resetContainerLimit(CommandContext<CommandSourceStack> context) {
+        return mutate(context, DroppedItemStackLimitConfig::resetContainerLimit,
+                "container stack limit reset to vanilla");
     }
 
     private static int setBlackMode(CommandContext<CommandSourceStack> context) {
@@ -223,6 +256,10 @@ public final class DroppedItemStackLimitCommand {
                 .append(Component.literal("black 数量：" + current.blackLimit() + "，黑名单 "
                         + current.blacklist().size() + " 项\n"))
                 .append(Component.literal("whitelist：" + current.whitelist().size() + " 项"));
+        if (DroppedItemStackLimitConfig.isStackSizeTweaksCompatibilityActive()) {
+            message.append(Component.literal("\nStack Size Tweaks 兼容模式 / compatibility mode: active")
+                    .withStyle(ChatFormatting.GREEN));
+        }
         if (DroppedItemStackLimitConfig.isLoadFailed()) {
             message.append(Component.literal("\n配置文件损坏，当前安全回退到原版").withStyle(ChatFormatting.RED));
         }

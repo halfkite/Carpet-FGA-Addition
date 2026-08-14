@@ -197,6 +197,236 @@ public class FGASettings {
         }
     }
 
+    public static class Minecraft1_21OrNewerCondition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
+                //#else
+                //$$ isTrue() {
+                //#endif
+            //#if MC >= 1.21 && MC <= 26.2
+            return true;
+            //#else
+            //$$ return false;
+            //#endif
+        }
+    }
+
+    public static class DeepslateStonecuttingRecipesCondition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
+                //#else
+                //$$ isTrue() {
+                //#endif
+            //#if MC >= 1.21 && MC <= 1.21.11
+            return true;
+            //#else
+            //$$ return false;
+            //#endif
+        }
+    }
+
+    @Rule(
+        desc = "Makes deepslate behave in the stonecutter like it does in 26.1+",
+        category = {FGA, FEATURE},
+        options = {"false", "true"},
+        condition = FGASettings.DeepslateStonecuttingRecipesCondition.class
+    )
+    public static boolean deepslateStonecuttingRecipes = false;
+
+    //#if MC >= 1.21 && MC <= 26.2
+    @Rule(
+        desc = "Prevents farmer villagers from crafting wheat into bread",
+        category = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean farmerVillagersDoNotCraftBread = false;
+
+    @Rule(
+        desc = "Lets villagers finish profession upgrades while trading",
+        category = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean villagerUpgradeWhileTrading = false;
+    //#endif
+
+    //#if MC == 1.21.1
+    @Rule(
+        desc = "Controls per-player chunk loading distance commands",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        strict = false,
+        validate = FGASettings.PlayerLoadDistanceValidator.class,
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static String playerLoadDistance = "false";
+
+    public static class PlayerLoadDistanceValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                //#if MC >= 1.19
+                CarpetRule<String> currentRule,
+                //#else
+                //$$ ParsedRule<String> currentRule,
+                //#endif
+                String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (Set.of("false", "true", "ops", "0", "1", "2", "3", "4").contains(value)) return value;
+            Messenger.m(source, "r playerLoadDistance must be false, true, ops, or 0-4");
+            return null;
+        }
+    }
+    //#endif
+
+    //#if MC >= 1.21 && MC <= 26.2
+    @Rule(
+        desc = "Makes each matching trial-spawner participant count as multiple players",
+        category = {FGA, FEATURE},
+        options = {"1", "10", "50", "100", "1000", "10000"},
+        strict = false,
+        validate = FGASettings.TrialSpawnerPlayerMultiplierValidator.class,
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    )
+    public static int trialSpawnerPlayerMultiplier = 100;
+
+    @Rule(
+        desc = "Selects players affected by the trial-spawner multiplier: false, true, or a name prefix",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "bot_"},
+        strict = false,
+        validate = FGASettings.TrialSpawnerPlayerFilterValidator.class,
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    )
+    public static String trialSpawnerPlayerFilter = "false";
+
+    @Rule(
+        desc = "Enables and controls the one-shot /trialStop stop-and-refresh command",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        strict = false,
+        validate = FGASettings.TrialStopCommandPermissionValidator.class,
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    )
+    public static String trialStopCommandPermission = "false";
+
+    public static class TrialSpawnerPlayerMultiplierValidator extends Validator<Integer> {
+        @Override
+        public Integer validate(CommandSourceStack source, CarpetRule<Integer> currentRule,
+                                Integer newValue, String userInput) {
+            if (newValue != null && newValue >= 1 && newValue <= 10000) return newValue;
+            Messenger.m(source, "r trialSpawnerPlayerMultiplier must be between 1 and 10000");
+            return null;
+        }
+    }
+
+    public static class TrialSpawnerPlayerFilterValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue;
+            if (value.length() >= 2) {
+                char first = value.charAt(0);
+                char last = value.charAt(value.length() - 1);
+                if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                    value = value.substring(1, value.length() - 1);
+                }
+            }
+            if (value.trim().isEmpty()) {
+                Messenger.m(source, "r trialSpawnerPlayerFilter must be false, true, or a non-blank player-name prefix");
+                return null;
+            }
+            if (value.equalsIgnoreCase("false")) return "false";
+            if (value.equalsIgnoreCase("true")) return "true";
+            return value;
+        }
+    }
+
+    public static class TrialStopCommandPermissionValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (Set.of("false", "true", "ops", "0", "1", "2", "3", "4").contains(value)) return value;
+            Messenger.m(source, "r trialStopCommandPermission must be false, true, ops, or 0-4");
+            return null;
+        }
+    }
+    //#endif
+
+    @Rule(
+        desc = "Prevents baby mobs from growing: false, true, or an exact custom name",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "mini"},
+        strict = false,
+        validate = FGASettings.BabyMobNoGrowthValidator.class,
+        condition = FGASettings.BabyMobNoGrowthBaselineCondition.class
+    )
+    public static String babyMobNoGrowth = "false";
+
+    public static class BabyMobNoGrowthBaselineCondition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
+                //#else
+                //$$ isTrue() {
+                //#endif
+            //#if MC >= 1.21 && MC <= 26.2
+            return true;
+            //#else
+            //$$ return false;
+            //#endif
+        }
+    }
+
+    public static class BabyMobNoGrowthValidator extends
+            //#if MC >= 1.19
+            Validator<String> {
+            //#else
+            //$$ Validator<String> {
+            //#endif
+        @Override
+        public String validate(CommandSourceStack source,
+                               //#if MC >= 1.19
+                               CarpetRule<String> currentRule,
+                               //#else
+                               //$$ ParsedRule<String> currentRule,
+                               //#endif
+                               String newValue, String userInput) {
+            String unquoted = newValue == null ? "" : newValue;
+            if (unquoted.length() >= 2) {
+                char first = unquoted.charAt(0);
+                char last = unquoted.charAt(unquoted.length() - 1);
+                if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                    unquoted = unquoted.substring(1, unquoted.length() - 1);
+                }
+            }
+            if (unquoted.trim().isEmpty()) {
+                Messenger.m(source, "r babyMobNoGrowth must be false, true, or a non-blank custom name");
+                return null;
+            }
+            return unquoted;
+        }
+    }
+
     @Rule(
         desc = "Allows unquoted command arguments to contain Unicode characters",
         category = {FGA, FEATURE}
@@ -224,53 +454,77 @@ public class FGASettings {
     )
     public static String playerHealthDisplay = "true";
 
-    @Rule(desc = "Enables fake-player inventory sorting: false, summon, or quickopen", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            options = {"false", "summon", "quickopen"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
-    public static String fakePlayerItemSortMode = "false";
+    @Rule(
+        desc = "Removes item frames from server tick scheduling and validates them when support blocks change",
+        category = {FGA, FEATURE},
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static boolean itemFrameBlockification = false;
 
-    @Rule(desc = "Fake-player sorter whitelist mode: false, vanillaWhitelist, or modWhitelist", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            options = {"false", "vanillaWhitelist", "modWhitelist"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
-    public static String fakePlayerItemSortWhitelist = "false";
+    @Rule(
+        desc = "Lets players riding normal minecarts use firework rockets for configurable speed boosts",
+        category = {FGA, FEATURE},
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static boolean fireworkMinecartBoost = false;
 
-    @Rule(desc = "Uses plain shulker boxes for fake-player inventory sorting", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            condition = Minecraft1_21_1OnlyCondition.class)
-    public static boolean fakePlayerItemSortQuickShulker = false;
+    @Rule(
+        desc = "Lets normal minecarts form persistent chain-linked trains",
+        category = {FGA, FEATURE},
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static boolean chainMinecartBinding = false;
 
-    @Rule(desc = "Fake-player sorter target-name format: false, autoDetect, prefix, or suffix", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            options = {"false", "autoDetect", "prefix", "suffix"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
-    public static String fakePlayerItemSortNameFormat = "false";
+    @Rule(
+        desc = "Controls access to minecart feature configuration commands",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        strict = false,
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static String minecartFeatureCommandPermission = "false";
 
-    @Rule(desc = "Fake-player sorter target language: english, chinese, or custom", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            options = {"english", "chinese", "custom"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
-    public static String fakePlayerItemSortTargetLanguage = "english";
+    @Rule(
+        desc = "Stops horizontal vehicle movement when the controlling player dismounts",
+        category = {FGA, FEATURE},
+        options = {"false", "minecart", "boat", "all", "custom"},
+        strict = false,
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static String vehicleStopOnDismount = "false";
 
-    @Rule(desc = "Lets box_restock craft plain shulker boxes for fake-player sorting", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            condition = Minecraft1_21_1OnlyCondition.class)
-    public static boolean fakePlayerItemSortShulkerRestock = false;
+    @Rule(
+        desc = "Makes newly generated chunks void while retaining biome and structure-location data",
+        category = {FGA, FEATURE}
+    )
+    public static boolean voidWorldGeneration = false;
 
-    @Rule(desc = "When sorting opens a target fake-player inventory, route foreign main-inventory and offhand items", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            condition = Minecraft1_21_1OnlyCondition.class)
-    public static boolean fakePlayerItemSortCleanOpenedTarget = false;
+    //#if MC >= 1.21 && MC <= 26.2
+    @Rule(
+        desc = "Controls access to terrain regeneration and clearing commands",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        strict = false,
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    )
+    public static String terrainRegenerationCommandPermission = "ops";
+    //#endif
 
-    @Rule(desc = "Allows sorter inventory rebuild commands: false, true, or opall", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            options = {"false", "true", "opall"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
-    public static String fakePlayerItemSortInventoryRebuild = "false";
+    @Rule(
+        desc = "Crafts full single-item shulker boxes through matching ordinary crafting recipes",
+        category = {FGA, FEATURE}
+    )
+    public static boolean fullShulkerBoxCrafting = false;
 
-    @Rule(desc = "Enables the local fake-player sorter dashboard", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            condition = Minecraft1_21_1OnlyCondition.class)
-    public static boolean fakePlayerItemSortDashboard = false;
-
-    @Rule(desc = "Async CPU preset for fake-player sorting: 0, 1, or 2", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            options = {"0", "1", "2"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
-    public static String fakePlayerItemSortCpuThreads = "0";
-
-    @Rule(desc = "Fake-player sorter speed preset: 4, 8, or 16", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            options = {"4", "8", "16"}, strict = false, condition = Minecraft1_21_1OnlyCondition.class)
-    public static String fakePlayerItemSortSpeed = "8";
+    //#if MC >= 1.21 && MC <= 26.2
+    @Rule(desc = "Enables fake-player inventory sorting; mode and sorter options are managed by /fakePlayerItemSort", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            options = {"false", "true"}, strict = false, condition = Minecraft1_21OrNewerCondition.class)
+    public static boolean fakePlayerItemSort = false;
 
     public static boolean isFakePlayerItemSortEnabled() {
-        return !"false".equals(fakePlayerItemSortMode);
+        return fakePlayerItemSort;
     }
+    //#endif
     //#endif
 
     //#if MC >= 1.21.1 && MC <= 1.21.5
@@ -425,6 +679,7 @@ public class FGASettings {
         return !"false".equals(droppedItemStackLimit);
     }
 
+
     public static class DroppedItemStackLimitValidator extends Validator<String> {
         @Override public String validate(CommandSourceStack source,
                 CarpetRule<String> currentRule, String newValue, String userInput) {
@@ -467,7 +722,7 @@ public class FGASettings {
 
     private static volatile Set<ResourceLocation> preStackMobTypes = Set.of();
 
-    //#if MC >= 1.20.5 && MC < 26.2
+    //#if MC >= 1.20.5 && MC <= 26.2
     @Rule(
         desc = "Enables unified entity-death and block-drop pre-stacking configured by /dropPreStack",
         category = {FGA, FEATURE},
@@ -527,7 +782,7 @@ public class FGASettings {
 
     public static Double preStackEntityRange(Entity entity) {
         ResourceLocation id = preStackEntityId(entity);
-        //#if MC >= 1.20.5 && MC < 26.2
+        //#if MC >= 1.20.5 && MC <= 26.2
         if (preStackDroppedItems) {
             Double containerConfigured = DropPreStackConfig.containerEntityRange(id);
             if (containerConfigured != null) return containerConfigured;
@@ -656,6 +911,14 @@ public class FGASettings {
         //#else
         return DroppedItemStackLimitConfig.effectiveLimit(stack);
         //#endif
+    }
+
+    public static int effectiveInventoryStackLimit(ItemStack stack) {
+        return DroppedItemStackLimitConfig.effectiveInventoryLimit(stack);
+    }
+
+    public static int effectiveContainerStackLimit(ItemStack stack) {
+        return DroppedItemStackLimitConfig.effectiveContainerLimit(stack);
     }
 
     public static double effectiveDroppedItemMergeDistance() {

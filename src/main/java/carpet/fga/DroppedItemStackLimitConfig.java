@@ -16,6 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
+import net.fabricmc.loader.api.FabricLoader;
 //#if MC >= 1.17
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,8 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 
 public final class DroppedItemStackLimitConfig {
-    public static final int MAX_LIMIT = 8192;
+    /** Keeps the sum of two maximum stacks below Integer.MAX_VALUE. */
+    public static final int MAX_LIMIT = 1_000_000_000;
     private static final int DEFAULT_LIMIT = 64;
     //#if MC >= 1.17
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/dropped-item-stack-limit");
@@ -70,6 +72,7 @@ public final class DroppedItemStackLimitConfig {
         if (!Files.exists(configPath)) {
             state = State.defaults();
             loadFailed = false;
+            logStackSizeTweaksCompatibility();
             return;
         }
         try (Reader reader = Files.newBufferedReader(configPath, StandardCharsets.UTF_8)) {
@@ -82,6 +85,7 @@ public final class DroppedItemStackLimitConfig {
             );
             loadFailed = false;
             LOGGER.info("Loaded dropped item stack configuration from {}", configPath);
+            logStackSizeTweaksCompatibility();
         } catch (Exception exception) {
             state = State.defaults();
             loadFailed = true;
@@ -102,6 +106,16 @@ public final class DroppedItemStackLimitConfig {
             return true;
         } catch (Exception exception) {
             return false;
+        }
+    }
+
+    public static boolean isStackSizeTweaksCompatibilityActive() {
+        return FabricLoader.getInstance().isModLoaded("stacksizetweaks");
+    }
+
+    private static void logStackSizeTweaksCompatibility() {
+        if (isStackSizeTweaksCompatibilityActive()) {
+            LOGGER.info("Stack Size Tweaks detected; using the compatible ItemEntity merge injection");
         }
     }
 
@@ -147,6 +161,37 @@ public final class DroppedItemStackLimitConfig {
         };
     }
 
+    public static int effectiveInventoryLimit(ItemStack stack) {
+        return scopedLimit(state.inventoryLimit(), stack);
+    }
+
+    public static int effectiveContainerLimit(ItemStack stack) {
+        return scopedLimit(state.containerLimit(), stack);
+    }
+
+    private static int scopedLimit(int configured, ItemStack stack) {
+        int vanilla = stack.getMaxStackSize();
+        return configured > 0 && vanilla > 1 ? Math.max(vanilla, configured) : vanilla;
+    }
+
+    public static synchronized void setInventoryLimit(int limit) throws IOException {
+        validateLimit(limit);
+        update(current -> current.withInventoryLimit(limit));
+    }
+
+    public static synchronized void setContainerLimit(int limit) throws IOException {
+        validateLimit(limit);
+        update(current -> current.withContainerLimit(limit));
+    }
+
+    public static synchronized void resetInventoryLimit() throws IOException {
+        update(current -> current.withInventoryLimit(0));
+    }
+
+    public static synchronized void resetContainerLimit() throws IOException {
+        update(current -> current.withContainerLimit(0));
+    }
+
     public static State snapshot() {
         return state;
     }
@@ -155,20 +200,25 @@ public final class DroppedItemStackLimitConfig {
         return loadFailed;
     }
 
+    public static boolean requiresModdedClient() {
+        State current = state;
+        return !loadFailed && (current.inventoryLimit() > 0 || current.containerLimit() > 0);
+    }
+
     public static synchronized void setAllMode(int limit) throws IOException {
         validateLimit(limit);
-        update(current -> new State(Mode.ALL, limit, current.blackLimit(),
+        update(current -> new State(Mode.ALL, limit, current.blackLimit(), current.inventoryLimit(), current.containerLimit(),
                 current.blacklist(), current.whitelist()));
     }
 
     public static synchronized void setBlackMode(int limit) throws IOException {
         validateLimit(limit);
-        update(current -> new State(Mode.BLACK, current.allLimit(), limit,
+        update(current -> new State(Mode.BLACK, current.allLimit(), limit, current.inventoryLimit(), current.containerLimit(),
                 current.blacklist(), current.whitelist()));
     }
 
     public static synchronized void setWhitelistMode() throws IOException {
-        update(current -> new State(Mode.WHITELIST, current.allLimit(), current.blackLimit(),
+        update(current -> new State(Mode.WHITELIST, current.allLimit(), current.blackLimit(), current.inventoryLimit(), current.containerLimit(),
                 current.blacklist(), current.whitelist()));
     }
 
@@ -179,7 +229,7 @@ public final class DroppedItemStackLimitConfig {
         update(current -> {
             Set<ResourceLocation> entries = new LinkedHashSet<>(current.blacklist());
             entries.add(itemId);
-            return new State(current.mode(), current.allLimit(), current.blackLimit(), entries, current.whitelist());
+            return new State(current.mode(), current.allLimit(), current.blackLimit(), current.inventoryLimit(), current.containerLimit(), entries, current.whitelist());
         });
         return true;
     }
@@ -191,7 +241,7 @@ public final class DroppedItemStackLimitConfig {
         update(current -> {
             Set<ResourceLocation> entries = new LinkedHashSet<>(current.blacklist());
             entries.remove(itemId);
-            return new State(current.mode(), current.allLimit(), current.blackLimit(), entries, current.whitelist());
+            return new State(current.mode(), current.allLimit(), current.blackLimit(), current.inventoryLimit(), current.containerLimit(), entries, current.whitelist());
         });
         return true;
     }
@@ -201,7 +251,7 @@ public final class DroppedItemStackLimitConfig {
         update(current -> {
             Map<ResourceLocation, Integer> entries = new LinkedHashMap<>(current.whitelist());
             entries.put(itemId, limit);
-            return new State(current.mode(), current.allLimit(), current.blackLimit(), current.blacklist(), entries);
+            return new State(current.mode(), current.allLimit(), current.blackLimit(), current.inventoryLimit(), current.containerLimit(), current.blacklist(), entries);
         });
     }
 
@@ -212,7 +262,7 @@ public final class DroppedItemStackLimitConfig {
         update(current -> {
             Map<ResourceLocation, Integer> entries = new LinkedHashMap<>(current.whitelist());
             entries.remove(itemId);
-            return new State(current.mode(), current.allLimit(), current.blackLimit(), current.blacklist(), entries);
+            return new State(current.mode(), current.allLimit(), current.blackLimit(), current.inventoryLimit(), current.containerLimit(), current.blacklist(), entries);
         });
         return true;
     }
@@ -227,9 +277,9 @@ public final class DroppedItemStackLimitConfig {
             return 0;
         }
         if (current.mode() == Mode.BLACK) {
-            update(value -> new State(value.mode(), value.allLimit(), value.blackLimit(), Set.of(), value.whitelist()));
+            update(value -> new State(value.mode(), value.allLimit(), value.blackLimit(), value.inventoryLimit(), value.containerLimit(), Set.of(), value.whitelist()));
         } else {
-            update(value -> new State(value.mode(), value.allLimit(), value.blackLimit(), value.blacklist(), Map.of()));
+            update(value -> new State(value.mode(), value.allLimit(), value.blackLimit(), value.inventoryLimit(), value.containerLimit(), value.blacklist(), Map.of()));
         }
         return removed;
     }
@@ -262,8 +312,13 @@ public final class DroppedItemStackLimitConfig {
         Mode mode = Mode.valueOf(getString(root, "mode", "whitelist").toUpperCase(Locale.ROOT));
         int allLimit = getInt(root, "allLimit", DEFAULT_LIMIT);
         int blackLimit = getInt(root, "blackLimit", DEFAULT_LIMIT);
+        int inventoryLimit = getInt(root, "inventoryLimit", 0);
+        int containerLimit = getInt(root, "containerLimit", 0);
         validateLimit(allLimit);
         validateLimit(blackLimit);
+        if (inventoryLimit < 0 || containerLimit < 0) throw new IllegalArgumentException("scoped limits cannot be negative");
+        if (inventoryLimit > 0) validateLimit(inventoryLimit);
+        if (containerLimit > 0) validateLimit(containerLimit);
 
         Set<ResourceLocation> blacklist = new LinkedHashSet<>();
         if (root.has("blacklist")) {
@@ -280,7 +335,7 @@ public final class DroppedItemStackLimitConfig {
                 whitelist.put(parseItemId(entry.getKey()), limit);
             }
         }
-        return new State(mode, allLimit, blackLimit, blacklist, whitelist);
+        return new State(mode, allLimit, blackLimit, inventoryLimit, containerLimit, blacklist, whitelist);
     }
 
     private static JsonObject toJson(State value) {
@@ -288,6 +343,8 @@ public final class DroppedItemStackLimitConfig {
         root.addProperty("mode", value.mode().serializedName());
         root.addProperty("allLimit", value.allLimit());
         root.addProperty("blackLimit", value.blackLimit());
+        root.addProperty("inventoryLimit", value.inventoryLimit());
+        root.addProperty("containerLimit", value.containerLimit());
 
         JsonArray blacklist = new JsonArray();
         value.blacklist().stream().sorted(Comparator.comparing(ResourceLocation::toString))
@@ -345,7 +402,7 @@ public final class DroppedItemStackLimitConfig {
         }
     }
 
-    public record State(Mode mode, int allLimit, int blackLimit,
+    public record State(Mode mode, int allLimit, int blackLimit, int inventoryLimit, int containerLimit,
                         Set<ResourceLocation> blacklist, Map<ResourceLocation, Integer> whitelist) {
         public State {
             blacklist = Set.copyOf(blacklist);
@@ -353,7 +410,15 @@ public final class DroppedItemStackLimitConfig {
         }
 
         private static State defaults() {
-            return new State(Mode.WHITELIST, DEFAULT_LIMIT, DEFAULT_LIMIT, Set.of(), Map.of());
+            return new State(Mode.WHITELIST, DEFAULT_LIMIT, DEFAULT_LIMIT, 0, 0, Set.of(), Map.of());
+        }
+
+        private State withInventoryLimit(int limit) {
+            return new State(mode, allLimit, blackLimit, limit, containerLimit, blacklist, whitelist);
+        }
+
+        private State withContainerLimit(int limit) {
+            return new State(mode, allLimit, blackLimit, inventoryLimit, limit, blacklist, whitelist);
         }
 
         public List<ResourceLocation> sortedBlacklist() {

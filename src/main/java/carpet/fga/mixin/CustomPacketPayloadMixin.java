@@ -21,17 +21,24 @@ public interface CustomPacketPayloadMixin {
     )
     private static <B extends FriendlyByteBuf> List<CustomPacketPayload.TypeAndCodec<? super B, ?>> registerHandshake(
             List<CustomPacketPayload.TypeAndCodec<? super B, ?>> codecs) {
-        for (CustomPacketPayload.TypeAndCodec<? super B, ?> codec : codecs) {
-            if (codec.type().equals(FGAPayloads.HandshakePayload.TYPE)) {
-                return codecs;
-            }
-        }
-        List<CustomPacketPayload.TypeAndCodec<? super B, ?>> extendedCodecs = new ArrayList<>(codecs);
+        // Carpet recursively calls this codec with a marker list. Copying that list removes
+        // its recursion guard and causes a StackOverflowError when both mods are client-side.
+        List<CustomPacketPayload.TypeAndCodec<? super B, ?>> extendedCodecs =
+                codecs.getClass().getName().equals("carpet.helpers.CarpetTaintedList")
+                        ? codecs : new ArrayList<>(codecs);
         @SuppressWarnings({"rawtypes", "unchecked"})
         List rawCodecs = extendedCodecs;
-        rawCodecs.add(new CustomPacketPayload.TypeAndCodec(
-                FGAPayloads.HandshakePayload.TYPE, FGAPayloads.HandshakePayload.STREAM_CODEC));
+        addCodec(rawCodecs, codecs, FGAPayloads.HandshakePayload.TYPE, FGAPayloads.HandshakePayload.STREAM_CODEC);
         return extendedCodecs;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void addCodec(List rawCodecs,
+            List<? extends CustomPacketPayload.TypeAndCodec<?, ?>> existing,
+            CustomPacketPayload.Type<?> type, StreamCodec<?, ?> codec) {
+        if (existing.stream().noneMatch(value -> value.type().equals(type))) {
+            rawCodecs.add(new CustomPacketPayload.TypeAndCodec(type, codec));
+        }
     }
 }
 //#endif

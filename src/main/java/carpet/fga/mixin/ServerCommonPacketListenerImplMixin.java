@@ -3,8 +3,14 @@ package carpet.fga.mixin;
 import carpet.fga.FGAModDetector;
 import carpet.fga.FakePlayerNameAlias;
 import carpet.fga.PlayerHealthDisplay;
+//#if MC == 1.21.1
+import carpet.fga.PlayerLoadDistanceManager;
+//#endif
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+//#if MC >= 1.20.2 && MC < 1.20.5
+import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+//#endif
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
@@ -25,6 +31,24 @@ public abstract class ServerCommonPacketListenerImplMixin {
 
     @Unique
     private boolean fga$sendingCustomizedPlayerInfo;
+
+//#if MC >= 1.20.2 && MC < 1.20.5
+//$$     @Inject(
+//$$             method = "handleCustomPayload(Lnet/minecraft/network/protocol/common/ServerboundCustomPayloadPacket;)V",
+//$$             at = @At("HEAD"),
+//$$             cancellable = true
+//$$     )
+//$$     private void handleHandshake(ServerboundCustomPayloadPacket packet, CallbackInfo ci) {
+//$$         if (packet.payload().id().equals(carpet.fga.FGAPayloads.HANDSHAKE_CHANNEL)) {
+//$$             ServerCommonPacketListenerImpl listener = (ServerCommonPacketListenerImpl) (Object) this;
+//$$             ServerPlayer receiver = server.getPlayerList().getPlayer(listener.getOwner().getId());
+//$$             if (receiver != null) {
+//$$                 FGAModDetector.markAsModded(receiver);
+//$$             }
+//$$             ci.cancel();
+//$$         }
+//$$     }
+//#endif
 
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;)V", at = @At("HEAD"), cancellable = true)
     private void sendFullNamesToModdedClient(Packet<?> packet, CallbackInfo ci) {
@@ -48,7 +72,13 @@ public abstract class ServerCommonPacketListenerImplMixin {
         }
         boolean sendFullNames = FGAModDetector.hasMod(receiver) && hasLongName;
         boolean decorateHealth = PlayerHealthDisplay.shouldDecorate(receiver);
-        if ((!sendFullNames && !decorateHealth) || players.size() != infoPacket.entries().size()) {
+        //#if MC == 1.21.1
+        boolean decorateLoadDistance = players.stream().anyMatch(PlayerLoadDistanceManager::hasOverride);
+        //#else
+        //$$ boolean decorateLoadDistance = false;
+        //#endif
+        if ((!sendFullNames && !decorateHealth && !decorateLoadDistance)
+                || players.size() != infoPacket.entries().size()) {
             return;
         }
 

@@ -2,6 +2,9 @@
 package carpet.fga.mixin;
 
 import carpet.fga.DeathDropPreStackManager;
+//#if MC == 1.21.1
+import carpet.fga.ItemFrameBlockificationManager;
+//#endif
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,5 +20,13 @@ public abstract class ServerLevelMixin {
             cir.setReturnValue(true);
         }
     }
+
+    //#if MC == 1.21.1
+    @Inject(method = "addEntity", at = @At("RETURN"))
+    private void carpetFga$indexItemFrame(Entity entity, CallbackInfoReturnable<Boolean> cir) {
+        if (cir.getReturnValue()) ItemFrameBlockificationManager.register(entity);
+    }
+
+    //#endif
 }
 //#endif

@@ -30,19 +30,11 @@ dependencies {
     } else {
         modImplementation carpet
     }
-    if (mcVersion >= 1_21_08) {
-        def fabricApi = "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-        if (unobfuscated) {
-            implementation fabricApi
-        } else {
-            modImplementation fabricApi
-        }
-    }
 }
 
 if (mcVersion >= 1_21_10 && mcVersion < 26_00_00) {
     configurations.configureEach {
-        resolutionStrategy.force 'io.github.llamalad7:mixinextras-fabric:0.5.0'
+        resolutionStrategy.force 'io.github.llamalad7:mixinextras-fabric:0.5.4'
     }
 }
 
@@ -65,7 +57,7 @@ processResources {
             version: project.version,
             minecraft_dependency: project.minecraft_dependency,
             carpet_dependency: project.carpet_dependency,
-            fabric_api_dependency: mcVersion >= 1_21_08 ? '"fabric-api": "*",' : '',
+            fabric_api_dependency: '',
             java_level: javaVersion == JavaVersion.VERSION_25 ? 25 : (javaVersion == JavaVersion.VERSION_21 ? 21 : 16),
             compatibility_level: javaVersion == JavaVersion.VERSION_25 ? 'JAVA_25' : (javaVersion == JavaVersion.VERSION_21 ? 'JAVA_21' : 'JAVA_16')
     ]
@@ -73,6 +65,45 @@ processResources {
     filesMatching('fabric.mod.json') { expand properties }
     filesMatching('carpet-fga-addition.mixins.json') {
         filter { line -> line.replace('{{COMPATIBILITY_LEVEL}}', properties.compatibility_level) }
+    }
+    doLast {
+        if (mcVersion < 1_17_00 || mcVersion >= 26_01_00) return
+
+        def recipeDirectory = destinationDir.toPath().resolve(
+                mcVersion >= 1_21_00 ? 'data/carpet-fga-addition/recipe' : 'data/carpet-fga-addition/recipes')
+        java.nio.file.Files.createDirectories(recipeDirectory)
+        def outputs = [
+                chiseled_deepslate: 1,
+                cobbled_deepslate: 1,
+                cobbled_deepslate_slab: 2,
+                cobbled_deepslate_stairs: 1,
+                cobbled_deepslate_wall: 1,
+                deepslate_brick_slab: 2,
+                deepslate_brick_stairs: 1,
+                deepslate_brick_wall: 1,
+                deepslate_bricks: 1,
+                deepslate_tile_slab: 2,
+                deepslate_tile_stairs: 1,
+                deepslate_tile_wall: 1,
+                deepslate_tiles: 1,
+                polished_deepslate: 1,
+                polished_deepslate_slab: 2,
+                polished_deepslate_stairs: 1,
+                polished_deepslate_wall: 1
+        ]
+        outputs.each { output, count ->
+            def ingredient = mcVersion >= 1_21_02
+                    ? '"minecraft:deepslate"'
+                    : '{"item":"minecraft:deepslate"}'
+            def recipe = mcVersion >= 1_20_05
+                    ? [type: 'minecraft:stonecutting', ingredient: new groovy.json.JsonSlurper().parseText(ingredient),
+                       result: [id: "minecraft:${output}", count: count]]
+                    : [type: 'minecraft:stonecutting', ingredient: [item: 'minecraft:deepslate'],
+                       result: "minecraft:${output}", count: count]
+            def target = recipeDirectory.resolve("${output}_from_deepslate_stonecutting.json")
+            java.nio.file.Files.writeString(target,
+                    groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(recipe)) + System.lineSeparator())
+        }
     }
 }
 
@@ -88,7 +119,6 @@ java {
 
 if (mcVersion < 1_18_00) {
     sourceSets.main.java.exclude(
-            'carpet/fga/FGAPayloads.java',
             'carpet/fga/mixin/ClientboundPlayerInfoUpdatePacketMixin.java',
             'carpet/fga/mixin/CustomPacketPayloadMixin.java',
             'carpet/fga/mixin/ServerGamePacketListenerImplMixin.java',
@@ -124,12 +154,20 @@ if (mcVersion < 1_19_04) {
 
 if (mcVersion < 1_20_05) {
     sourceSets.main.java.exclude(
-            'carpet/fga/FGAPayloads.java',
             'carpet/fga/mixin/CustomPacketPayloadMixin.java',
             'carpet/fga/mixin/ServerGamePacketListenerImplMixin.java',
-            'carpet/fga/mixin/ServerCommonPacketListenerAccessor.java',
-            'carpet/fga/mixin/ServerCommonPacketListenerImplMixin.java',
-            'carpet/fga/mixin/ClientPacketListenerMixin.java',
             'carpet/fga/mixin/FriendlyByteBufMixin.java'
+    )
+}
+
+if (mcVersion < 1_20_02) {
+    sourceSets.main.java.exclude(
+            'carpet/fga/mixin/ServerCommonPacketListenerAccessor.java',
+            'carpet/fga/mixin/ServerCommonPacketListenerImplMixin.java'
+    )
+} else {
+    sourceSets.main.java.exclude(
+            'carpet/fga/mixin/LegacyServerGamePacketListenerImplMixin.java',
+            'carpet/fga/mixin/LegacyClientPacketListenerMixin.java'
     )
 }

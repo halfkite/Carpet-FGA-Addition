@@ -39,7 +39,7 @@ public final class RangePlayerCommand {
                 )
                 .then(Commands.argument("player", StringArgumentType.word())
                         .then(Commands.literal("stop").executes(RangePlayerCommand::stop))
-                        //#if MC == 1.21.1
+                        //#if MC >= 1.21 && MC <= 26.2
                         .then(FakePlayerItemSortCommand.playerSort())
                         //#endif
                         .then(rangeAction("use", RangeActionManager.Mode.USE))
