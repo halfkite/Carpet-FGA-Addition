@@ -56,7 +56,16 @@
         "WorkAtComposterNoBreadMixin",
         "VillagerUpgradeWhileTradingMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 1.21.11
+        //#if MC == 1.21.1
+        ,"ResilientPlantBlockStateMixin",
+        "EndPortalPlayerTpControlMixin",
+        "EndGatewayPlayerTpControlMixin"
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.2
+        ,"StonecutterMenuWoodInputMixin",
+        "StonecutterResultSlotWoodMixin"
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.2
         ,"ClientboundUpdateRecipesDeepslateMixin",
         "StonecutterMenuDeepslateMixin"
         //#endif

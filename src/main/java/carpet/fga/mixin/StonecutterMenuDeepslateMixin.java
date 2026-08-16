@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 1.21.11
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
@@ -29,11 +29,10 @@ public abstract class StonecutterMenuDeepslateMixin {
 
     @Inject(method = "setupRecipeList", at = @At("RETURN"))
     private void carpetFga$filterDeepslateRecipes(CallbackInfo callback) {
-        if (FGASettings.deepslateStonecuttingRecipes) return;
         //#if MC >= 1.21.3
         //$$ recipesForInput = DeepslateStonecuttingRecipes.filter(recipesForInput);
         //#else
-        recipes.removeIf(DeepslateStonecuttingRecipes::isFgaRecipe);
+        recipes.removeIf(DeepslateStonecuttingRecipes::isDisabledFgaRecipe);
         //#endif
     }
 }

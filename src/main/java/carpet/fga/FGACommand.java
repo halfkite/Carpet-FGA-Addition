@@ -37,6 +37,7 @@ public final class FGACommand {
         //#if MC == 1.21.1
         redirect(root, "minecart", dispatcher);
         redirect(root, "playerLoadDistance", dispatcher);
+        redirect(root, "playertpend", dispatcher);
         //#endif
         redirect(root, "vehicleStop", dispatcher);
         //#if MC >= 1.21 && MC <= 26.2
@@ -63,6 +64,9 @@ public final class FGACommand {
         //#if MC == 1.21.1
         if (CommandHelper.canUseCommand(context.getSource(), FGASettings.minecartFeatureCommandPermission)) {
             line(out, "/fga minecart help", "矿车烟花加速与锁链列车 / firework boost and chain trains");
+        }
+        if ("control".equals(FGASettings.PlayerTpEndControl)) {
+            line(out, "/fga playertpend help", "玩家末地门传送控制 / player End portal control");
         }
         //#endif
         line(out, "/fga regenerateTerrain help", "地形重生成与虚空清除 / regenerate or clear terrain");

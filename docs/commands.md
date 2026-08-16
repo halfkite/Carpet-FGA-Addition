@@ -1,6 +1,6 @@
 # Carpet FGA Addition 命令
 
-> 文档版本：`1.4.7`
+> 文档版本：`1.4.10`
 
 ## 命令总表
 
@@ -10,12 +10,27 @@
 | `/droppedItemStackLimit` | `droppedItemStackLimit` | 规则权限/全部支持版本 | 配置地面、玩家背包和容器的独立堆叠上限，背包或容器上限启用时需要 FGA 客户端。 |
 | `/dropPreStack` | `preStackDroppedItems` | 与掉落物上限权限/1.20.5-26.2 | 配置生物、方块和容器掉落预堆叠。 |
 | `/villagerPerformance` | `villagerPerformanceOptimization` | 规则权限/1.20.1+ | 配置村民交易、赠礼和流浪商人保护。 |
-| `/fakePlayerItemSort` | 1.21-26.2 分类规则 | `commandPlayer`/1.21-26.2 | 配置分类器核心，网页、重构、补货和线程参数仅在 1.21.1 可用。 |
-| `/player <name> bot_sort` | 1.21-26.2 分类规则 | `commandPlayer`/1.21-26.2 | 启动或停止指定假人的分类任务，重构语法仅在 1.21.1 可用。 |
+| `/fakePlayerItemSort` | 1.21-26.2（不含 1.21.3）分类规则 | `commandPlayer`/1.21-26.2（不含 1.21.3） | 配置分类器核心，网页、重构、补货和线程参数仅在 1.21.1 可用。 |
+| `/player <name> bot_sort` | 1.21-26.2（不含 1.21.3）分类规则 | `commandPlayer`/1.21-26.2（不含 1.21.3） | 启动或停止指定假人的分类任务，重构语法仅在 1.21.1 可用。 |
 | `/minecart` | 矿车烟花与锁链规则 | `minecartFeatureCommandPermission`/1.21.1 | 配置烟花矿车速度与锁链列车距离。 |
 | `/vehicleStop` | `vehicleStopOnDismount` | 自己；OP 可管理在线玩家/全部支持版本 | 配置玩家自己的矿车与船离开急停。 |
 | `/regenerateTerrain` | `voidWorldGeneration`、`terrainRegenerationCommandPermission` | 配置权限/1.21-26.2 | 将正常地形重生成或全空气清除任务加入下次重启队列。 |
 | `/trialStop` | `trialStopCommandPermission` | 规则权限/1.21-26.2 | 一次性截停并刷新已加载试炼刷怪笼，可选择无奖励、正常奖励或立即奖励。 |
+| `/playertpend` | `PlayerTpEndControl` | `control` 模式/1.21.1 | 管理每名玩家的三种末地门传送偏好。 |
+
+## `/playertpend`
+
+先执行 `/carpet PlayerTpEndControl control`。`enter` 是进入末地门，`exit` 是末地主岛出口，`gateway` 是末地折跃门。
+
+```text
+/playertpend status [玩家]
+/playertpend set <enter|exit|gateway> <allow|deny>
+/playertpend set <玩家> <enter|exit|gateway> <allow|deny>
+/playertpend reset [enter|exit|gateway]
+/playertpend reset <玩家> [enter|exit|gateway]
+```
+
+偏好按 UUID 保存到 `world/config/carpetfgaaddition/player-tp-end-control.json`。OP 能修改任意在线玩家；非 OP 只能修改自己与在线 Carpet 假人。
 
 ## `/regenerateTerrain`
 

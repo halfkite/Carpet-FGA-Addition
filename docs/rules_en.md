@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.4.8`
+> Documentation version: `1.4.10`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default.
 
@@ -25,6 +25,7 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `terrainRegenerationCommandPermission` | Permission | `ops` | `false`, `true`, `ops`, `0-4` | 1.21-26.2 | Controls `/regenerateTerrain` and `/fga regenerateTerrain`, including destructive clear and regeneration tasks. |
 | `fullShulkerBoxCrafting` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Uses the server's current ordinary recipes for full shulker boxes, including multi-material, tag, data-pack, Shift/Q refill, and soft AMS 54-slot support. |
 | `spectatorFreeTeleport` | Boolean | `false` | `false`, `true` | 1.21.1-1.21.5 | Lets non-OP spectators teleport themselves only. |
+| `PlayerTpEndControl` | Enum | `false` | `false`, `true`, `control` | 1.21.1 | Controls player teleportation through End entrance portals, the End exit portal, and End gateways. `true` blocks all three; `control` uses `/playertpend` preferences and defaults to allow. Non-player entities are unchanged. |
 | `clientDimensionIds` | List | `[overworld,the_nether,the_end]` | Three client dimension IDs | 1.21.1+ | Changes client-visible dimension IDs without changing server dimensions. |
 | `removeDialogWarning` | Boolean | `false` | `false`, `true` | 1.21.8+ | Removes server-sent command/dialog confirmation warnings. |
 | `restorePre26BeeCollisionBox` | Boolean | `false` | `false`, `true` | 26.2 | Restores the pre-26.2 bee collision box. |
@@ -35,7 +36,8 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 |---|---|---|---|---|---|
 | `villagerBreedingAnimalization` | Enum | `false` | `false`, `true`, `only` | All supported versions | Controls direct player feeding of villagers. |
 | `babyMobNoGrowth` | String | `false` | `false`, `true`, `mini`, custom name | 1.21-26.2 | `true` freezes every normally growing baby; `mini` is a name-mode preset; a custom value freezes only babies whose full custom-name text matches exactly and case-sensitively, including tadpoles. |
-| `farmerVillagersDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
+| `resilientPlants` | String | `false` | `false`, `true`, `[]`, block ID list | 1.21.1 | Lets `BushBlock` plants ignore vanilla survival restrictions with `true`; a list selects supported plant blocks such as cactus, sugar cane, bamboo, vines, and water plants. |
+| `villagerDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 (excluding 1.21.3) | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
 | `villagerUpgradeWhileTrading` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Lets villagers finish upgrading while the trading screen remains open and immediately refreshes their level, XP, and offers |
 | `villagerPerformanceOptimization` | Enum | `false` | `false`, `true`, `ops`, `1-4` | 1.20.1+ | Enables villager trade/gift optimization and controls `/villagerPerformance` access. |
 | `hostileMobInventoryAccess` | Boolean | `false` | `false`, `true` | All supported versions | Opens hostile-mob equipment with an empty-handed sneak right-click. |
@@ -55,6 +57,7 @@ The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hi
 | Rule | Type | Default | Values | Effective versions | Description |
 |---|---|---|---|---|---|
 | `deepslateStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.17.1-1.21.11` | Makes deepslate behave in the stonecutter like it does in 26.1+. Only FGA recipes are controlled; vanilla, data-pack, and mod recipes are unchanged. The rule is not registered on `1.16.5`, `26.1.2`, or `26.2`. |
+| `woodStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.21-26.2` (excluding 1.21.3) | Allows wood products to be crafted in the stonecutter. Logs or stems yield 4 stairs or 8 slabs, planks yield 1 stair or 2 slabs, and bamboo mosaic slabs/stairs yield 4/2. Bamboo blocks, stripped bamboo blocks, and 9 bamboo are equivalent inputs for the bamboo conversion table, with server-side validation for each multi-input recipe. |
 | `playerLoadDistance` | Permission string | `false` | `false`, `true`, `ops`, `0-4` | `1.21.1` | Enables per-player chunk sending and tracking overrides without changing simulation distance. `false` disables the command. |
 | `trialSpawnerPlayerMultiplier` | Integer | `100` | `1-10000` | `1.21-26.2` | Counts each matching player as this many participants for normal and ominous trial mob and reward scale; `1` is vanilla |
 | `trialSpawnerPlayerFilter` | String | `false` | `false`, `true`, `bot_`, custom prefix | `1.21-26.2` | `false` disables scaling; `true` matches everyone; other values use a case-sensitive player-name prefix, with `bot_` as a preset |
@@ -70,7 +73,7 @@ The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hi
 
 | Rule | Type | Default | Values | Description |
 |---|---|---|---|---|
-| `fakePlayerItemSort` | Boolean | `false` | `false`, `true` | Enables the fake-player sorter core on `1.21-26.2`; restock, rebuild, disk cache, dashboard, and worker tuning remain exclusive to `1.21.1`. |
+| `fakePlayerItemSort` | Boolean | `false` | `false`, `true` | `1.21-26.2` (excluding 1.21.3) | Enables the fake-player sorter core; restock, rebuild, disk cache, dashboard, and worker tuning remain exclusive to `1.21.1`. |
 
 Sorter settings are stored in `world/config/carpetfgaaddition/fake-player-item-sort.json`. `/fakePlayerItemSort mode summon` uses online Carpet fake players; `mode quickopen` edits offline playerdata directly. Legacy `fakePlayerItemSort*` Carpet settings are migrated once at startup and are no longer registered as rules.
 

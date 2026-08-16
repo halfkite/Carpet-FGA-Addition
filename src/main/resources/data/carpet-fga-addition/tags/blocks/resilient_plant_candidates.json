@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:bamboo",
+    "minecraft:cactus",
+    "minecraft:chorus_flower",
+    "minecraft:chorus_plant",
+    "minecraft:glow_lichen",
+    "minecraft:hanging_roots",
+    "minecraft:kelp",
+    "minecraft:kelp_plant",
+    "minecraft:lily_pad",
+    "minecraft:sea_pickle",
+    "minecraft:seagrass",
+    "minecraft:sugar_cane",
+    "minecraft:twisting_vines",
+    "minecraft:twisting_vines_plant",
+    "minecraft:vine",
+    "minecraft:weeping_vines",
+    "minecraft:weeping_vines_plant"
+  ]
+}

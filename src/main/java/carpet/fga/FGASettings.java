@@ -218,6 +218,27 @@ public class FGASettings {
         }
     }
 
+    public static class WoodStonecuttingRecipesCondition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
+                //#else
+                //$$ isTrue() {
+                //#endif
+            //#if MC >= 1.21 && MC <= 26.2
+            return true;
+            //#else
+            //$$ return false;
+            //#endif
+        }
+    }
+
     public static class DeepslateStonecuttingRecipesCondition implements
             //#if MC >= 1.19
             carpet.api.settings.Rule.Condition {
@@ -249,11 +270,21 @@ public class FGASettings {
 
     //#if MC >= 1.21 && MC <= 26.2
     @Rule(
-        desc = "Prevents farmer villagers from crafting wheat into bread",
+        desc = "Allows wood products to be crafted in the stonecutter",
+        category = {FGA, FEATURE},
+        options = {"false", "true"},
+        condition = FGASettings.WoodStonecuttingRecipesCondition.class
+    )
+    public static boolean woodStonecuttingRecipes = false;
+    //#endif
+
+    //#if MC >= 1.21 && MC <= 26.2
+    @Rule(
+        desc = "Prevents villagers from crafting wheat into bread",
         category = {FGA, FEATURE},
         options = {"false", "true"}
     )
-    public static boolean farmerVillagersDoNotCraftBread = false;
+    public static boolean villagerDoNotCraftBread = false;
 
     @Rule(
         desc = "Lets villagers finish profession upgrades while trading",
@@ -427,6 +458,38 @@ public class FGASettings {
         }
     }
 
+    //#if MC == 1.21.1
+    @Rule(
+        desc = "Allows configured plants to survive without their normal support restrictions",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "[]"},
+        strict = false,
+        validate = FGASettings.ResilientPlantsValidator.class,
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static String resilientPlants = "false";
+
+    public static class ResilientPlantsValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                               //#if MC >= 1.19
+                               CarpetRule<String> currentRule,
+                               //#else
+                               //$$ ParsedRule<String> currentRule,
+                               //#endif
+                               String newValue, String userInput) {
+            try {
+                String normalized = ResilientPlants.validate(newValue);
+                ResilientPlants.setConfiguredBlocks(normalized);
+                return normalized;
+            } catch (IllegalArgumentException exception) {
+                Messenger.m(source, "r " + exception.getMessage());
+                return null;
+            }
+        }
+    }
+    //#endif
+
     @Rule(
         desc = "Allows unquoted command arguments to contain Unicode characters",
         category = {FGA, FEATURE}
@@ -534,6 +597,27 @@ public class FGASettings {
         condition = FGASettings.Minecraft1_21_1OnlyCondition.class
     )
     public static boolean spectatorFreeTeleport = false;
+
+    @Rule(
+        desc = "Controls whether players may use End portals and End gateways: false, true, or control",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "control"},
+        strict = false,
+        validate = FGASettings.PlayerTpEndControlValidator.class,
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static String PlayerTpEndControl = "false";
+
+    public static class PlayerTpEndControlValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (Set.of("false", "true", "control").contains(value)) return value;
+            Messenger.m(source, "r PlayerTpEndControl must be false, true, or control");
+            return null;
+        }
+    }
     //#endif
 
 

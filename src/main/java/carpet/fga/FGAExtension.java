@@ -81,6 +81,7 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC == 1.21.1
         PlayerLoadDistanceManager.load(server);
+        PlayerTpEndControlManager.load(server);
         MinecartFeatureConfig.load(server);
         MinecartFeatureManager.load(server);
         ItemFrameBlockificationManager.rebuild(server);
@@ -116,6 +117,7 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC == 1.21.1
         PlayerLoadDistanceCommand.register(dispatcher);
+        PlayerTpEndControlCommand.register(dispatcher);
         MinecartFeatureCommand.register(dispatcher);
         //#endif
         //#endif
@@ -174,6 +176,7 @@ public class FGAExtension implements CarpetExtension {
         DropPreStackConfig.clear();
         //#if MC == 1.21.1
         PlayerLoadDistanceManager.clear();
+        PlayerTpEndControlManager.clear();
         MinecartFeatureConfig.clear();
         MinecartFeatureManager.clear();
         ItemFrameBlockificationManager.clear();
@@ -264,7 +267,11 @@ public class FGAExtension implements CarpetExtension {
                     && !"villagerPerformanceOptimization".equals(rule.name())
                     && !"minecartFeatureCommandPermission".equals(rule.name())
                     && !"terrainRegenerationCommandPermission".equals(rule.name())
-                    && !"trialStopCommandPermission".equals(rule.name())) {
+                    && !"trialStopCommandPermission".equals(rule.name())
+                    //#if MC == 1.21.1
+                    && !"PlayerTpEndControl".equals(rule.name())
+                    //#endif
+                    ) {
                 return;
             }
             MinecraftServer server = CarpetServer.minecraft_server;
@@ -290,7 +297,7 @@ public class FGAExtension implements CarpetExtension {
     }
 
     private static void registerPlayerLoadDistanceObserver() {
-        //#if MC >= 1.21 && MC <= 1.21.11
+        //#if MC >= 1.21 && MC <= 26.2
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
             MinecraftServer server = CarpetServer.minecraft_server;
             //#if MC == 1.21.1
@@ -302,7 +309,11 @@ public class FGAExtension implements CarpetExtension {
                         net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(server.getPlayerList().getPlayers())));
             } else
             //#endif
-            if ("deepslateStonecuttingRecipes".equals(rule.name()) && server != null) {
+            if (("deepslateStonecuttingRecipes".equals(rule.name())
+                    //#if MC >= 1.21 && MC <= 26.2
+                    || "woodStonecuttingRecipes".equals(rule.name())
+                    //#endif
+                    ) && server != null) {
                 net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket packet =
                         new net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket(
                                 //#if MC >= 1.21.3

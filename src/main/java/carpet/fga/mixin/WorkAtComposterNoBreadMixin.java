@@ -24,7 +24,7 @@ public abstract class WorkAtComposterNoBreadMixin {
             //$$ ServerLevel level,
             //#endif
             Villager villager, CallbackInfo callback) {
-        if (FGASettings.farmerVillagersDoNotCraftBread) {
+        if (FGASettings.villagerDoNotCraftBread) {
             callback.cancel();
         }
     }

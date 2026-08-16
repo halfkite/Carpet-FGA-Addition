@@ -1,6 +1,6 @@
 # Carpet FGA Addition 规则
 
-> 文档版本：`1.4.8`
+> 文档版本：`1.4.10`
 
 所有规则通过 `/carpet <规则名> <值>` 管理。未特别说明时，规则默认关闭。
 
@@ -25,6 +25,7 @@
 | `terrainRegenerationCommandPermission` | 权限 | `ops` | `false`、`true`、`ops`、`0-4` | 1.21-26.2 | 控制 `/regenerateTerrain` 与 `/fga regenerateTerrain`，包括有破坏性的清除和重生成任务。 |
 | `fullShulkerBoxCrafting` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 使用服务器当前普通配方处理满潜影盒，支持多材料、标签、数据包配方、Shift/Q 补货和 AMS 54 格大潜影盒软兼容。 |
 | `spectatorFreeTeleport` | 布尔 | `false` | `false`、`true` | 1.21.1-1.21.5 | 允许非 OP 旁观者只传送自己。 |
+| `PlayerTpEndControl` | 枚举 | `false` | `false`、`true`、`control` | 1.21.1 | 控制玩家通过进入末地门、末地主岛出口和末地折跃门传送；`true` 全部阻止，`control` 使用 `/playertpend` 的个人设置，未设置默认允许，非玩家实体不受影响。 |
 | `clientDimensionIds` | 列表 | `[overworld,the_nether,the_end]` | 三个客户端维度 ID | 1.21.1+ | 修改客户端看到的维度 ID，不改变服务端维度。 |
 | `removeDialogWarning` | 布尔 | `false` | `false`、`true` | 1.21.8+ | 移除服务端发送的命令/对话框确认警告。 |
 | `restorePre26BeeCollisionBox` | 布尔 | `false` | `false`、`true` | 26.2 | 恢复 26.2 之前的蜜蜂碰撞箱。 |
@@ -35,7 +36,8 @@
 |---|---|---|---|---|---|
 | `villagerBreedingAnimalization` | 枚举 | `false` | `false`、`true`、`only` | 全版本 | 控制玩家直接喂养村民；`only` 只允许玩家喂养。 |
 | `babyMobNoGrowth` | 字符串 | `false` | `false`、`true`、`mini`、自定义名称 | 1.21-26.2 | `true` 阻止所有可成长幼体长大；`mini` 是同名名称模式预设；自定义值仅锁定完整自定义名称严格匹配且区分大小写的幼体，包括蝌蚪。 |
-| `farmerVillagersDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
+| `resilientPlants` | 字符串 | `false` | `false`、`true`、`[]`、方块 ID 列表 | 1.21.1 | `true` 让 `BushBlock` 植物忽略原版存活限制；列表可选择仙人掌、甘蔗、竹子、藤蔓和水生植物等受支持植物。 |
+| `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2（不含 1.21.3） | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
 | `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.20.1+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |
 | `hostileMobInventoryAccess` | 布尔 | `false` | `false`、`true` | 全版本 | 空手潜行右键敌对生物时打开其原版装备栏。 |
@@ -55,6 +57,7 @@
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
 |---|---|---|---|---|---|
 | `deepslateStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.17.1-1.21.11` | 让深板岩在切石机中的表现与 26.1+ 一样；只控制 FGA 新增配方，不过滤原版、数据包和模组配方。`1.16.5`、`26.1.2`、`26.2` 不注册该规则 |
+| `woodStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-26.2`（不含 1.21.3） | 允许使用切石机合成木制品；原木或菌柄可切出 4 个楼梯或 8 个台阶，木板可切出 1 个楼梯或 2 个台阶，竹马赛克台阶为 4 个、竹马赛克楼梯为 2 个；竹块、去皮竹块和 9 根竹子都可作为竹块配方的等价输入，木桶和箱子等配方按实际输入数量由服务端校验 |
 | `playerLoadDistance` | 权限字符串 | `false` | `false`、`true`、`ops`、`0-4` | `1.21.1` | 启用每名玩家独立的区块发送与跟踪覆盖，不改变模拟距离。`false` 时命令不可用 |
 | `trialSpawnerPlayerMultiplier` | 整数 | `100` | `1-10000` | `1.21-26.2` | 每名命中筛选的玩家按该人数参与普通与不祥试炼的刷怪和奖励规模，`1` 为原版 |
 | `trialSpawnerPlayerFilter` | 字符串 | `false` | `false`、`true`、`bot_`、自定义前缀 | `1.21-26.2` | `false` 关闭多倍；`true` 匹配所有玩家；其他值按玩家名称区分大小写的前缀匹配，`bot_` 是预选项 |
@@ -72,7 +75,7 @@
 
 | 规则 | 类型 | 默认值 | 可选值 | 说明 |
 |---|---|---|---|---|
-| `fakePlayerItemSort` | 布尔 | `false` | `false`、`true` | 启用假人全物品分类核心，模式、白名单、潜影盒和语言由 `/fakePlayerItemSort` 管理；补货、重构、磁盘缓存、网页和线程参数仅在 `1.21.1` 启用。 |
+| `fakePlayerItemSort` | 布尔 | `false` | `false`、`true` | `1.21-26.2`（不含 1.21.3） | 启用假人全物品分类核心，模式、白名单、潜影盒和语言由 `/fakePlayerItemSort` 管理；补货、重构、磁盘缓存、网页和线程参数仅在 `1.21.1` 启用。 |
 
 分类配置保存在 `world/config/carpetfgaaddition/fake-player-item-sort.json`。`/fakePlayerItemSort mode summon` 使用在线 Carpet 假人，`mode quickopen` 直接读写离线 playerdata。旧版 `fakePlayerItemSort*` Carpet 配置只在首次启动时迁移到该 JSON，不再注册为规则。
 

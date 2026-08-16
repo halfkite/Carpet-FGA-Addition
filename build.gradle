@@ -51,8 +51,14 @@ preprocess {
 
 def archiveTimestamp = new Date().format('yyyyMMdd-HHmmss', TimeZone.getTimeZone('Asia/Shanghai'))
 
+def publishedVersionNames = [
+        '1.21', '1.21.1', '1.21.4', '1.21.5', '1.21.8',
+        '1.21.10', '1.21.11', '26.1.2', '26.2'
+]
+def publishedVersionProjects = subprojects.findAll { publishedVersionNames.contains(it.name) }
+
 tasks.register('buildAllVersions') {
-    dependsOn subprojects.collect { it.tasks.named('build') }
+    dependsOn publishedVersionProjects.collect { it.tasks.named('build') }
     doLast {
         def archiveDir = layout.buildDirectory.dir("libs/${archiveTimestamp}").get().asFile
         if (archiveDir.exists()) {
@@ -61,7 +67,7 @@ tasks.register('buildAllVersions') {
         if (!archiveDir.mkdirs()) {
             throw new GradleException("无法创建构建归档目录：${archiveDir}")
         }
-        subprojects.each { versionProject ->
+        publishedVersionProjects.each { versionProject ->
             def artifactTask = versionProject.mcVersion >= 26_00_00
                     ? versionProject.tasks.named('jar').get()
                     : versionProject.tasks.named('remapJar').get()

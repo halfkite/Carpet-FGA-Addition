@@ -67,7 +67,7 @@ processResources {
         filter { line -> line.replace('{{COMPATIBILITY_LEVEL}}', properties.compatibility_level) }
     }
     doLast {
-        if (mcVersion < 1_17_00 || mcVersion >= 26_01_00) return
+        if (mcVersion < 1_17_00) return
 
         def recipeDirectory = destinationDir.toPath().resolve(
                 mcVersion >= 1_21_00 ? 'data/carpet-fga-addition/recipe' : 'data/carpet-fga-addition/recipes')
@@ -91,18 +91,101 @@ processResources {
                 polished_deepslate_stairs: 1,
                 polished_deepslate_wall: 1
         ]
-        outputs.each { output, count ->
-            def ingredient = mcVersion >= 1_21_02
-                    ? '"minecraft:deepslate"'
-                    : '{"item":"minecraft:deepslate"}'
-            def recipe = mcVersion >= 1_20_05
-                    ? [type: 'minecraft:stonecutting', ingredient: new groovy.json.JsonSlurper().parseText(ingredient),
-                       result: [id: "minecraft:${output}", count: count]]
-                    : [type: 'minecraft:stonecutting', ingredient: [item: 'minecraft:deepslate'],
-                       result: "minecraft:${output}", count: count]
-            def target = recipeDirectory.resolve("${output}_from_deepslate_stonecutting.json")
-            java.nio.file.Files.writeString(target,
-                    groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(recipe)) + System.lineSeparator())
+        if (mcVersion < 26_01_00) {
+            outputs.each { output, count ->
+                def ingredient = mcVersion >= 1_21_02
+                        ? '"minecraft:deepslate"'
+                        : '{"item":"minecraft:deepslate"}'
+                def recipe = mcVersion >= 1_20_05
+                        ? [type: 'minecraft:stonecutting', ingredient: new groovy.json.JsonSlurper().parseText(ingredient),
+                           result: [id: "minecraft:${output}", count: count]]
+                        : [type: 'minecraft:stonecutting', ingredient: [item: 'minecraft:deepslate'],
+                           result: "minecraft:${output}", count: count]
+                def target = recipeDirectory.resolve("${output}_from_deepslate_stonecutting.json")
+                java.nio.file.Files.writeString(target,
+                        groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(recipe)) + System.lineSeparator())
+            }
+        }
+
+        if (mcVersion >= 1_21_00 && mcVersion <= 26_02_00 && mcVersion != 1_21_03) {
+            def woodFamilies = [
+                    oak: [inputs: ['oak_log', 'oak_wood', 'stripped_oak_log', 'stripped_oak_wood'], planks: 'oak_planks', button: 'oak_button', stairs: 'oak_stairs', slab: 'oak_slab', pressure: 'oak_pressure_plate', sign: 'oak_sign', trapdoor: 'oak_trapdoor', door: 'oak_door', fence: 'oak_fence', gate: 'oak_fence_gate', boat: 'oak_boat'],
+                    spruce: [inputs: ['spruce_log', 'spruce_wood', 'stripped_spruce_log', 'stripped_spruce_wood'], planks: 'spruce_planks', button: 'spruce_button', stairs: 'spruce_stairs', slab: 'spruce_slab', pressure: 'spruce_pressure_plate', sign: 'spruce_sign', trapdoor: 'spruce_trapdoor', door: 'spruce_door', fence: 'spruce_fence', gate: 'spruce_fence_gate', boat: 'spruce_boat'],
+                    birch: [inputs: ['birch_log', 'birch_wood', 'stripped_birch_log', 'stripped_birch_wood'], planks: 'birch_planks', button: 'birch_button', stairs: 'birch_stairs', slab: 'birch_slab', pressure: 'birch_pressure_plate', sign: 'birch_sign', trapdoor: 'birch_trapdoor', door: 'birch_door', fence: 'birch_fence', gate: 'birch_fence_gate', boat: 'birch_boat'],
+                    jungle: [inputs: ['jungle_log', 'jungle_wood', 'stripped_jungle_log', 'stripped_jungle_wood'], planks: 'jungle_planks', button: 'jungle_button', stairs: 'jungle_stairs', slab: 'jungle_slab', pressure: 'jungle_pressure_plate', sign: 'jungle_sign', trapdoor: 'jungle_trapdoor', door: 'jungle_door', fence: 'jungle_fence', gate: 'jungle_fence_gate', boat: 'jungle_boat'],
+                    acacia: [inputs: ['acacia_log', 'acacia_wood', 'stripped_acacia_log', 'stripped_acacia_wood'], planks: 'acacia_planks', button: 'acacia_button', stairs: 'acacia_stairs', slab: 'acacia_slab', pressure: 'acacia_pressure_plate', sign: 'acacia_sign', trapdoor: 'acacia_trapdoor', door: 'acacia_door', fence: 'acacia_fence', gate: 'acacia_fence_gate', boat: 'acacia_boat'],
+                    dark_oak: [inputs: ['dark_oak_log', 'dark_oak_wood', 'stripped_dark_oak_log', 'stripped_dark_oak_wood'], planks: 'dark_oak_planks', button: 'dark_oak_button', stairs: 'dark_oak_stairs', slab: 'dark_oak_slab', pressure: 'dark_oak_pressure_plate', sign: 'dark_oak_sign', trapdoor: 'dark_oak_trapdoor', door: 'dark_oak_door', fence: 'dark_oak_fence', gate: 'dark_oak_fence_gate', boat: 'dark_oak_boat'],
+                    mangrove: [inputs: ['mangrove_log', 'mangrove_wood', 'stripped_mangrove_log', 'stripped_mangrove_wood'], planks: 'mangrove_planks', button: 'mangrove_button', stairs: 'mangrove_stairs', slab: 'mangrove_slab', pressure: 'mangrove_pressure_plate', sign: 'mangrove_sign', trapdoor: 'mangrove_trapdoor', door: 'mangrove_door', fence: 'mangrove_fence', gate: 'mangrove_fence_gate', boat: 'mangrove_boat'],
+                    cherry: [inputs: ['cherry_log', 'cherry_wood', 'stripped_cherry_log', 'stripped_cherry_wood'], planks: 'cherry_planks', button: 'cherry_button', stairs: 'cherry_stairs', slab: 'cherry_slab', pressure: 'cherry_pressure_plate', sign: 'cherry_sign', trapdoor: 'cherry_trapdoor', door: 'cherry_door', fence: 'cherry_fence', gate: 'cherry_fence_gate', boat: 'cherry_boat'],
+                    pale_oak: [inputs: ['pale_oak_log', 'pale_oak_wood', 'stripped_pale_oak_log', 'stripped_pale_oak_wood'], planks: 'pale_oak_planks', button: 'pale_oak_button', stairs: 'pale_oak_stairs', slab: 'pale_oak_slab', pressure: 'pale_oak_pressure_plate', sign: 'pale_oak_sign', trapdoor: 'pale_oak_trapdoor', door: 'pale_oak_door', fence: 'pale_oak_fence', gate: 'pale_oak_fence_gate', boat: 'pale_oak_boat'],
+                    bamboo: [inputs: ['bamboo_block', 'stripped_bamboo_block'], planks: 'bamboo_planks', button: 'bamboo_button', stairs: 'bamboo_stairs', slab: 'bamboo_slab', pressure: 'bamboo_pressure_plate', sign: 'bamboo_sign', trapdoor: 'bamboo_trapdoor', door: 'bamboo_door', fence: 'bamboo_fence', gate: 'bamboo_fence_gate', raft: 'bamboo_raft', mosaic: 'bamboo_mosaic', mosaic_slab: 'bamboo_mosaic_slab', mosaic_stairs: 'bamboo_mosaic_stairs'],
+                    crimson: [inputs: ['crimson_stem', 'crimson_hyphae', 'stripped_crimson_stem', 'stripped_crimson_hyphae'], planks: 'crimson_planks', button: 'crimson_button', stairs: 'crimson_stairs', slab: 'crimson_slab', pressure: 'crimson_pressure_plate', sign: 'crimson_sign', trapdoor: 'crimson_trapdoor', door: 'crimson_door', fence: 'crimson_fence', gate: 'crimson_fence_gate'],
+                    warped: [inputs: ['warped_stem', 'warped_hyphae', 'stripped_warped_stem', 'stripped_warped_hyphae'], planks: 'warped_planks', button: 'warped_button', stairs: 'warped_stairs', slab: 'warped_slab', pressure: 'warped_pressure_plate', sign: 'warped_sign', trapdoor: 'warped_trapdoor', door: 'warped_door', fence: 'warped_fence', gate: 'warped_fence_gate']
+            ]
+
+            def writeWoodRecipe = { String input, String output, int count ->
+                def ingredient = mcVersion >= 1_21_02
+                        ? "minecraft:${input}"
+                        : [item: "minecraft:${input}"]
+                def recipe = [type: 'minecraft:stonecutting', ingredient: ingredient,
+                              result: [id: "minecraft:${output}", count: count]]
+                def target = recipeDirectory.resolve("${input}_to_${output}_from_wood_stonecutting.json")
+                java.nio.file.Files.writeString(target,
+                        groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(recipe)) + System.lineSeparator())
+            }
+
+            woodFamilies.each { family, definition ->
+                definition.inputs.eachWithIndex { String input, int index ->
+                    if (index == 0 && !['bamboo', 'crimson', 'warped'].contains(family)) {
+                        writeWoodRecipe(input, "stripped_${family}_log", 1)
+                    }
+                    if (index == 1 && !['bamboo', 'crimson', 'warped'].contains(family)) {
+                        writeWoodRecipe(input, "stripped_${family}_wood", 1)
+                    }
+                    if (family in ['crimson', 'warped']) {
+                        if (index == 0) writeWoodRecipe(input, "stripped_${family}_stem", 1)
+                        if (index == 1) writeWoodRecipe(input, "stripped_${family}_hyphae", 1)
+                    }
+                    if (definition.inputs.size() == 4 && index == 0) {
+                        writeWoodRecipe(input, definition.inputs[3], 1)
+                    }
+                    if (definition.inputs.size() == 4 && index == 1) {
+                        writeWoodRecipe(input, definition.inputs[2], 1)
+                    }
+
+                    if (index == 0) writeWoodRecipe(input, definition.inputs[1], 1)
+                    if (index == 1) writeWoodRecipe(input, definition.inputs[0], 1)
+                    if (index == 2) writeWoodRecipe(input, definition.inputs[3], 1)
+                    if (index == 3) writeWoodRecipe(input, definition.inputs[2], 1)
+
+                    boolean baseLogInput = index == 0
+                    def products = family == 'bamboo' ? [
+                            [definition.planks, 2], [definition.button, 2], [definition.stairs, 2],
+                            [definition.slab, 4], ['stick', 8], [definition.pressure, 1],
+                            [definition.sign, 1], [definition.trapdoor, 1], [definition.door, 1],
+                            [definition.fence, 1], [definition.gate, 1], ['crafting_table', 1],
+                            ['barrel', 1], ['chest', 1], ['bowl', 5]
+                    ] : [
+                            [definition.planks, 4], [definition.button, 4], [definition.stairs, baseLogInput ? 4 : 1],
+                            [definition.slab, baseLogInput ? 8 : 2], ['stick', 16], [definition.pressure, 2],
+                            [definition.sign, 2], [definition.trapdoor, 2], [definition.door, 2],
+                            [definition.fence, 2], [definition.gate, 1], ['crafting_table', 1],
+                            ['barrel', 1], ['chest', 1], ['bowl', 5]
+                    ]
+                    if (definition.boat != null) products << [definition.boat, 1]
+                    if (definition.raft != null) products << [definition.raft, 1]
+                    if (definition.mosaic != null) products << [definition.mosaic, family == 'bamboo' ? 2 : 1]
+                    if (definition.mosaic_slab != null) products << [definition.mosaic_slab, 4]
+                    if (definition.mosaic_stairs != null) products << [definition.mosaic_stairs, 2]
+                    products.each { output, count -> writeWoodRecipe(input, output, count as int) }
+                    if (family == 'bamboo' && index == 0) {
+                        products.each { output, count -> writeWoodRecipe('bamboo', output, count as int) }
+                    }
+                }
+                writeWoodRecipe(definition.planks, definition.stairs, 1)
+                writeWoodRecipe(definition.planks, definition.slab, 2)
+                if (family == 'bamboo') writeWoodRecipe('bamboo', 'bamboo_block', 1)
+            }
         }
     }
 }

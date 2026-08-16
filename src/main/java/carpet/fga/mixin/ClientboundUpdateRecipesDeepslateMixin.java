@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 1.21.11
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
@@ -33,11 +33,10 @@ public abstract class ClientboundUpdateRecipesDeepslateMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void carpetFga$filterDisabledRecipes(CallbackInfo callback) {
-        if (FGASettings.deepslateStonecuttingRecipes) return;
         //#if MC >= 1.21.3
         //$$ stonecutterRecipes = DeepslateStonecuttingRecipes.filter(stonecutterRecipes);
         //#else
-        recipes = recipes.stream().filter(recipe -> !DeepslateStonecuttingRecipes.isFgaRecipe(recipe)).toList();
+        recipes = recipes.stream().filter(recipe -> !DeepslateStonecuttingRecipes.isDisabledFgaRecipe(recipe)).toList();
         //#endif
     }
 }
