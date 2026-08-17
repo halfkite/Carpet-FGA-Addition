@@ -58,6 +58,8 @@
         //#endif
         //#if MC == 1.21.1
         ,"ResilientPlantBlockStateMixin",
+        "ComparatorBlockThroughBlocksMixin",
+        "LevelComparatorThroughBlocksMixin",
         "EndPortalPlayerTpControlMixin",
         "EndGatewayPlayerTpControlMixin"
         //#endif
