@@ -3,6 +3,9 @@ package carpet.fga.mixin;
 
 import carpet.fga.FGAModDetector;
 import carpet.fga.FGAPayloads;
+//#if MC >= 1.21 && MC <= 1.21.1
+import carpet.fga.QuickCraftEntityPlacementServer;
+//#endif
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
@@ -27,6 +30,18 @@ public abstract class ServerGamePacketListenerImplMixin {
             cancellable = true
     )
     private void handleHandshake(ServerboundCustomPayloadPacket packet, CallbackInfo ci) {
+        //#if MC >= 1.21 && MC <= 1.21.1
+        if (packet.payload() instanceof FGAPayloads.EntityPlaceHelloPayload payload) {
+            QuickCraftEntityPlacementServer.handleHello(player, payload);
+            ci.cancel();
+            return;
+        }
+        if (packet.payload() instanceof FGAPayloads.EntityPlaceRequestPayload payload) {
+            QuickCraftEntityPlacementServer.handleRequest(player, payload);
+            ci.cancel();
+            return;
+        }
+        //#endif
         if (packet.payload() instanceof FGAPayloads.HandshakePayload) {
             FGAModDetector.markAsModded(player);
             List<ServerPlayer> longNamePlayers = ((ServerCommonPacketListenerAccessor) this).carpetFga$getServer()
