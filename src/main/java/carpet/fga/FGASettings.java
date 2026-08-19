@@ -45,7 +45,7 @@ public class FGASettings {
     /** FGA 自定义分类，会出现在 /carpet 菜单中作为可点击选项 */
     public static final String FGA = "FGA";
 
-    //#if MC >= 1.21 && MC <= 1.21.1
+    //#if MC >= 1.21 && MC <= 26.2
     @Rule(
         desc = "允许 QuickCraft 客户端通过服务端校验放置投影实体并扣除材料",
         category = {FGA, FEATURE},

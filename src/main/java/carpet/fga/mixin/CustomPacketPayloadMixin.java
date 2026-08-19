@@ -29,16 +29,6 @@ public interface CustomPacketPayloadMixin {
         @SuppressWarnings({"rawtypes", "unchecked"})
         List rawCodecs = extendedCodecs;
         addCodec(rawCodecs, codecs, FGAPayloads.HandshakePayload.TYPE, FGAPayloads.HandshakePayload.STREAM_CODEC);
-        //#if MC >= 1.21 && MC <= 1.21.1
-        addCodec(rawCodecs, codecs, FGAPayloads.EntityPlaceHelloPayload.TYPE,
-                FGAPayloads.EntityPlaceHelloPayload.STREAM_CODEC);
-        addCodec(rawCodecs, codecs, FGAPayloads.EntityPlaceCapabilityPayload.TYPE,
-                FGAPayloads.EntityPlaceCapabilityPayload.STREAM_CODEC);
-        addCodec(rawCodecs, codecs, FGAPayloads.EntityPlaceRequestPayload.TYPE,
-                FGAPayloads.EntityPlaceRequestPayload.STREAM_CODEC);
-        addCodec(rawCodecs, codecs, FGAPayloads.EntityPlaceResultPayload.TYPE,
-                FGAPayloads.EntityPlaceResultPayload.STREAM_CODEC);
-        //#endif
         return extendedCodecs;
     }
 
