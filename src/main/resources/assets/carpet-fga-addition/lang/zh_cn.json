@@ -1,5 +1,7 @@
 ﻿{
     "carpet.category.FGA":  "FGA",
+    "carpet.rule.quickCraftEasyPlaceEntities.name":  "轻松放置实体",
+    "carpet.rule.quickCraftEasyPlaceEntities.desc":  "允许 QuickCraft 客户端请求放置投影实体；服务端负责校验距离、实体数据和材料，并在成功生成时扣除材料。",
     "carpet.rule.fakePlayerNameLength.name":  "假人名字最大长度",
     "carpet.rule.fakePlayerNameLength.desc":  "设置假人玩家名字的最大字符长度（1-128），超过 16 字符的名字会以兼容别名发送给客户端，无需客户端安装模组。",
     "carpet.rule.fakePlayerRangeControl.name":  "假人范围控制",

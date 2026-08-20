@@ -1,5 +1,7 @@
 {
     "carpet.category.FGA":  "FGA",
+    "carpet.rule.quickCraftEasyPlaceEntities.name":  "QuickCraft Easy Place Entities",
+    "carpet.rule.quickCraftEasyPlaceEntities.desc":  "Allows QuickCraft clients to request schematic entity placement. The server validates reach, entity data, and materials before consuming materials and spawning the entity.",
     "carpet.rule.fakePlayerNameLength.name":  "Fake Player Name Length",
     "carpet.rule.fakePlayerNameLength.desc":  "Sets the maximum fake-player name length from 1 to 128. Long names use a client-compatible network alias.",
     "carpet.rule.fakePlayerRangeControl.name":  "Fake Player Range Control",
