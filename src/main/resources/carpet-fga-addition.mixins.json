@@ -61,7 +61,10 @@
         "ComparatorBlockThroughBlocksMixin",
         "LevelComparatorThroughBlocksMixin",
         "EndPortalPlayerTpControlMixin",
-        "EndGatewayPlayerTpControlMixin"
+        "EndGatewayPlayerTpControlMixin",
+        "ShulkerBedrockRespawnMixin",
+        "ShulkerAttackArmorStandMixin",
+        "ShulkerBedrockLootingMixin"
         //#endif
         //#if MC >= 1.21 && MC <= 26.2
         ,"StonecutterMenuWoodInputMixin",

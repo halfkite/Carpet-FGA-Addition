@@ -1,0 +1,31 @@
+name: Gradle build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      target_subproject:
+        description: 'Minecraft version to build, or all'
+        required: false
+        type: choice
+        default: all
+        options:
+          - all
+          - '1.21'
+          - '1.21.1'
+          - '1.21.4'
+          - '1.21.5'
+          - '1.21.8'
+          - '1.21.10'
+          - '1.21.11'
+          - '26.1.2'
+          - '26.2'
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      target_subproject: ${{ inputs.target_subproject || 'all' }}

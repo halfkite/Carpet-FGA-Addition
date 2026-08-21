@@ -1,0 +1,183 @@
+name: Release Carpet FGA Addition
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'New release tag, for example 1.4.10'
+        required: true
+        type: string
+      target_subproject:
+        description: 'Minecraft version to publish, or all'
+        required: false
+        type: choice
+        default: all
+        options:
+          - all
+          - '1.21'
+          - '1.21.1'
+          - '1.21.4'
+          - '1.21.5'
+          - '1.21.8'
+          - '1.21.10'
+          - '1.21.11'
+          - '26.1.2'
+          - '26.2'
+      previous_tag:
+        description: 'Previous tag for the changelog; leave empty to detect it'
+        required: false
+        type: string
+      release_type:
+        description: 'Formal release removes the build timestamp from the JAR name; beta keeps it'
+        required: false
+        type: choice
+        default: release
+        options:
+          - release
+          - beta
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag }}
+  RELEASE_TYPE: ${{ inputs.release_type }}
+
+jobs:
+  build:
+    name: Build release artifacts
+    uses: ./.github/workflows/build.yml
+    with:
+      target_subproject: ${{ inputs.target_subproject || 'all' }}
+      ref: ${{ github.sha }}
+
+  prepare:
+    name: Create release and changelog
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate short changelog
+        env:
+          PREVIOUS_TAG: ${{ inputs.previous_tag }}
+        run: |
+          set -euo pipefail
+          args=(--head "$GITHUB_SHA" --tag "$RELEASE_TAG" --output RELEASE_NOTES.md)
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            args+=(--previous-tag "$PREVIOUS_TAG")
+          fi
+          python scripts/python/release_notes.py "${args[@]}"
+
+      - name: Create tag and GitHub Release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git show-ref --tags --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            echo "Tag already exists: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          git tag -a "$RELEASE_TAG" "$GITHUB_SHA" -m "Release $RELEASE_TAG"
+          git push origin "$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" \
+            --target "$GITHUB_SHA" \
+            --title "Carpet FGA Addition $RELEASE_TAG" \
+            --notes-file RELEASE_NOTES.md
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Publish Minecraft ${{ matrix.mc_version }}
+    needs: [prepare, build]
+    if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mc_version:
+          - '1.21'
+          - '1.21.1'
+          - '1.21.4'
+          - '1.21.5'
+          - '1.21.8'
+          - '1.21.10'
+          - '1.21.11'
+          - '26.1.2'
+          - '26.2'
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ matrix.mc_version }}
+          path: release-assets/${{ matrix.mc_version }}
+
+      - name: Read artifact metadata
+        id: artifact
+        shell: pwsh
+        env:
+          MC_VERSION: ${{ matrix.mc_version }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = Join-Path 'release-assets' $env:MC_VERSION
+          $source = @(Get-ChildItem $dir -Filter '*.jar')
+          if ($source.Count -ne 1) {
+            throw "Expected exactly one downloaded JAR for $env:MC_VERSION, found $($source.Count)"
+          }
+
+          if ($env:RELEASE_TYPE -eq 'release') {
+            $publishedName = "carpet-fga-addition-$env:RELEASE_TAG-mc$env:MC_VERSION.jar"
+            $publishedPath = Join-Path $dir $publishedName
+            Move-Item $source[0].FullName $publishedPath
+          } else {
+            $publishedPath = $source[0].FullName
+            $publishedName = $source[0].Name
+          }
+
+          $sha = (Get-FileHash $publishedPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $shaPath = Join-Path $dir "SHA-256-$env:MC_VERSION.txt"
+          "$sha  $publishedName" | Set-Content -Path $shaPath -Encoding utf8
+          $manifestPath = Join-Path $dir "build-manifest-$env:MC_VERSION.json"
+          $manifest = [ordered]@{
+            mod = 'carpet-fga-addition'
+            release_tag = $env:RELEASE_TAG
+            release_type = $env:RELEASE_TYPE
+            minecraft_version = $env:MC_VERSION
+            artifact = $publishedName
+            sha256 = $sha
+          }
+          $manifest | ConvertTo-Json | Set-Content -Path $manifestPath -Encoding utf8
+          "jar=$publishedPath" >> $env:GITHUB_OUTPUT
+          "version=$env:RELEASE_TAG-mc$env:MC_VERSION" >> $env:GITHUB_OUTPUT
+
+      - name: Publish to Modrinth and CurseForge
+        uses: Kira-NT/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID || 'carpet-fga-addition' }}
+          modrinth-token: ${{ secrets.MODRINTH_API_TOKEN }}
+          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          github-token: ${{ github.token }}
+          files: ${{ steps.artifact.outputs.jar }}
+          name: Carpet FGA Addition ${{ inputs.release_tag }} for Minecraft ${{ matrix.mc_version }}
+          version: ${{ steps.artifact.outputs.version }}
+          version-type: ${{ inputs.release_type }}
+          loaders: fabric
+          game-versions: ${{ matrix.mc_version }}
+
+      - name: Attach checksums and manifest to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ needs.prepare.outputs.release_tag }}" \
+            "release-assets/${{ matrix.mc_version }}/SHA-256-${{ matrix.mc_version }}.txt" \
+            "release-assets/${{ matrix.mc_version }}/build-manifest-${{ matrix.mc_version }}.json" \
+            --clobber

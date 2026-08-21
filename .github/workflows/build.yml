@@ -1,0 +1,129 @@
+name: Build supported versions
+
+on:
+  workflow_call:
+    inputs:
+      target_subproject:
+        description: 'Minecraft version to build, or all'
+        required: false
+        type: string
+        default: all
+      ref:
+        description: 'Git ref to build'
+        required: false
+        type: string
+        default: ''
+  workflow_dispatch:
+    inputs:
+      target_subproject:
+        description: 'Minecraft version to build, or all'
+        required: false
+        type: choice
+        default: all
+        options:
+          - all
+          - '1.21'
+          - '1.21.1'
+          - '1.21.4'
+          - '1.21.5'
+          - '1.21.8'
+          - '1.21.10'
+          - '1.21.11'
+          - '26.1.2'
+          - '26.2'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Minecraft ${{ matrix.mc_version }}
+    if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mc_version: '1.21'
+            java: '21'
+          - mc_version: '1.21.1'
+            java: '21'
+          - mc_version: '1.21.4'
+            java: '21'
+          - mc_version: '1.21.5'
+            java: '21'
+          - mc_version: '1.21.8'
+            java: '21'
+          - mc_version: '1.21.10'
+            java: '21'
+          - mc_version: '1.21.11'
+            java: '21'
+          - mc_version: '26.1.2'
+            java: '25'
+          - mc_version: '26.2'
+            java: '25'
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Java ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build ${{ matrix.mc_version }}
+        shell: bash
+        run: ./gradlew :${{ matrix.mc_version }}:build --no-daemon
+
+      - name: Collect artifact metadata
+        id: artifact
+        shell: pwsh
+        env:
+          MC_VERSION: ${{ matrix.mc_version }}
+          GIT_COMMIT: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $buildDir = Join-Path 'versions' $env:MC_VERSION
+          $jarFiles = @(Get-ChildItem (Join-Path $buildDir 'build/libs') -Filter '*.jar' |
+            Where-Object { $_.Name -notmatch '(-dev|-sources|-javadoc)\.jar$' })
+          if ($jarFiles.Count -ne 1) {
+            throw "Expected exactly one distributable JAR for $env:MC_VERSION, found $($jarFiles.Count)"
+          }
+
+          $outDir = Join-Path 'release-assets' $env:MC_VERSION
+          New-Item -ItemType Directory -Force $outDir | Out-Null
+          $jar = $jarFiles[0]
+          $copiedJar = Join-Path $outDir $jar.Name
+          Copy-Item $jar.FullName $copiedJar
+          $sha = (Get-FileHash $copiedJar -Algorithm SHA256).Hash.ToLowerInvariant()
+          $shaFile = Join-Path $outDir "SHA-256-$env:MC_VERSION.txt"
+          "$sha  $($jar.Name)" | Set-Content -Path $shaFile -Encoding utf8
+
+          $manifest = [ordered]@{
+            mod = 'carpet-fga-addition'
+            minecraft_version = $env:MC_VERSION
+            artifact = $jar.Name
+            sha256 = $sha
+            commit = $env:GIT_COMMIT
+            build_command = "./gradlew :$env:MC_VERSION`:build --no-daemon"
+            workflow = $env:GITHUB_WORKFLOW
+            run_id = $env:GITHUB_RUN_ID
+          }
+          $manifest | ConvertTo-Json | Set-Content -Path (Join-Path $outDir "build-manifest-$env:MC_VERSION.json") -Encoding utf8
+          "artifact=$($jar.Name)" >> $env:GITHUB_OUTPUT
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.mc_version }}
+          path: release-assets/${{ matrix.mc_version }}
+          if-no-files-found: error
+          retention-days: 14
