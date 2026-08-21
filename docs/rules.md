@@ -1,6 +1,6 @@
 # Carpet FGA Addition 规则
 
-> 文档版本：`1.4.10`
+> 文档版本：`1.5.0`
 
 所有规则通过 `/carpet <规则名> <值>` 管理。未特别说明时，规则默认关闭。
 
@@ -14,8 +14,8 @@
 | `wanderingTraderNoDespawn` | 枚举 | `false` | `false`、`true`、`controlled` | 1.16.5-26.1.2 | 控制流浪商人自然消失；`controlled` 只保护命中名单的名称或脚下方块。 |
 | `fakePlayerProfilePreload` | 枚举 | `false` | `false`、`always`、`adaptive` | 1.21.1 | 异步预加载假人档案，减少召唤时的阻塞。 |
 | `fgaUnicodeArgumentsSupport` | 布尔 | `false` | `false`、`true` | 全版本 | 允许未加引号的命令参数包含中文和其他 Unicode 字符。 |
-| `recipeBookAlwaysUnlocked` | 布尔 | `false` | `false`、`true` | 1.16.5+ | 保持配方书解锁，不保存每名玩家的逐条配方解锁进度。 |
-| `playerHealthDisplay` | 枚举 | `true` | `true`、`false`、`nofake` | 1.16.5+ | 只在多人游戏列表最右侧显示生命值；不创建计分板或头顶显示。 |
+| `recipeBookAlwaysUnlocked` | 布尔 | `false` | `false`、`true` | 1.16.5+ | 玩家进入服务器时自动获得全部已注册配方，每名玩家自动发放冷却一分钟；同时保留已保存的配方解锁进度，不会清空配方数据。 |
+| `playerHealthDisplay` | 枚举 | `false` | `true`、`false`、`nofake` | 1.16.5+ | 只在多人游戏列表最右侧显示生命值；不创建计分板或头顶显示。默认关闭，可通过 `/carpet playerHealthDisplay true` 开启。 |
 | `itemFrameBlockification` | 布尔 | `false` | `false`、`true` | 1.21.1 | 将普通与荧光展示框移出服务端实体 tick 调度，改为支撑方块变化时验证；保留原版客户端显示、交互、掉落、地图和比较器行为。 |
 | `fireworkMinecartBoost` | 布尔 | `false` | `false`、`true` | 1.21.1 | 玩家乘坐普通矿车时可使用烟花火箭，以配置速度满速运行并在结束后线性减速。 |
 | `chainMinecartBinding` | 布尔 | `false` | `false`、`true` | 1.21.1 | 使用锁链依次右击两辆普通矿车，将其连接为持久保存的线性列车。 |
@@ -41,6 +41,8 @@
 | `shulkerBedrockDuplication` | 布尔 | `false` | `false`、`true` | 1.21.1 | 潜影贝被潜影贝子弹（自己的或其它潜影贝的）击杀时，必定在原地重新生成一只潜影贝，移植基岩版行为。 |
 | `shulkerBedrockLooting` | 布尔 | `false` | `false`、`true` | 1.21.1 | 潜影壳掉落同步基岩版：固定 50% 概率掉落，掉落时均匀掉落 1 至 1+抢夺等级 个潜影壳。 |
 | `shulkerAttackArmorStand` | 枚举 | `false` | `false`、`true`、`pumpkin` | 1.21.1 | 允许潜影贝瞄准并射击盔甲架；`true` 攻击所有盔甲架，`pumpkin` 仅攻击头戴雕刻南瓜的盔甲架。 |
+| `anvilNoPriorWorkPenalty` | 布尔 | `false` | `false`、`true` | 1.21.1 | 取消铁砧重复工作惩罚和 40 级“过于昂贵”限制；保留附魔冲突检查、材料消耗和正常附魔合并费用。 |
+| `experienceLevelCost` | 字符串 | `false` | `false`、`29-30`、`0-1` | 1.21.1 | 扁平化升级经验消耗。`29-30` 模式在 30 级及以后固定使用 29 到 30 的 107 点经验；`0-1` 模式所有等级固定使用 0 到 1 的 7 点经验。 |
 | `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2（不含 1.21.3） | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
 | `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.20.1+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |

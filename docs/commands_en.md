@@ -1,6 +1,6 @@
 # Carpet FGA Addition Commands
 
-> Documentation version: `1.4.10`
+> Documentation version: `1.5.0`
 
 ## Command index
 

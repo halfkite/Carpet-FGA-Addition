@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -91,7 +91,12 @@ public final class ResilientPlants {
             if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
                 throw new IllegalArgumentException("unknown block id: " + entry);
             }
-            Block block = BuiltInRegistries.BLOCK.get(id);
+            Block block =
+                    //#if MC >= 1.21.2
+                    //$$ BuiltInRegistries.BLOCK.getValue(id);
+                    //#else
+                    BuiltInRegistries.BLOCK.get(id);
+                    //#endif
             if (!isCandidate(block, id)) {
                 throw new IllegalArgumentException("block is not a supported plant candidate: " + id);
             }

@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
@@ -14,6 +14,9 @@ import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+//#if MC >= 1.21.3
+//$$ import net.minecraft.server.level.ServerLevel;
+//#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -33,7 +36,12 @@ public abstract class ShulkerAttackArmorStandMixin extends Mob {
 
     static final class CarpetFgaArmorStandTargetGoal extends NearestAttackableTargetGoal<ArmorStand> {
         CarpetFgaArmorStandTargetGoal(Shulker shulker) {
-            super(shulker, ArmorStand.class, 10, true, false, CarpetFgaArmorStandTargetGoal::carpetFga$isEligible);
+            super(shulker, ArmorStand.class, 10, true, false,
+                    //#if MC >= 1.21.3
+                    //$$ CarpetFgaArmorStandTargetGoal::carpetFga$isEligibleWithLevel);
+                    //#else
+                    CarpetFgaArmorStandTargetGoal::carpetFga$isEligible);
+                    //#endif
         }
 
         private static boolean carpetFga$isEligible(LivingEntity target) {
@@ -43,6 +51,12 @@ public abstract class ShulkerAttackArmorStandMixin extends Mob {
             }
             return "true".equals(rule);
         }
+
+        //#if MC >= 1.21.3
+        //$$ private static boolean carpetFga$isEligibleWithLevel(LivingEntity target, ServerLevel ignored) {
+        //$$     return carpetFga$isEligible(target);
+        //$$ }
+        //#endif
 
         @Override
         public boolean canUse() {

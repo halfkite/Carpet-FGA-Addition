@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.ComparatorThroughBlocks;
@@ -25,7 +25,11 @@ public abstract class ComparatorBlockThroughBlocksMixin {
         BlockPos outputPos = passthroughPos.relative(facing);
         BlockState outputState = level.getBlockState(outputPos);
         cir.setReturnValue(outputState.hasAnalogOutputSignal()
+                //#if MC >= 1.21.10
+                //$$ ? outputState.getAnalogOutputSignal(level, outputPos, facing.getOpposite())
+                //#else
                 ? outputState.getAnalogOutputSignal(level, outputPos)
+                //#endif
                 : 0);
     }
 }
