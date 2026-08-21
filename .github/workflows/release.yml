@@ -158,6 +158,7 @@ jobs:
           curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-token: ${{ github.token }}
+          github-tag: ${{ needs.prepare.outputs.release_tag }}
           files: ${{ steps.artifact.outputs.jar }}
           name: Carpet FGA Addition ${{ inputs.release_tag }} for Minecraft ${{ matrix.mc_version }}
           version: ${{ steps.artifact.outputs.version }}
