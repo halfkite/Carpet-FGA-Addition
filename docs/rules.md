@@ -37,6 +37,10 @@
 | `villagerBreedingAnimalization` | 枚举 | `false` | `false`、`true`、`only` | 全版本 | 控制玩家直接喂养村民；`only` 只允许玩家喂养。 |
 | `babyMobNoGrowth` | 字符串 | `false` | `false`、`true`、`mini`、自定义名称 | 1.21-26.2 | `true` 阻止所有可成长幼体长大；`mini` 是同名名称模式预设；自定义值仅锁定完整自定义名称严格匹配且区分大小写的幼体，包括蝌蚪。 |
 | `resilientPlants` | 字符串 | `false` | `false`、`true`、`[]`、方块 ID 列表 | 1.21.1 | `true` 让 `BushBlock` 植物忽略原版存活限制；列表可选择仙人掌、甘蔗、竹子、藤蔓和水生植物等受支持植物。 |
+| `comparatorThroughBlocks` | 方块列表 | `false` | `false`、`[chain]`、`[piston]`、`[chain,piston]`、自定义方块 ID 列表 | 1.21.1 | 允许比较器隔着配置的前方方块读取后一格容器的模拟信号，不改变方块本身红石行为。 |
+| `shulkerBedrockDuplication` | 布尔 | `false` | `false`、`true` | 1.21.1 | 潜影贝被潜影贝子弹（自己的或其它潜影贝的）击杀时，必定在原地重新生成一只潜影贝，移植基岩版行为。 |
+| `shulkerBedrockLooting` | 布尔 | `false` | `false`、`true` | 1.21.1 | 潜影壳掉落同步基岩版：固定 50% 概率掉落，掉落时均匀掉落 1 至 1+抢夺等级 个潜影壳。 |
+| `shulkerAttackArmorStand` | 枚举 | `false` | `false`、`true`、`pumpkin` | 1.21.1 | 允许潜影贝瞄准并射击盔甲架；`true` 攻击所有盔甲架，`pumpkin` 仅攻击头戴雕刻南瓜的盔甲架。 |
 | `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2（不含 1.21.3） | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
 | `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.20.1+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |
@@ -49,6 +53,12 @@
 | `piglinBarterItemExclusions` | 列表 | `false` | `false`、`ironBoots`、`potions`、物品 ID 列表 | 全版本 | 排除指定猪灵 barter 结果。 |
 
 `babyMobNoGrowth` 是纯服务端规则。`mini` 预设仅匹配自定义名称完整等于小写 `mini` 的幼体，`Mini` 不匹配。其他名称模式只读取实体明确设置的自定义名称，并按 `Component#getString()` 的完整文本比较；带空格的名称需要用引号传入，例如 `/carpet babyMobNoGrowth "永远年幼"`。规则只阻止自然成长和喂食加速，不拦截管理员使用 `/data` 或 NBT 直接修改年龄。关闭规则后，被冻结的幼体会从当前年龄继续成长。
+
+`shulkerBedrockDuplication` 是纯服务端规则。判定条件是造成致命一击的直接伤害来源为潜影贝子弹（对应基岩版行为），被其它方式（近战、箭、摔落等）击杀不会重生。新潜影贝在受击前位置生成，继承原潜影贝的染色颜色和附着面朝向，为满血全新实体；原潜影贝照常播放死亡动画并掉落战利品。Java 版原版"受击时概率复制"机制不受影响，与本规则叠加生效。
+
+`shulkerBedrockLooting` 是纯服务端规则。Java 版潜影壳掉落是固定掉 1 个、概率随抢夺每级 +6.25%（抢夺 III 68.75%）；基岩版则是固定 50% 概率掉落，掉落时数量在 1 至 1+抢夺等级 之间均匀分布。两种公式的期望值对比（无抢夺/抢夺 I/II/III）：Java 版 0.50/0.56/0.62/0.69，基岩版 0.50/0.75/1.00/1.25。规则开启后潜影贝的战利品表掷骰被替换为基岩版公式；抢夺等级读取击杀者主手武器（与原版战利品上下文的 ATTACKING_ENTITY 一致），`doMobLoot` 游戏规则与 `/summon` 的 CanPickUpLoot 等原版门槛不受影响；无抢夺时两种公式完全一致（50% 掉 1 个）。
+
+`shulkerAttackArmorStand` 是纯服务端规则。原版潜影贝的目标选择只针对玩家和实现 `Enemy` 接口的生物，盔甲架两者都不是，永远不会被瞄准。本规则为潜影贝追加一个低优先级目标：`true` 时索敌范围内（跟随距离内，且沿潜影贝附着轴向的搜索盒扩至 4 格）的所有盔甲架，`pumpkin` 时仅头部装备槽为雕刻南瓜的盔甲架——生存模式下玩家右键即可给盔甲架戴上南瓜头，无需命令。锁定目标后由原版 `ShulkerAttackGoal` 正常开火、发射子弹；对玩家的优先瞄准、报复目标、和平难度不攻击等原版行为全部保留（生存模式玩家在 16 格内会先被瞄准，创造模式玩家不会被瞄准）。切换规则值即时生效，无需重启或重 summon；目标盔甲架死亡或不再满足条件时会立即释放目标并重新索敌。旧版本使用的 `onlyWithPumpkinHead`、`onlyWithShulkerShell` 选项名会自动归一化为 `pumpkin`，旧存档配置无需手动迁移。
 
 旧版 `preStackMobDeathDrops` 与 `preStackMobDeathDropsRange` 已隐藏，仅保留旧存档兼容；新配置使用 `/dropPreStack entity ...`。
 

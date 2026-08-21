@@ -288,6 +288,9 @@ public class FGAExtension implements CarpetExtension {
             if ("itemFrameBlockification".equals(rule.name())) {
                 MinecraftServer server = CarpetServer.minecraft_server;
                 if (server != null) ItemFrameBlockificationManager.rebuild(server);
+            } else if ("comparatorThroughBlocks".equals(rule.name())) {
+                MinecraftServer server = CarpetServer.minecraft_server;
+                if (server != null) ComparatorThroughBlocks.refreshLoadedComparators(server);
             } else if ("fireworkMinecartBoost".equals(rule.name())
                     && !Boolean.TRUE.equals(rule.value())) {
                 MinecartFeatureManager.clearBoosts();

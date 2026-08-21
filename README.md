@@ -1,6 +1,7 @@
 # Carpet FGA Addition
 
 Minecraft 1.21.1 adds the server-side `resilientPlants` rule for placing selected plants without normal survival support.
+Minecraft 1.21.1 also adds `comparatorThroughBlocks`, allowing comparators to read a container signal through configured blocks such as chains or pistons.
 It also adds the opt-in `woodStonecuttingRecipes` rule, allowing wood products to be crafted in the stonecutter with bidirectional wood conversion, log-to-stair/slab yields of 4/8, plank-to-stair/slab yields of 1/2, bamboo mosaics, boats, bamboo rafts, and server-authoritative bamboo input counts, with bamboo blocks, stripped bamboo blocks, and 9 bamboo accepted as equivalent bamboo inputs.
 
 Carpet FGA Addition 是一个面向服务器的 Fabric Carpet 扩展，提供假人、掉落物、村民、命令兼容、生命显示和性能辅助功能。除特别说明外，功能默认关闭，通过 `/carpet` 规则启用。
@@ -17,6 +18,7 @@ Carpet FGA Addition 是一个面向服务器的 Fabric Carpet 扩展，提供假
 - [English rules](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/rules_en.md)
 - [中文命令说明](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/commands.md)
 - [English commands](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/commands_en.md)
+- [发布流程](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/releasing.md)
 
 ## 功能概览
 
@@ -24,6 +26,7 @@ Carpet FGA Addition 是一个面向服务器的 Fabric Carpet 扩展，提供假
 - Minecraft `1.21.1` 的玩家末地门传送控制：可统一阻止三类末地门传送，或通过 `/playertpend` 为每名玩家设置进入末地门、出口和折跃门的允许/阻止偏好。
 - 村民交易/赠礼优化、流浪商人保护和敌对生物装备栏访问。
 - Minecraft `1.21-26.2` 幼年生物成长锁定：支持 `true`、`mini` 和完整自定义名称，包括蝌蚪，纯服务端生效。
+- Minecraft `1.21.1` 基岩版潜影贝复制：潜影贝被潜影贝子弹击杀时必定在原地重生一只新潜影贝，继承颜色与附着面，纯服务端生效。
 - 地面物品堆叠上限、掉落物预堆叠、掉落距离和 `/fill` 兼容修复。
 - 配方书解锁、隐藏的背包进度优化、Tab 列表生命显示和客户端维度 ID 映射。
 - Minecraft `1.21.1` 展示框方块化：将展示框移出服务端实体 tick 调度，以支撑方块更新驱动存活验证，降低大量展示框的服务端开销。
@@ -35,6 +38,8 @@ Carpet FGA Addition 是一个面向服务器的 Fabric Carpet 扩展，提供假
 - Minecraft `1.17.1-1.21.11` 深板岩直接切石开关 `deepslateStonecuttingRecipes`，让深板岩在切石机中的表现与 26.1+ 一样
 - Minecraft `1.21-26.2` 农民不再把小麦合成面包，以及交易界面保持打开时完成村民升级并立即刷新交易
 - Minecraft `1.21.1` 玩家加载距离规则与 `/playerLoadDistance`，支持临时、持久、`-1`、`0`、`1-32` 和 `none`
+- Minecraft `1.21.1` 潜影贝攻击盔甲架：可攻击全部盔甲架或仅头戴雕刻南瓜的盔甲架（`pumpkin`）
+- Minecraft `1.21.1` 潜影壳掉落同步基岩版：固定 50% 掉落，掉落时 1 至 1+抢夺等级 个均匀分布
 - Minecraft `1.21-26.2` 试炼刷怪笼等效人数与一次性截停：可按玩家名称前缀放大刷怪和奖励规模，并按水平半径或 XYZ 方框截停、刷新已加载刷怪笼
 
 ## 重要说明

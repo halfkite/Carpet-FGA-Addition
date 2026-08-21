@@ -488,6 +488,90 @@ public class FGASettings {
             }
         }
     }
+
+    @Rule(
+        desc = "Allows comparators to read container signals through configured blocks",
+        category = {FGA, FEATURE},
+        options = {"false", "[chain]", "[piston]", "[chain,piston]"},
+        strict = false,
+        validate = FGASettings.ComparatorThroughBlocksValidator.class,
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static String comparatorThroughBlocks = "false";
+
+    public static class ComparatorThroughBlocksValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                               //#if MC >= 1.19
+                               CarpetRule<String> currentRule,
+                               //#else
+                               //$$ ParsedRule<String> currentRule,
+                               //#endif
+                               String newValue, String userInput) {
+            try {
+                String normalized = ComparatorThroughBlocks.validate(newValue);
+                ComparatorThroughBlocks.setConfiguredBlocks(normalized);
+                return normalized;
+            } catch (IllegalArgumentException exception) {
+                Messenger.m(source, "r " + exception.getMessage());
+                return null;
+            }
+        }
+    }
+    //#endif
+
+    //#if MC == 1.21.1
+    @Rule(
+        desc = "Shulkers killed by shulker bullets always respawn a new shulker at the death spot, like Bedrock Edition",
+        category = {FGA, FEATURE},
+        options = {"false", "true"},
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static boolean shulkerBedrockDuplication = false;
+
+    @Rule(
+        desc = "Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly",
+        category = {FGA, FEATURE},
+        options = {"false", "true"},
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static boolean shulkerBedrockLooting = false;
+
+    @Rule(
+        desc = "Allows shulkers to attack armor stands within targeting range",
+        category = {FGA, FEATURE},
+        options = {"false", "true", "pumpkin"},
+        strict = false,
+        validate = FGASettings.ShulkerAttackArmorStandValidator.class,
+        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    public static String shulkerAttackArmorStand = "false";
+
+    public static class ShulkerAttackArmorStandValidator extends
+            //#if MC >= 1.19
+            Validator<String> {
+            //#else
+            //$$ Validator<String> {
+            //#endif
+        @Override
+        public String validate(CommandSourceStack source,
+                               //#if MC >= 1.19
+                               CarpetRule<String> currentRule,
+                               //#else
+                               //$$ ParsedRule<String> currentRule,
+                               //#endif
+                               String newValue, String userInput) {
+            // Legacy option names from earlier builds normalize to pumpkin so saved configs keep working.
+            if ("pumpkin".equals(newValue) || "onlyWithPumpkinHead".equals(newValue) || "onlyWithShulkerShell".equals(newValue)) {
+                return "pumpkin";
+            }
+            if ("false".equals(newValue) || "true".equals(newValue)) {
+                return newValue;
+            }
+            Messenger.m(source, "r shulkerAttackArmorStand must be false, true, or pumpkin");
+            return null;
+        }
+    }
     //#endif
 
     @Rule(

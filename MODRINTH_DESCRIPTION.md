@@ -9,6 +9,10 @@ Version `1.4.10` is available for Minecraft `1.16.5`, `1.17.1`, `1.18.2`, `1.19.
 ## Features
 
 - Minecraft `1.21.1`: `resilientPlants` lets selected plants ignore vanilla survival restrictions and be placed without normal support.
+- Minecraft `1.21.1`: `comparatorThroughBlocks` lets comparators read container signals through configured blocks such as chains and pistons.
+- Minecraft `1.21.1`: `shulkerBedrockDuplication` makes a shulker killed by a shulker bullet, its own or another shulker's, always respawn a new shulker at the same spot with the same dye color and attach face, matching Bedrock Edition.
+- Minecraft `1.21.1`: `shulkerAttackArmorStand` lets shulkers target and shoot armor stands, either all of them or only those wearing a carved pumpkin on the head (`pumpkin`).
+- Minecraft `1.21.1`: `shulkerBedrockLooting` makes shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, rolling 1 to 1+Looting shells uniformly.
 - Minecraft `1.21-26.2` (excluding `1.21.3`): `woodStonecuttingRecipes` allows wood products to be crafted in the stonecutter, including bidirectional wood conversion, 4-stair/8-slab log yields, 1-stair/2-slab plank recipes, bamboo mosaics, ordinary boats, bamboo rafts, dedicated bamboo conversion ratios, bamboo-block-equivalent 9-bamboo inputs, and server-side input validation.
 
 - All supported versions include void generation for new chunks; Minecraft `1.21-26.2` also provides restart-queued normal terrain regeneration and full-air chunk clearing.
