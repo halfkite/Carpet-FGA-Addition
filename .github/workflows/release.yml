@@ -90,7 +90,7 @@ jobs:
           git push origin "$RELEASE_TAG"
           gh release create "$RELEASE_TAG" \
             --target "$GITHUB_SHA" \
-            --title "Carpet FGA Addition $RELEASE_TAG" \
+            --title "$RELEASE_TAG" \
             --notes-file RELEASE_NOTES.md
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
@@ -134,19 +134,6 @@ jobs:
             $publishedName = $source[0].Name
           }
 
-          $sha = (Get-FileHash $publishedPath -Algorithm SHA256).Hash.ToLowerInvariant()
-          $shaPath = Join-Path $dir "SHA-256-$env:MC_VERSION.txt"
-          "$sha  $publishedName" | Set-Content -Path $shaPath -Encoding utf8
-          $manifestPath = Join-Path $dir "build-manifest-$env:MC_VERSION.json"
-          $manifest = [ordered]@{
-            mod = 'carpet-fga-addition'
-            release_tag = $env:RELEASE_TAG
-            release_type = $env:RELEASE_TYPE
-            minecraft_version = $env:MC_VERSION
-            artifact = $publishedName
-            sha256 = $sha
-          }
-          $manifest | ConvertTo-Json | Set-Content -Path $manifestPath -Encoding utf8
           "jar=$publishedPath" >> $env:GITHUB_OUTPUT
           "version=$env:RELEASE_TAG-mc$env:MC_VERSION" >> $env:GITHUB_OUTPUT
 
@@ -160,20 +147,10 @@ jobs:
           github-token: ${{ github.token }}
           github-tag: ${{ needs.prepare.outputs.release_tag }}
           files: ${{ steps.artifact.outputs.jar }}
-          name: Carpet FGA Addition ${{ inputs.release_tag }} for Minecraft ${{ matrix.mc_version }}
+          name: ${{ inputs.release_tag }}
           version: ${{ steps.artifact.outputs.version }}
           version-type: ${{ inputs.release_type }}
           loaders: fabric
           game-versions: ${{ matrix.mc_version }}
           dependencies: |
             carpet(required){modrinth:TQTTVgYE}{curseforge:349239}
-
-      - name: Attach checksums and manifest to GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh release upload "${{ needs.prepare.outputs.release_tag }}" \
-            "release-assets/${{ matrix.mc_version }}/SHA-256-${{ matrix.mc_version }}.txt" \
-            "release-assets/${{ matrix.mc_version }}/build-manifest-${{ matrix.mc_version }}.json" \
-            --clobber
