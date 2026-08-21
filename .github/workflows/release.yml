@@ -80,6 +80,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git show-ref --tags --verify --quiet "refs/tags/$RELEASE_TAG"; then
             echo "Tag already exists: $RELEASE_TAG" >&2
             exit 1
@@ -162,6 +164,8 @@ jobs:
           version-type: ${{ inputs.release_type }}
           loaders: fabric
           game-versions: ${{ matrix.mc_version }}
+          dependencies: |
+            carpet(required){modrinth:TQTTVgYE}{curseforge:349239}
 
       - name: Attach checksums and manifest to GitHub Release
         env:
