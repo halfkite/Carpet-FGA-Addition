@@ -177,6 +177,7 @@ public class FGAExtension implements CarpetExtension {
         //#if MC == 1.21.1
         PlayerLoadDistanceManager.clear();
         PlayerTpEndControlManager.clear();
+        RecipeBookAlwaysUnlockedManager.clear();
         MinecartFeatureConfig.clear();
         MinecartFeatureManager.clear();
         ItemFrameBlockificationManager.clear();
@@ -226,6 +227,7 @@ public class FGAExtension implements CarpetExtension {
         //#if MC == 1.21.1
         if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();
         PlayerLoadDistanceManager.onLogin(player);
+        RecipeBookAlwaysUnlockedManager.onPlayerLoggedIn(player);
         //#endif
     }
 
@@ -283,18 +285,24 @@ public class FGAExtension implements CarpetExtension {
     }
 
     private static void registerItemFrameBlockificationObserver() {
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
+            //#if MC == 1.21.1
             if ("itemFrameBlockification".equals(rule.name())) {
                 MinecraftServer server = CarpetServer.minecraft_server;
                 if (server != null) ItemFrameBlockificationManager.rebuild(server);
-            } else if ("comparatorThroughBlocks".equals(rule.name())) {
+            }
+            //#endif
+            if ("comparatorThroughBlocks".equals(rule.name())) {
                 MinecraftServer server = CarpetServer.minecraft_server;
                 if (server != null) ComparatorThroughBlocks.refreshLoadedComparators(server);
-            } else if ("fireworkMinecartBoost".equals(rule.name())
+            }
+            //#if MC == 1.21.1
+            if ("fireworkMinecartBoost".equals(rule.name())
                     && !Boolean.TRUE.equals(rule.value())) {
                 MinecartFeatureManager.clearBoosts();
             }
+            //#endif
         });
         //#endif
     }

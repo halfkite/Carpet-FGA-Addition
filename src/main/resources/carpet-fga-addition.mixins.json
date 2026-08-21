@@ -56,15 +56,21 @@
         "WorkAtComposterNoBreadMixin",
         "VillagerUpgradeWhileTradingMixin"
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
+        ,"AnvilMenuNoPriorWorkPenaltyMixin",
+        "PlayerExperienceLevelCostMixin"
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.2
         ,"ResilientPlantBlockStateMixin",
         "ComparatorBlockThroughBlocksMixin",
         "LevelComparatorThroughBlocksMixin",
-        "EndPortalPlayerTpControlMixin",
-        "EndGatewayPlayerTpControlMixin",
         "ShulkerBedrockRespawnMixin",
         "ShulkerAttackArmorStandMixin",
         "ShulkerBedrockLootingMixin"
+        //#endif
+        //#if MC == 1.21.1
+        ,"EndPortalPlayerTpControlMixin",
+        "EndGatewayPlayerTpControlMixin"
         //#endif
         //#if MC >= 1.21 && MC <= 26.2
         ,"StonecutterMenuWoodInputMixin",
@@ -113,8 +119,7 @@
         //#endif
         //#if MC >= 1.16.5
         ,"RecipeBookMixin",
-        "ServerPlaceRecipeMixin",
-        "ServerRecipeBookMixin"
+        "ServerPlaceRecipeMixin"
         //#endif
         //#if MC >= 1.20.5 && MC <= 26.2
         ,"BlockDropPreStackMixin",

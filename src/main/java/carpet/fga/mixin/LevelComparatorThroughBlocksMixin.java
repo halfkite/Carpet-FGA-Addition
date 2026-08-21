@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.ComparatorThroughBlocks;
@@ -8,6 +8,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+//#if MC >= 1.21.2
+//$$ import net.minecraft.world.level.redstone.Orientation;
+//#endif
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,7 +28,12 @@ public abstract class LevelComparatorThroughBlocksMixin {
 
             BlockState neighborState = level.getBlockState(neighborPos);
             if (neighborState.is(Blocks.COMPARATOR)) {
+                //#if MC >= 1.21.2
+                //$$ level.neighborChanged(neighborState, neighborPos, sourceBlock,
+                //$$         Orientation.of(Direction.UP, direction, Orientation.SideBias.LEFT), false);
+                //#else
                 level.neighborChanged(neighborState, neighborPos, sourceBlock, sourcePos, false);
+                //#endif
                 continue;
             }
             if (!neighborState.isRedstoneConductor(level, neighborPos)
@@ -35,7 +43,12 @@ public abstract class LevelComparatorThroughBlocksMixin {
             if (!level.hasChunkAt(beyondPos)) continue;
             BlockState beyondState = level.getBlockState(beyondPos);
             if (beyondState.is(Blocks.COMPARATOR)) {
+                //#if MC >= 1.21.2
+                //$$ level.neighborChanged(beyondState, beyondPos, sourceBlock,
+                //$$         Orientation.of(Direction.UP, direction, Orientation.SideBias.LEFT), false);
+                //#else
                 level.neighborChanged(beyondState, beyondPos, sourceBlock, sourcePos, false);
+                //#endif
             }
         }
         ci.cancel();

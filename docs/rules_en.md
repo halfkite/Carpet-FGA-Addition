@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.4.10`
+> Documentation version: `1.5.0`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default.
 
@@ -14,8 +14,8 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `wanderingTraderNoDespawn` | Enum | `false` | `false`, `true`, `controlled` | 1.16.5-26.1.2 | Controls natural wandering-trader despawning; `controlled` protects configured names or foot blocks. |
 | `fakePlayerProfilePreload` | Enum | `false` | `false`, `always`, `adaptive` | 1.21.1 | Asynchronously preloads fake-player profiles. |
 | `fgaUnicodeArgumentsSupport` | Boolean | `false` | `false`, `true` | All supported versions | Allows unquoted command arguments to contain Unicode characters. |
-| `recipeBookAlwaysUnlocked` | Boolean | `false` | `false`, `true` | 1.16.5+ | Keeps registered recipes available without per-player unlock progress storage. |
-| `playerHealthDisplay` | Enum | `true` | `true`, `false`, `nofake` | 1.16.5+ | Shows health only at the far right of the multiplayer player list. No scoreboard or nametag display is created. |
+| `recipeBookAlwaysUnlocked` | Boolean | `false` | `false`, `true` | 1.16.5+ | Gives every player all registered recipes on login with a one-minute per-player cooldown while preserving saved unlock progress; it never clears recipe data. |
+| `playerHealthDisplay` | Enum | `false` | `true`, `false`, `nofake` | 1.16.5+ | Shows health only at the far right of the multiplayer player list. No scoreboard or nametag display is created. Disabled by default; use `/carpet playerHealthDisplay true` to enable it. |
 | `itemFrameBlockification` | Boolean | `false` | `false`, `true` | 1.21.1 | Removes normal and glowing item frames from server entity tick scheduling and validates support-block changes while preserving vanilla clients, interaction, drops, maps, and comparator behavior. |
 | `fireworkMinecartBoost` | Boolean | `false` | `false`, `true` | 1.21.1 | Lets a player riding a normal minecart consume a firework for a configurable full-speed boost followed by linear deceleration. |
 | `chainMinecartBinding` | Boolean | `false` | `false`, `true` | 1.21.1 | Uses chains to connect normal minecarts into persistent linear trains. |
@@ -41,6 +41,8 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `shulkerBedrockDuplication` | Boolean | `false` | `false`, `true` | 1.21.1 | A shulker killed by a shulker bullet, its own or another shulker's, always respawns a new shulker at the same spot, matching Bedrock Edition. |
 | `shulkerBedrockLooting` | Boolean | `false` | `false`, `true` | 1.21.1 | Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly. |
 | `shulkerAttackArmorStand` | Enum | `false` | `false`, `true`, `pumpkin` | 1.21.1 | Lets shulkers target and shoot armor stands; `true` targets all armor stands, `pumpkin` targets only those wearing a carved pumpkin on the head. |
+| `anvilNoPriorWorkPenalty` | Boolean | `false` | `false`, `true` | 1.21.1 | Removes the anvil prior-work penalty and the 40-level “too expensive” limit while keeping enchantment conflicts, material costs, and normal enchantment-combination costs. |
+| `experienceLevelCost` | String | `false` | `false`, `29-30`, `0-1` | 1.21.1 | Flattens level-up costs. `29-30` fixes level 30 and above at 107 XP, the vanilla cost from level 29 to 30; `0-1` fixes every level at 7 XP, the vanilla cost from level 0 to 1. |
 | `villagerDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 (excluding 1.21.3) | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
 | `villagerUpgradeWhileTrading` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Lets villagers finish upgrading while the trading screen remains open and immediately refreshes their level, XP, and offers |
 | `villagerPerformanceOptimization` | Enum | `false` | `false`, `true`, `ops`, `1-4` | 1.20.1+ | Enables villager trade/gift optimization and controls `/villagerPerformance` access. |

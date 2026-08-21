@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga;
 
 import carpet.fga.mixin.ChunkMapTrialStopAccessor;
@@ -13,6 +13,10 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+//#if MC >= 1.21.2
+//$$ import net.minecraft.core.Direction;
+//$$ import net.minecraft.world.level.redstone.Orientation;
+//#endif
 
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -56,11 +60,16 @@ public final class ComparatorThroughBlocks {
     public static void refreshLoadedComparators(MinecraftServer server) {
         for (ServerLevel level : server.getAllLevels()) {
             ChunkMapTrialStopAccessor chunks = (ChunkMapTrialStopAccessor) level.getChunkSource().chunkMap;
-            Set<Long> seen = new LinkedHashSet<>();
-            for (ChunkHolder holder : chunks.carpetFga$getLoadedChunks()) {
+            Set<String> seen = new LinkedHashSet<>();
+            for (ChunkHolder holder :
+                    //#if MC >= 1.21.10
+                    //$$ chunks.carpetFga$getVisibleChunkMap().values()) {
+                    //#else
+                    chunks.carpetFga$getLoadedChunks()) {
+                    //#endif
                 LevelChunk chunk = holder.getTickingChunk();
                 if (chunk == null) chunk = holder.getChunkToSend();
-                if (chunk == null || !seen.add(chunk.getPos().toLong())) continue;
+                if (chunk == null || !seen.add(chunk.getPos().toString())) continue;
                 refreshChunk(level, chunk);
             }
         }
@@ -78,7 +87,12 @@ public final class ComparatorThroughBlocks {
             for (int y = 0; y < 16; y++) for (int z = 0; z < 16; z++) for (int x = 0; x < 16; x++) {
                 BlockPos pos = new BlockPos(minX + x, baseY + y, minZ + z);
                 if (level.getBlockState(pos).is(Blocks.COMPARATOR)) {
+                    //#if MC >= 1.21.2
+                    //$$ level.neighborChanged(pos, Blocks.AIR, Orientation.of(
+                    //$$         Direction.UP, Direction.NORTH, Orientation.SideBias.LEFT));
+                    //#else
                     level.neighborChanged(pos, Blocks.AIR, pos);
+                    //#endif
                 }
             }
         }
@@ -93,7 +107,12 @@ public final class ComparatorThroughBlocks {
             if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
                 throw new IllegalArgumentException("unknown block id: " + entry);
             }
-            Block block = BuiltInRegistries.BLOCK.get(id);
+            Block block =
+                    //#if MC >= 1.21.2
+                    //$$ BuiltInRegistries.BLOCK.getValue(id);
+                    //#else
+                    BuiltInRegistries.BLOCK.get(id);
+                    //#endif
             if (!result.add(block)) throw new IllegalArgumentException("duplicate block id: " + id);
         }
         return result;

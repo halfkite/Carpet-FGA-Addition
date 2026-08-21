@@ -119,7 +119,7 @@ public class FGASettings {
         category = {FGA, FEATURE},
         options = {"false", "always", "adaptive"},
         validate = FGASettings.FakePlayerProfilePreloadValidator.class,
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
     )
     public static String fakePlayerProfilePreload = "false";
 
@@ -280,6 +280,73 @@ public class FGASettings {
 
     //#if MC >= 1.21 && MC <= 26.2
     @Rule(
+        desc = "Removes the anvil prior-work penalty and the 40-level too-expensive limit",
+        category = {FGA, FEATURE},
+        options = {"false", "true"},
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    )
+    public static boolean anvilNoPriorWorkPenalty = false;
+    //#endif
+
+    //#if MC >= 1.21 && MC <= 26.2
+    public static final String EXPERIENCE_LEVEL_COST_29_30 = "29-30";
+    public static final String EXPERIENCE_LEVEL_COST_0_1 = "0-1";
+    private static final String LEGACY_EXPERIENCE_LEVEL_COST_29_30 = "30级后每级升级消耗经验与29到30一样";
+    private static final String LEGACY_EXPERIENCE_LEVEL_COST_0_1 = "每级升级消耗经验与0到1一样";
+
+    @Rule(
+        desc = "Flattens experience required for level upgrades",
+        category = {FGA, FEATURE},
+        options = {"false", "29-30", "0-1"},
+        strict = false,
+        validate = FGASettings.ExperienceLevelCostValidator.class,
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    )
+    public static String experienceLevelCost = "false";
+
+    public static boolean usesExperienceLevelCost29To30() {
+        return EXPERIENCE_LEVEL_COST_29_30.equals(experienceLevelCost)
+                || LEGACY_EXPERIENCE_LEVEL_COST_29_30.equals(experienceLevelCost);
+    }
+
+    public static boolean usesExperienceLevelCost0To1() {
+        return EXPERIENCE_LEVEL_COST_0_1.equals(experienceLevelCost)
+                || LEGACY_EXPERIENCE_LEVEL_COST_0_1.equals(experienceLevelCost);
+    }
+
+    public static class ExperienceLevelCostValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                               CarpetRule<String> currentRule,
+                               String newValue,
+                               String userInput) {
+            String value = newValue == null ? "" : newValue.trim();
+            if (value.length() >= 2) {
+                char first = value.charAt(0);
+                char last = value.charAt(value.length() - 1);
+                if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                    value = value.substring(1, value.length() - 1).trim();
+                }
+            }
+            if (value.equalsIgnoreCase("false")) return "false";
+            if (value.equals(EXPERIENCE_LEVEL_COST_29_30)
+                    || value.equals("30")
+                    || value.equals(LEGACY_EXPERIENCE_LEVEL_COST_29_30)) {
+                return EXPERIENCE_LEVEL_COST_29_30;
+            }
+            if (value.equals(EXPERIENCE_LEVEL_COST_0_1)
+                    || value.equals("1")
+                    || value.equals(LEGACY_EXPERIENCE_LEVEL_COST_0_1)) {
+                return EXPERIENCE_LEVEL_COST_0_1;
+            }
+            Messenger.m(source, "r experienceLevelCost must be false, 29-30, or 0-1");
+            return null;
+        }
+    }
+    //#endif
+
+    //#if MC >= 1.21 && MC <= 26.2
+    @Rule(
         desc = "Allows wood products to be crafted in the stonecutter",
         category = {FGA, FEATURE},
         options = {"false", "true"},
@@ -304,14 +371,14 @@ public class FGASettings {
     public static boolean villagerUpgradeWhileTrading = false;
     //#endif
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.2
     @Rule(
         desc = "Controls per-player chunk loading distance commands",
         category = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
         validate = FGASettings.PlayerLoadDistanceValidator.class,
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
     )
     public static String playerLoadDistance = "false";
 
@@ -468,14 +535,14 @@ public class FGASettings {
         }
     }
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.2
     @Rule(
         desc = "Allows configured plants to survive without their normal support restrictions",
         category = {FGA, FEATURE},
         options = {"false", "true", "[]"},
         strict = false,
         validate = FGASettings.ResilientPlantsValidator.class,
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
     )
     public static String resilientPlants = "false";
 
@@ -505,7 +572,7 @@ public class FGASettings {
         options = {"false", "[chain]", "[piston]", "[chain,piston]"},
         strict = false,
         validate = FGASettings.ComparatorThroughBlocksValidator.class,
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
     )
     public static String comparatorThroughBlocks = "false";
 
@@ -530,12 +597,12 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.2
     @Rule(
         desc = "Shulkers killed by shulker bullets always respawn a new shulker at the death spot, like Bedrock Edition",
         category = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
     )
     public static boolean shulkerBedrockDuplication = false;
 
@@ -543,7 +610,7 @@ public class FGASettings {
         desc = "Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly",
         category = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
     )
     public static boolean shulkerBedrockLooting = false;
 
@@ -553,7 +620,7 @@ public class FGASettings {
         options = {"false", "true", "pumpkin"},
         strict = false,
         validate = FGASettings.ShulkerAttackArmorStandValidator.class,
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
     )
     public static String shulkerAttackArmorStand = "false";
 
@@ -595,7 +662,7 @@ public class FGASettings {
 
     //#if MC >= 1.16.5
     @Rule(
-        desc = "Keeps the recipe book functional without storing per-player recipe unlock data; all registered recipes are available",
+        desc = "Gives every player all registered recipes on login, with a one-minute per-player cooldown, without discarding saved recipe unlock data",
         category = {FGA, FEATURE}
     )
     public static boolean recipeBookAlwaysUnlocked = false;
@@ -609,7 +676,7 @@ public class FGASettings {
         options = {"true", "false", "nofake"},
         strict = false
     )
-    public static String playerHealthDisplay = "true";
+    public static String playerHealthDisplay = "false";
 
     @Rule(
         desc = "Removes item frames from server tick scheduling and validates them when support blocks change",

@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
@@ -20,8 +20,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntity.class)
 public abstract class ShulkerBedrockLootingMixin {
-    @Inject(method = "dropFromLootTable", at = @At("HEAD"), cancellable = true)
+    //#if MC >= 1.21.3
+    //$$ @Inject(method = "dropFromLootTable(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;Z)V", at = @At("HEAD"), cancellable = true)
+    //$$ private void carpetFga$bedrockShulkerShellDrop(ServerLevel level, DamageSource damageSource,
+    //$$                                                   boolean recentlyHit, CallbackInfo ci) {
+    //$$     carpetFga$handleDrop(damageSource, ci);
+    //$$ }
+    //#else
+    @Inject(method = "dropFromLootTable(Lnet/minecraft/world/damagesource/DamageSource;Z)V", at = @At("HEAD"), cancellable = true)
     private void carpetFga$bedrockShulkerShellDrop(DamageSource damageSource, boolean recentlyHit, CallbackInfo ci) {
+        carpetFga$handleDrop(damageSource, ci);
+    }
+    //#endif
+
+    private void carpetFga$handleDrop(DamageSource damageSource, CallbackInfo ci) {
         // The doMobLoot gamerule and shouldDropLoot gate run in dropAllDeathLoot before this method.
         LivingEntity dying = (LivingEntity) (Object) this;
         if (!FGASettings.shulkerBedrockLooting || !(dying instanceof Shulker)
@@ -37,12 +49,21 @@ public abstract class ShulkerBedrockLootingMixin {
         int looting = 0;
         if (damageSource.getEntity() instanceof LivingEntity attacker) {
             Holder<Enchantment> lootingEnchantment = serverLevel.registryAccess()
+                    //#if MC >= 1.21.3
+                    //$$ .lookupOrThrow(Registries.ENCHANTMENT)
+                    //$$ .getOrThrow(Enchantments.LOOTING);
+                    //#else
                     .registryOrThrow(Registries.ENCHANTMENT)
                     .getHolderOrThrow(Enchantments.LOOTING);
+                    //#endif
             looting = EnchantmentHelper.getEnchantmentLevel(lootingEnchantment, attacker);
         }
         int count = 1 + dying.getRandom().nextInt(looting + 1);
+        //#if MC >= 1.21.2
+        //$$ dying.spawnAtLocation(serverLevel, new ItemStack(Items.SHULKER_SHELL, count));
+        //#else
         dying.spawnAtLocation(new ItemStack(Items.SHULKER_SHELL, count));
+        //#endif
     }
 }
 //#endif
