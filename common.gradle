@@ -30,6 +30,14 @@ dependencies {
     } else {
         modImplementation carpet
     }
+    if (mcVersion >= 1_21_00 && mcVersion <= 26_02_00) {
+        def fabricApi = "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+        if (unobfuscated) {
+            implementation fabricApi
+        } else {
+            modImplementation fabricApi
+        }
+    }
 }
 
 if (mcVersion >= 1_21_10 && mcVersion < 26_00_00) {
@@ -57,7 +65,8 @@ processResources {
             version: project.version,
             minecraft_dependency: project.minecraft_dependency,
             carpet_dependency: project.carpet_dependency,
-            fabric_api_dependency: '',
+            fabric_api_dependency: mcVersion >= 1_21_00 && mcVersion <= 26_02_00
+                    ? '"fabric-api": "*",' : '',
             java_level: javaVersion == JavaVersion.VERSION_25 ? 25 : (javaVersion == JavaVersion.VERSION_21 ? 21 : 16),
             compatibility_level: javaVersion == JavaVersion.VERSION_25 ? 'JAVA_25' : (javaVersion == JavaVersion.VERSION_21 ? 'JAVA_21' : 'JAVA_16')
     ]
