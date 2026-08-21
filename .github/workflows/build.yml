@@ -70,6 +70,11 @@ jobs:
           ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
           fetch-depth: 1
 
+      - name: Select preprocessing root
+        if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
+        shell: bash
+        run: printf '1.21.1\n' > versions/mainProject
+
       - name: Set up Java ${{ matrix.java }}
         if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
         uses: actions/setup-java@v4
