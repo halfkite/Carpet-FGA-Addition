@@ -95,21 +95,11 @@ jobs:
   publish:
     name: Publish Minecraft ${{ matrix.mc_version }}
     needs: [prepare, build]
-    if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        mc_version:
-          - '1.21'
-          - '1.21.1'
-          - '1.21.4'
-          - '1.21.5'
-          - '1.21.8'
-          - '1.21.10'
-          - '1.21.11'
-          - '26.1.2'
-          - '26.2'
+        mc_version: ${{ inputs.target_subproject == 'all' && fromJSON('["1.21","1.21.1","1.21.4","1.21.5","1.21.8","1.21.10","1.21.11","26.1.2","26.2"]') || fromJSON(format('["{0}"]', inputs.target_subproject)) }}
 
     steps:
       - name: Download build artifact
