@@ -170,6 +170,7 @@ jobs:
       - name: Attach checksums and manifest to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release upload "${{ needs.prepare.outputs.release_tag }}" \
             "release-assets/${{ matrix.mc_version }}/SHA-256-${{ matrix.mc_version }}.txt" \
