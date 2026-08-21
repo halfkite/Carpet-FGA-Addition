@@ -38,7 +38,6 @@ permissions:
 jobs:
   build:
     name: Minecraft ${{ matrix.mc_version }}
-    if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -65,25 +64,30 @@ jobs:
 
     steps:
       - name: Check out source
+        if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
           fetch-depth: 1
 
       - name: Set up Java ${{ matrix.java }}
+        if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
 
       - name: Set up Gradle
+        if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build ${{ matrix.mc_version }}
+        if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
         shell: bash
         run: ./gradlew :${{ matrix.mc_version }}:build --no-daemon
 
       - name: Collect artifact metadata
+        if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
         id: artifact
         shell: pwsh
         env:
@@ -121,6 +125,7 @@ jobs:
           "artifact=$($jar.Name)" >> $env:GITHUB_OUTPUT
 
       - name: Upload build artifact
+        if: inputs.target_subproject == 'all' || inputs.target_subproject == matrix.mc_version
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.mc_version }}
