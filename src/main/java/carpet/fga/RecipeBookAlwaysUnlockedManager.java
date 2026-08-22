@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC == 1.21.1
+//#if MC >= 1.16.5 && MC <= 26.2
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.HashMap;
@@ -17,14 +17,15 @@ public final class RecipeBookAlwaysUnlockedManager {
 
     public static void onPlayerLoggedIn(ServerPlayer player) {
         if (!FGASettings.recipeBookAlwaysUnlocked) return;
-        if (player.getServer() == null) return;
+        var server = FGACompat.server(player);
+        if (server == null) return;
 
-        long now = player.getServer().getTickCount();
+        long now = server.getTickCount();
         Long previous = LAST_GRANT_TICK.get(player.getUUID());
         if (previous != null && now - previous < COOLDOWN_TICKS) return;
 
         LAST_GRANT_TICK.put(player.getUUID(), now);
-        player.awardRecipes(player.getServer().getRecipeManager().getRecipes());
+        player.awardRecipes(server.getRecipeManager().getRecipes());
     }
 
     public static void clear() {

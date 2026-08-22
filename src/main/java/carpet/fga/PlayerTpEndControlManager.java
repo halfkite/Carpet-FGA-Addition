@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.20.1 && MC <= 1.21.5
 package carpet.fga;
 
 import com.google.gson.Gson;

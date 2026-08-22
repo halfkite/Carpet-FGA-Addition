@@ -2,7 +2,7 @@ package carpet.fga;
 
 import carpet.CarpetExtension;
 import carpet.CarpetServer;
-//#if MC >= 1.21
+//#if MC >= 1.19
 import carpet.utils.CommandHelper;
 //#endif
 //#if MC >= 1.19
@@ -28,7 +28,7 @@ public class FGAExtension implements CarpetExtension {
 
     private static final String MOD_ID = "carpet-fga-addition";
     private boolean previousBeeCollisionBoxRule;
-    //#if MC >= 1.21.1 && MC <= 1.21.5
+    //#if MC >= 1.20.1 && MC <= 1.21.5
     private boolean previousSpectatorFreeTeleportRule;
     //#endif
 
@@ -73,19 +73,24 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         VehicleStopConfig.load(server);
         VehicleStopManager.clear();
-        //#if MC >= 1.20.5 && MC <= 26.2
-        DropPreStackConfig.load(server);
-        //#if MC >= 1.21 && MC <= 26.2
+        RecipeBookAlwaysUnlockedManager.clear();
+        //#if MC >= 1.20.1 && MC <= 1.21.5
+        PlayerTpEndControlManager.load(server);
+        //#endif
+        //#if MC >= 1.20.1 && MC <= 26.2
         FakePlayerItemSortConfig.load(server);
         FakePlayerItemSortManager.load(server);
         //#endif
-        //#if MC == 1.21.1
-        PlayerLoadDistanceManager.load(server);
-        PlayerTpEndControlManager.load(server);
+        //#if MC >= 1.20.1 && MC <= 26.2
+        DropPreStackConfig.load(server);
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
+        PlayerLoadDistanceCompat.load(server);
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
         MinecartFeatureConfig.load(server);
         MinecartFeatureManager.load(server);
         ItemFrameBlockificationManager.rebuild(server);
-        //#endif
         //#endif
         //#if MC <= 26.2
         DroppedItemStackLimitConfig.load(server);
@@ -108,18 +113,26 @@ public class FGAExtension implements CarpetExtension {
         VillagerPerformanceCommand.register(dispatcher);
         //#endif
         VehicleStopCommand.register(dispatcher);
-        //#if MC >= 1.20.5 && MC <= 26.2
-        DropPreStackCommand.register(dispatcher);
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 1.21.5
+        PlayerTpEndControlCommand.register(dispatcher);
+        //#endif
+        //#if MC >= 1.20.1 && MC <= 26.2
         FakePlayerItemSortCommand.register(dispatcher);
+        //#endif
+        //#if MC >= 1.20.1 && MC <= 26.2
+        DropPreStackCommand.register(dispatcher);
+        //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
         TerrainRegenerationCommand.register(dispatcher);
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.2
         TrialStopCommand.register(dispatcher);
         //#endif
-        //#if MC == 1.21.1
+        //#if MC == 1.20.1 || MC == 1.21.1
         PlayerLoadDistanceCommand.register(dispatcher);
-        PlayerTpEndControlCommand.register(dispatcher);
-        MinecartFeatureCommand.register(dispatcher);
         //#endif
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
+        MinecartFeatureCommand.register(dispatcher);
         //#endif
         FGACommand.register(dispatcher);
     }
@@ -129,15 +142,17 @@ public class FGAExtension implements CarpetExtension {
         //#if MC <= 26.2
         DeathDropPreStackManager.clearTickCache();
         //#endif
-        //#if MC >= 1.20.5
+        //#if MC >= 1.20.1
         StackLimitClientRequirement.tick(server);
         //#endif
         RangeActionManager.tick(server);
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         FakePlayerItemSortManager.tick(server);
         //#endif
-        //#if MC == 1.21.1
-        PlayerLoadDistanceManager.tick(server);
+        //#if MC == 1.20.1 || MC == 1.21.1
+        PlayerLoadDistanceCompat.tick(server);
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
         MinecartFeatureManager.tick(server);
         //#endif
         //#if MC >= 1.16.5 && MC <= 26.2
@@ -153,7 +168,7 @@ public class FGAExtension implements CarpetExtension {
             previousBeeCollisionBoxRule = FGASettings.restorePre26BeeCollisionBox;
             BeeDimensions.refreshLoadedBees(server);
         }
-        //#if MC >= 1.21.1 && MC <= 1.21.5
+        //#if MC >= 1.20.1 && MC <= 1.21.5
         if (previousSpectatorFreeTeleportRule != FGASettings.spectatorFreeTeleport) {
             previousSpectatorFreeTeleportRule = FGASettings.spectatorFreeTeleport;
             server.getPlayerList().getPlayers().forEach(player -> server.getCommands().sendCommands(player));
@@ -165,24 +180,32 @@ public class FGAExtension implements CarpetExtension {
     public void onServerClosed(MinecraftServer server) {
         VehicleStopConfig.clear();
         VehicleStopManager.clear();
-        //#if MC >= 1.21 && MC <= 26.2
+        RecipeBookAlwaysUnlockedManager.clear();
+        //#if MC >= 1.20.1 && MC <= 1.21.5
+        PlayerTpEndControlManager.clear();
+        //#endif
+        //#if MC >= 1.20.1 && MC <= 26.2
         FakePlayerItemSortManager.close();
+        //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
         TerrainRegenerationManager.clear();
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.2
         TrialSpawnerStopManager.clear();
         //#endif
-        //#if MC >= 1.21.1
+        //#endif
+        //#if MC == 1.20.1 || MC >= 1.21.1
         FakePlayerProfilePreloadManager.close(server);
-        //#if MC >= 1.21.1 && MC <= 26.2
+        //#endif
+        //#if MC >= 1.20.1 && MC <= 26.2
         DropPreStackConfig.clear();
-        //#if MC == 1.21.1
-        PlayerLoadDistanceManager.clear();
-        PlayerTpEndControlManager.clear();
-        RecipeBookAlwaysUnlockedManager.clear();
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
+        PlayerLoadDistanceCompat.clear();
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
         MinecartFeatureConfig.clear();
         MinecartFeatureManager.clear();
         ItemFrameBlockificationManager.clear();
-        //#endif
-        //#endif
         //#endif
         //#if MC >= 1.16.5 && MC <= 26.2
         FullShulkerBoxCraftingManager.clear();
@@ -199,12 +222,12 @@ public class FGAExtension implements CarpetExtension {
         //#if MC <= 26.2
         DeathDropPreStackManager.clear();
         //#endif
-        //#if MC >= 1.20.5
+        //#if MC >= 1.20.1
         StackLimitClientRequirement.clear();
         //#endif
         RangeActionManager.clear();
         previousBeeCollisionBoxRule = false;
-        //#if MC >= 1.21.1 && MC <= 1.21.5
+        //#if MC >= 1.20.1 && MC <= 1.21.5
         previousSpectatorFreeTeleportRule = false;
         //#endif
     }
@@ -212,10 +235,12 @@ public class FGAExtension implements CarpetExtension {
     @Override
     public void onPlayerLoggedOut(net.minecraft.server.level.ServerPlayer player) {
         FGAModDetector.remove(player);
-        //#if MC == 1.21.1
+        //#if MC == 1.20.1 || MC == 1.21.1
         if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();
         MinecartFeatureManager.removePlayer(player);
-        PlayerLoadDistanceManager.onLogout(player);
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
+        PlayerLoadDistanceCompat.onLogout(player);
         //#endif
         //#if MC >= 1.19.4
         PlayerHealthDisplay.remove(player);
@@ -224,10 +249,12 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onPlayerLoggedIn(net.minecraft.server.level.ServerPlayer player) {
-        //#if MC == 1.21.1
-        if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();
-        PlayerLoadDistanceManager.onLogin(player);
         RecipeBookAlwaysUnlockedManager.onPlayerLoggedIn(player);
+        //#if MC == 1.20.1 || MC == 1.21.1
+        if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
+        PlayerLoadDistanceCompat.onLogin(player);
         //#endif
     }
 
@@ -263,14 +290,14 @@ public class FGAExtension implements CarpetExtension {
     }
 
     private static void registerFgaCommandTreeRefreshObserver() {
-        //#if MC >= 1.21
+        //#if MC >= 1.19
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
             if (!"droppedItemStackLimit".equals(rule.name())
                     && !"villagerPerformanceOptimization".equals(rule.name())
                     && !"minecartFeatureCommandPermission".equals(rule.name())
                     && !"terrainRegenerationCommandPermission".equals(rule.name())
                     && !"trialStopCommandPermission".equals(rule.name())
-                    //#if MC == 1.21.1
+                    //#if MC >= 1.20.1 && MC <= 1.21.5
                     && !"PlayerTpEndControl".equals(rule.name())
                     //#endif
                     ) {
@@ -285,9 +312,9 @@ public class FGAExtension implements CarpetExtension {
     }
 
     private static void registerItemFrameBlockificationObserver() {
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
-            //#if MC == 1.21.1
+            //#if MC == 1.20.1 || MC == 1.21.1
             if ("itemFrameBlockification".equals(rule.name())) {
                 MinecraftServer server = CarpetServer.minecraft_server;
                 if (server != null) ItemFrameBlockificationManager.rebuild(server);
@@ -297,7 +324,7 @@ public class FGAExtension implements CarpetExtension {
                 MinecraftServer server = CarpetServer.minecraft_server;
                 if (server != null) ComparatorThroughBlocks.refreshLoadedComparators(server);
             }
-            //#if MC == 1.21.1
+            //#if MC == 1.20.1 || MC == 1.21.1
             if ("fireworkMinecartBoost".equals(rule.name())
                     && !Boolean.TRUE.equals(rule.value())) {
                 MinecartFeatureManager.clearBoosts();
@@ -308,12 +335,12 @@ public class FGAExtension implements CarpetExtension {
     }
 
     private static void registerPlayerLoadDistanceObserver() {
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
             MinecraftServer server = CarpetServer.minecraft_server;
-            //#if MC == 1.21.1
+            //#if MC == 1.20.1 || MC == 1.21.1
             if ("playerLoadDistance".equals(rule.name())) {
-                PlayerLoadDistanceManager.onRuleChanged();
+                PlayerLoadDistanceCompat.onRuleChanged();
                 if (server == null) return;
                 CommandHelper.notifyPlayersCommandsChanged(server);
                 server.getPlayerList().getPlayers().forEach(player -> player.connection.send(
@@ -321,7 +348,7 @@ public class FGAExtension implements CarpetExtension {
             } else
             //#endif
             if (("deepslateStonecuttingRecipes".equals(rule.name())
-                    //#if MC >= 1.21 && MC <= 26.2
+                    //#if MC >= 1.20.1 && MC <= 26.2
                     || "woodStonecuttingRecipes".equals(rule.name())
                     //#endif
                     ) && server != null) {

@@ -116,7 +116,7 @@ processResources {
             }
         }
 
-        if (mcVersion >= 1_21_00 && mcVersion <= 26_02_00 && mcVersion != 1_21_03) {
+        if (mcVersion >= 1_20_01 && mcVersion <= 26_02_00 && mcVersion != 1_21_03) {
             def woodFamilies = [
                     oak: [inputs: ['oak_log', 'oak_wood', 'stripped_oak_log', 'stripped_oak_wood'], planks: 'oak_planks', button: 'oak_button', stairs: 'oak_stairs', slab: 'oak_slab', pressure: 'oak_pressure_plate', sign: 'oak_sign', trapdoor: 'oak_trapdoor', door: 'oak_door', fence: 'oak_fence', gate: 'oak_fence_gate', boat: 'oak_boat'],
                     spruce: [inputs: ['spruce_log', 'spruce_wood', 'stripped_spruce_log', 'stripped_spruce_wood'], planks: 'spruce_planks', button: 'spruce_button', stairs: 'spruce_stairs', slab: 'spruce_slab', pressure: 'spruce_pressure_plate', sign: 'spruce_sign', trapdoor: 'spruce_trapdoor', door: 'spruce_door', fence: 'spruce_fence', gate: 'spruce_fence_gate', boat: 'spruce_boat'],
@@ -139,8 +139,11 @@ processResources {
                 def ingredient = mcVersion >= 1_21_02
                         ? "minecraft:${input}"
                         : [item: "minecraft:${input}"]
-                def recipe = [type: 'minecraft:stonecutting', ingredient: ingredient,
-                              result: [id: "minecraft:${output}", count: count]]
+                def recipe = mcVersion >= 1_20_05
+                        ? [type: 'minecraft:stonecutting', ingredient: ingredient,
+                           result: [id: "minecraft:${output}", count: count]]
+                        : [type: 'minecraft:stonecutting', ingredient: ingredient,
+                           result: "minecraft:${output}", count: count]
                 def target = recipeDirectory.resolve("${input}_to_${output}_from_wood_stonecutting.json")
                 java.nio.file.Files.writeString(target,
                         groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(recipe)) + System.lineSeparator())

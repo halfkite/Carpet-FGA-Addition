@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.20.1 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;

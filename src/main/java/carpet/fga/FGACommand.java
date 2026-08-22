@@ -30,17 +30,23 @@ public final class FGACommand {
         redirect(root, "droppedItemStackLimit", dispatcher);
         redirect(root, "dropPreStack", dispatcher);
         redirect(root, "villagerPerformance", dispatcher);
-        //#if MC >= 1.21 && MC <= 26.2
-        redirect(root, "fakePlayerItemSort", dispatcher);
-        redirect(root, "trialStop", dispatcher);
-        //#endif
-        //#if MC == 1.21.1
-        redirect(root, "minecart", dispatcher);
-        redirect(root, "playerLoadDistance", dispatcher);
+        //#if MC >= 1.20.1 && MC <= 1.21.5
         redirect(root, "playertpend", dispatcher);
         //#endif
-        redirect(root, "vehicleStop", dispatcher);
+        //#if MC >= 1.20.1 && MC <= 26.2
+        redirect(root, "fakePlayerItemSort", dispatcher);
+        //#endif
         //#if MC >= 1.21 && MC <= 26.2
+        redirect(root, "trialStop", dispatcher);
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
+        redirect(root, "minecart", dispatcher);
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
+        redirect(root, "playerLoadDistance", dispatcher);
+        //#endif
+        redirect(root, "vehicleStop", dispatcher);
+        //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
         redirect(root, "regenerateTerrain", dispatcher);
         //#endif
         redirect(root, "inventoryAdvancementOptimization", dispatcher);
@@ -59,26 +65,34 @@ public final class FGACommand {
         line(out, "/fga droppedItemStackLimit help", "地面物品堆叠上限 / ground item stack limit");
         line(out, "/fga dropPreStack help", "掉落物预堆叠 / drop pre-stacking");
         line(out, "/fga villagerPerformance help", "村民性能配置 / villager performance");
-        //#if MC >= 1.21 && MC <= 26.2
-        line(out, "/fga fakePlayerItemSort help", "假人物品分类 / fake-player item sorting");
-        //#if MC == 1.21.1
-        if (CommandHelper.canUseCommand(context.getSource(), FGASettings.minecartFeatureCommandPermission)) {
-            line(out, "/fga minecart help", "矿车烟花加速与锁链列车 / firework boost and chain trains");
-        }
+        //#if MC >= 1.20.1 && MC <= 1.21.5
         if ("control".equals(FGASettings.PlayerTpEndControl)) {
             line(out, "/fga playertpend help", "玩家末地门传送控制 / player End portal control");
         }
         //#endif
+        //#if MC >= 1.20.1 && MC <= 26.2
+        line(out, "/fga fakePlayerItemSort help", "假人物品分类 / fake-player item sorting");
+        //#if MC == 1.20.1 || MC == 1.21.1
+        if (CommandHelper.canUseCommand(context.getSource(), FGASettings.minecartFeatureCommandPermission)) {
+            line(out, "/fga minecart help", "矿车烟花加速与锁链列车 / firework boost and chain trains");
+        }
+        //#endif
+        //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
         line(out, "/fga regenerateTerrain help", "地形重生成与虚空清除 / regenerate or clear terrain");
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.2
         if (CommandHelper.canUseCommand(context.getSource(), FGASettings.trialStopCommandPermission)) {
             line(out, "/fga trialStop help", "试炼刷怪笼截停并刷新 / stop and refresh trial spawners");
         }
         //#endif
+        //#endif
         line(out, "/fga vehicleStop help", "玩家离开载具急停 / stop vehicles when drivers dismount");
+        //#if MC == 1.20.1 || MC == 1.21.1
         line(out, "/fga playerLoadDistance help", "玩家加载距离 / per-player chunk loading distance");
+        //#endif
         line(out, "/fga inventoryAdvancementOptimization help", "背包进度优化 / inventory advancement optimization");
         line(out, "/log playerHealth", "订阅多人列表血量 / subscribe to player-list health");
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         line(out, "/fga player <fake> bot_sort help", "假人分类操作 / fake-player sorting actions");
         line(out, "/fga status", "FGA 分类任务状态 / sorter task status");
         //#endif
@@ -93,7 +107,7 @@ public final class FGACommand {
     }
 
     private static int status(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context) {
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         FGACompat.sendSuccess(context.getSource(), FGACompat.literal(FakePlayerItemSortManager.status()).withStyle(ChatFormatting.GRAY), false);
         //#else
         //$$ FGACompat.sendSuccess(context.getSource(), FGACompat.literal("Carpet FGA Addition").withStyle(ChatFormatting.GRAY), false);

@@ -1,7 +1,7 @@
 //#if MC >= 1.21 && MC <= 26.2
 package carpet.fga;
 
-import carpet.fga.mixin.ChunkMapTrialStopAccessor;
+import carpet.fga.mixin.ChunkMapLoadedChunksAccessor;
 import carpet.fga.mixin.TrialSpawnerDataAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -37,7 +37,7 @@ public final class TrialSpawnerStopManager {
         int stopped = 0;
         int removed = 0;
         Set<Long> seenChunks = new HashSet<>();
-        ChunkMapTrialStopAccessor chunks = (ChunkMapTrialStopAccessor) level.getChunkSource().chunkMap;
+        ChunkMapLoadedChunksAccessor chunks = (ChunkMapLoadedChunksAccessor) level.getChunkSource().chunkMap;
         Iterable<ChunkHolder> loaded =
                 //#if MC >= 1.21.10
                 //$$ chunks.carpetFga$getVisibleChunkMap().values();

@@ -1,7 +1,7 @@
 //#if MC <= 26.2
 package carpet.fga;
 
-//#if MC < 1.21.1
+//#if MC < 1.20.1
 //$$ import carpet.CarpetSettings;
 //#endif
 //#if MC >= 1.19
@@ -52,7 +52,7 @@ public final class DroppedItemStackLimitCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("droppedItemStackLimit")
                 .requires(source ->
-                        //#if MC >= 1.21.1
+                        //#if MC >= 1.20.1
                         CommandHelper.canUseCommand(source, FGASettings.droppedItemStackLimit)
                         //#elseif MC >= 1.19
                         //$$ CommandHelper.canUseCommand(source, CarpetSettings.carpetCommandPermissionLevel)
@@ -245,7 +245,7 @@ public final class DroppedItemStackLimitCommand {
         DroppedItemStackLimitConfig.State current = DroppedItemStackLimitConfig.snapshot();
         MutableComponent message = Component.literal("掉落物堆叠配置\n")
                 .append(Component.literal("规则：" +
-                        //#if MC >= 1.21.1
+                        //#if MC >= 1.20.1
                         FGASettings.droppedItemStackLimit
                         //#else
                         //$$ (FGASettings.droppedItemStackLimit ? "true" : "false")

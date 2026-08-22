@@ -1,8 +1,10 @@
-//#if MC == 1.21.1
+//#if MC == 1.20.1 || MC == 1.21.1
 package carpet.fga;
 
+//#if MC >= 1.20.5
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponents;
+//#endif
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -24,7 +26,9 @@ import net.minecraft.world.entity.vehicle.AbstractMinecart;
 import net.minecraft.world.entity.vehicle.Minecart;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+//#if MC >= 1.20.5
 import net.minecraft.world.item.component.Fireworks;
+//#endif
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.Vec3;
@@ -46,8 +50,10 @@ public final class MinecartFeatureManager {
     private static final double VANILLA_WATER_SPEED = 0.2D;
     private static final double BREAK_DISTANCE = 16.0D;
     private static final long SELECTION_TIMEOUT = 1200L;
+    //#if MC >= 1.20.2
     private static final SavedData.Factory<LinkData> DATA_FACTORY = new SavedData.Factory<>(
             LinkData::new, LinkData::load, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
+    //#endif
 
     private static final Map<UUID, BoostState> BOOSTS = new HashMap<>();
     private static final Map<UUID, Selection> SELECTIONS = new HashMap<>();
@@ -178,13 +184,25 @@ public final class MinecartFeatureManager {
         if (direction.lengthSqr() < 1.0E-6D) direction = horizontalDirection(minecart.getDeltaMovement());
         if (direction.lengthSqr() < 1.0E-6D) direction = new Vec3(0.0D, 0.0D, 1.0D);
 
+        int flight;
+        //#if MC >= 1.20.5
         Fireworks fireworks = stack.get(DataComponents.FIREWORKS);
-        int flight = fireworks == null ? 1 : Math.max(1, fireworks.flightDuration());
+        flight = fireworks == null ? 1 : Math.max(1, fireworks.flightDuration());
+        //#else
+        //$$ CompoundTag fireworks = stack.getTagElement("Fireworks");
+        //$$ flight = fireworks == null ? 1 : Math.max(1, fireworks.getByte("Flight"));
+        //#endif
         int ticks = Math.multiplyExact(flight, MinecartFeatureConfig.snapshot().durationPerFlight());
         lastBoostDuration = ticks;
         BOOSTS.put(minecart.getUUID(), new BoostState(direction, ticks));
 
-        if (!player.getAbilities().instabuild) stack.consume(1, player);
+        if (!player.getAbilities().instabuild) {
+            //#if MC >= 1.20.5
+            stack.consume(1, player);
+            //#else
+            //$$ stack.shrink(1);
+            //#endif
+        }
         player.awardStat(Stats.ITEM_USED.get(Items.FIREWORK_ROCKET));
         ServerLevel level = (ServerLevel) player.level();
         level.playSound(null, minecart.getX(), minecart.getY(), minecart.getZ(),
@@ -310,7 +328,13 @@ public final class MinecartFeatureManager {
         }
 
         boolean paid = !player.getAbilities().instabuild;
-        if (paid) stack.consume(1, player);
+        if (paid) {
+            //#if MC >= 1.20.5
+            stack.consume(1, player);
+            //#else
+            //$$ stack.shrink(1);
+            //#endif
+        }
         links.links.put(key, new LinkRecord(paid));
         links.setDirty();
         chainEffect(first, false);
@@ -451,7 +475,12 @@ public final class MinecartFeatureManager {
 
     private static void ensureLinks(MinecraftServer server) {
         if (links == null && server != null && server.overworld() != null) {
-            links = server.overworld().getDataStorage().computeIfAbsent(DATA_FACTORY, DATA_NAME);
+            links = server.overworld().getDataStorage().computeIfAbsent(
+                    //#if MC >= 1.20.2
+                    DATA_FACTORY, DATA_NAME);
+                    //#else
+                    //$$ LinkData::load, LinkData::new, DATA_NAME);
+                    //#endif
         }
     }
 
@@ -507,7 +536,11 @@ public final class MinecartFeatureManager {
     private static final class LinkData extends SavedData {
         private final Map<LinkKey, LinkRecord> links = new LinkedHashMap<>();
 
-        private static LinkData load(CompoundTag tag, HolderLookup.Provider provider) {
+        private static LinkData load(CompoundTag tag
+                                     //#if MC >= 1.20.2
+                                     , HolderLookup.Provider provider
+                                     //#endif
+        ) {
             LinkData data = new LinkData();
             ListTag list = tag.getList("links", Tag.TAG_COMPOUND);
             for (int index = 0; index < list.size(); index++) {
@@ -522,7 +555,11 @@ public final class MinecartFeatureManager {
         }
 
         @Override
-        public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+        public CompoundTag save(CompoundTag tag
+                                //#if MC >= 1.20.2
+                                , HolderLookup.Provider provider
+                                //#endif
+        ) {
             ListTag list = new ListTag();
             for (Map.Entry<LinkKey, LinkRecord> link : links.entrySet()) {
                 CompoundTag entry = new CompoundTag();

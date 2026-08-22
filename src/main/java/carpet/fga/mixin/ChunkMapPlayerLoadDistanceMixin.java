@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ChunkMapPlayerLoadDistanceMixin {
     @Inject(method = "move", at = @At("TAIL"))
     private void carpetFga$refreshPlayerView(ServerPlayer player, CallbackInfo callback) {
-        PlayerLoadDistanceManager.reapply(player);
+        carpet.fga.PlayerLoadDistanceCompat.reapply(player);
     }
 }
 //#endif

@@ -1,10 +1,14 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.20.1 && MC <= 26.2
 package carpet.fga;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.StonecutterMenu;
 import net.minecraft.world.inventory.Slot;
+//#if MC >= 1.20.2
 import net.minecraft.world.item.crafting.RecipeHolder;
+//#else
+//$$ import net.minecraft.world.item.crafting.Recipe;
+//#endif
 //#if MC >= 1.21.3
 //$$ import net.minecraft.world.item.crafting.SelectableRecipe;
 //$$ import net.minecraft.world.item.crafting.StonecutterRecipe;
@@ -29,7 +33,7 @@ public final class WoodStonecuttingRecipes {
     }
 
     public static boolean isTwoInputRecipe(StonecutterMenu menu) {
-        RecipeHolder<?> recipe = selectedRecipe(menu);
+        Object recipe = selectedRecipe(menu);
         return recipe != null && requiredInputCount(recipe) > 1;
     }
 
@@ -42,12 +46,12 @@ public final class WoodStonecuttingRecipes {
         return menu != null && isTwoInputRecipe(menu);
     }
 
-    public static boolean isTwoInputRecipe(RecipeHolder<?> recipe) {
+    public static boolean isTwoInputRecipe(Object recipe) {
         return requiredInputCount(recipe) > 1;
     }
 
     public static int requiredInputCount(StonecutterMenu menu) {
-        RecipeHolder<?> recipe = selectedRecipe(menu);
+        Object recipe = selectedRecipe(menu);
         return recipe == null ? 1 : requiredInputCount(recipe);
     }
 
@@ -56,13 +60,9 @@ public final class WoodStonecuttingRecipes {
         return menu == null ? 1 : requiredInputCount(menu);
     }
 
-    public static int requiredInputCount(RecipeHolder<?> recipe) {
-        ResourceLocation id =
-                //#if MC >= 1.21.3
-                //$$ recipe.id().location();
-                //#else
-                recipe.id();
-                //#endif
+    public static int requiredInputCount(Object recipe) {
+        ResourceLocation id = recipeId(recipe);
+        if (id == null) return 1;
         if (!isWoodRecipe(id)) return 1;
         String path = id.getPath();
         if (path.startsWith("bamboo_to_")) return 9;
@@ -77,20 +77,26 @@ public final class WoodStonecuttingRecipes {
         return 1;
     }
 
-    private static RecipeHolder<?> selectedRecipe(StonecutterMenu menu) {
+    private static ResourceLocation recipeId(Object recipe) {
+        if (recipe == null) return null;
+                //#if MC >= 1.21.3
+                //$$ return ((RecipeHolder<?>) recipe).id().location();
+                //#elseif MC >= 1.20.2
+                return ((RecipeHolder<?>) recipe).id();
+                //#else
+                //$$ return ((Recipe<?>) recipe).getId();
+                //#endif
+    }
+
+    private static Object selectedRecipe(StonecutterMenu menu) {
         int index = menu.getSelectedRecipeIndex();
         //#if MC >= 1.21.3
         //$$ List<SelectableRecipe.SingleInputEntry<StonecutterRecipe>> recipes = menu.getVisibleRecipes().entries();
         //$$ return index >= 0 && index < recipes.size() ? recipes.get(index).recipe().recipe().orElse(null) : null;
         //#else
-        List<RecipeHolder<?>> recipes = rawRecipes(menu.getRecipes());
+        List<?> recipes = menu.getRecipes();
         return index >= 0 && index < recipes.size() ? recipes.get(index) : null;
         //#endif
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<RecipeHolder<?>> rawRecipes(List<?> recipes) {
-        return (List<RecipeHolder<?>>) (List<?>) recipes;
     }
 }
 //#endif

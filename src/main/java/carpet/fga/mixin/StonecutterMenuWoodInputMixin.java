@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.20.1 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.WoodStonecuttingRecipes;
@@ -15,8 +15,8 @@ abstract class StonecutterMenuWoodInputMixin {
     private void carpetFga$hideUnderfilledWoodResult(CallbackInfo callback) {
         StonecutterMenu menu = (StonecutterMenu) (Object) this;
         WoodStonecuttingRecipes.registerInputSlot(menu.getSlot(0), menu);
-        if (WoodStonecuttingRecipes.isTwoInputRecipe(menu)
-                && menu.getSlot(0).getItem().getCount() < 2) {
+        int required = WoodStonecuttingRecipes.requiredInputCount(menu);
+        if (required > 1 && menu.getSlot(0).getItem().getCount() < required) {
             menu.getSlot(1).set(ItemStack.EMPTY);
         }
     }

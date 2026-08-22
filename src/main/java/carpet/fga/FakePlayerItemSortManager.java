@@ -1,11 +1,10 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.20.1 && MC <= 26.2
 package carpet.fga;
 
 import carpet.patches.EntityPlayerMPFake;
 import com.google.gson.*;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -15,6 +14,7 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
@@ -22,8 +22,12 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+//#if MC >= 1.20.5
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.component.ItemContainerContents;
+//#endif
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.storage.LevelResource;
 
@@ -464,7 +468,22 @@ public final class FakePlayerItemSortManager {
 
     private static String itemKey(ItemStack stack) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        return id + "|" + stack.getComponentsPatch();
+        return id + "|" +
+                //#if MC >= 1.20.5
+                stack.getComponentsPatch();
+                //#else
+                //$$ stack.save(new CompoundTag());
+                //#endif
+    }
+
+    private static boolean createFake(String name, MinecraftServer minecraftServer, net.minecraft.world.phys.Vec3 position,
+                                      float yaw, float pitch, ResourceKey<Level> dimension,
+                                      GameType gameMode, boolean flying) {
+        //#if MC >= 1.20.2
+        return EntityPlayerMPFake.createFake(name, minecraftServer, position, yaw, pitch, dimension, gameMode, flying);
+        //#else
+        //$$ return EntityPlayerMPFake.createFake(name, minecraftServer, position, yaw, pitch, dimension, gameMode, flying) != null;
+        //#endif
     }
 
     private static void rebuildRoute(MinecraftServer minecraftServer, RebuildRequest request) {
@@ -821,7 +840,7 @@ public final class FakePlayerItemSortManager {
                 stopFake(existing);
             }
             if (skipped(minecraftServer, name)) continue;
-            if (!EntityPlayerMPFake.createFake(name, minecraftServer, source.position(), source.getYRot(), source.getXRot(),
+            if (!createFake(name, minecraftServer, source.position(), source.getYRot(), source.getXRot(),
                     source.serverLevel().dimension(), GameType.SURVIVAL, false)) continue;
             ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(name);
             if (!(spawned instanceof EntityPlayerMPFake)) continue;
@@ -841,7 +860,7 @@ public final class FakePlayerItemSortManager {
             if (!(existing instanceof EntityPlayerMPFake)) return null;
             stopFake(existing);
         }
-        if (!EntityPlayerMPFake.createFake(base, minecraftServer, source.position(), source.getYRot(), source.getXRot(),
+        if (!createFake(base, minecraftServer, source.position(), source.getYRot(), source.getXRot(),
                 source.serverLevel().dimension(), GameType.SURVIVAL, false)) return null;
         ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(base);
         if (!(spawned instanceof EntityPlayerMPFake)) return null;
@@ -1104,7 +1123,7 @@ public final class FakePlayerItemSortManager {
             if (!(existing instanceof EntityPlayerMPFake)) return null;
             stopFake(existing);
         }
-        if (!EntityPlayerMPFake.createFake(name, minecraftServer, context.source().position(), context.source().getYRot(),
+        if (!createFake(name, minecraftServer, context.source().position(), context.source().getYRot(),
                 context.source().getXRot(),
                 //#if MC >= 1.21.8
                 //$$ context.source().level().dimension(),
@@ -1229,7 +1248,7 @@ public final class FakePlayerItemSortManager {
                 left -= n;
             }
         }
-        shulker.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(contents));
+        setShulkerContents(shulker, contents);
         return count - left;
     }
 
@@ -1246,13 +1265,42 @@ public final class FakePlayerItemSortManager {
 
     private static NonNullList<ItemStack> shulkerContents(ItemStack shulker) {
         NonNullList<ItemStack> contents = NonNullList.withSize(SHULKER_SIZE, ItemStack.EMPTY);
+        //#if MC >= 1.20.5
         ItemContainerContents component = shulker.get(DataComponents.CONTAINER);
         if (component != null) component.copyInto(contents);
+        //#else
+        //$$ CompoundTag blockEntity = shulker.getTagElement("BlockEntityTag");
+        //$$ if (blockEntity != null && blockEntity.contains("Items", Tag.TAG_LIST)) {
+        //$$     ListTag items = blockEntity.getList("Items", Tag.TAG_COMPOUND);
+        //$$     for (int i = 0; i < items.size(); i++) {
+        //$$         CompoundTag entry = items.getCompound(i);
+        //$$         int slot = entry.getByte("Slot") & 255;
+        //$$         if (slot >= 0 && slot < contents.size()) contents.set(slot, ItemStack.of(entry));
+        //$$     }
+        //$$ }
+        //#endif
         return contents;
     }
 
     private static void setShulkerContents(ItemStack shulker, NonNullList<ItemStack> contents) {
+        //#if MC >= 1.20.5
         shulker.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(contents));
+        //#else
+        //$$ CompoundTag root = shulker.getOrCreateTag();
+        //$$ CompoundTag blockEntity = root.getCompound("BlockEntityTag");
+        //$$ ListTag items = new ListTag();
+        //$$ for (int slot = 0; slot < contents.size(); slot++) {
+        //$$     ItemStack stack = contents.get(slot);
+        //$$     if (stack.isEmpty()) continue;
+        //$$     CompoundTag entry = new CompoundTag();
+        //$$     stack.save(entry);
+        //$$     entry.putByte("Slot", (byte) slot);
+        //$$     items.add(entry);
+        //$$ }
+        //$$ blockEntity.put("Items", items);
+        //$$ root.put("BlockEntityTag", blockEntity);
+        //$$ shulker.setTag(root);
+        //#endif
     }
 
     private static void copyShulkerContents(ItemStack target, ItemStack source) {
@@ -1268,7 +1316,12 @@ public final class FakePlayerItemSortManager {
     }
 
     private static boolean isPlainShulker(ItemStack stack) {
-        return stack.is(Items.SHULKER_BOX) && stack.get(DataComponents.CUSTOM_NAME) == null;
+        return stack.is(Items.SHULKER_BOX) &&
+                //#if MC >= 1.20.5
+                stack.get(DataComponents.CUSTOM_NAME) == null;
+                //#else
+                //$$ !stack.hasCustomHoverName();
+                //#endif
     }
 
     private static boolean isShulkerTarget(String itemKey) {
@@ -1631,7 +1684,7 @@ public final class FakePlayerItemSortManager {
         ServerPlayer reference = sourceId == null ? null : minecraftServer.getPlayerList().getPlayer(sourceId);
         if (reference == null && initiator != null) reference = minecraftServer.getPlayerList().getPlayer(initiator);
         if (reference != null) {
-            if (EntityPlayerMPFake.createFake(name, minecraftServer, reference.position(), reference.getYRot(), reference.getXRot(),
+            if (createFake(name, minecraftServer, reference.position(), reference.getYRot(), reference.getXRot(),
                     reference.serverLevel().dimension(), GameType.SURVIVAL, false)) {
                 ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(name);
                 if (spawned instanceof EntityPlayerMPFake) {
@@ -1924,10 +1977,53 @@ public final class FakePlayerItemSortManager {
             readInventory();
         }
 
+        private static CompoundTag readCompressed(Path path) throws IOException {
+            //#if MC >= 1.20.2
+            return NbtIo.readCompressed(path, NbtAccounter.unlimitedHeap());
+            //#else
+            //$$ return NbtIo.readCompressed(path.toFile());
+            //#endif
+        }
+
+        private static void writeCompressed(CompoundTag data, Path path) throws IOException {
+            //#if MC >= 1.20.2
+            NbtIo.writeCompressed(data, path);
+            //#else
+            //$$ NbtIo.writeCompressed(data, path.toFile());
+            //#endif
+        }
+
+        private static ItemStack decodeItemStack(HolderLookup.Provider registry, CompoundTag entry) {
+            //#if MC >= 1.21.8
+            //$$ return ItemStack.OPTIONAL_CODEC
+            //$$         .parse(registry.createSerializationContext(NbtOps.INSTANCE), entry)
+            //$$         .result().orElse(ItemStack.EMPTY);
+            //#elseif MC >= 1.21.5
+            //$$ return ItemStack.parse(registry, entry).orElse(ItemStack.EMPTY);
+            //#elseif MC >= 1.20.5
+            return ItemStack.parseOptional(registry, entry);
+            //#else
+            //$$ return ItemStack.of(entry);
+            //#endif
+        }
+
+        private static CompoundTag encodeItemStack(HolderLookup.Provider registry, ItemStack stack) {
+            //#if MC >= 1.21.8
+            //$$ return ItemStack.OPTIONAL_CODEC
+            //$$         .encodeStart(registry.createSerializationContext(NbtOps.INSTANCE), stack)
+            //$$         .result().filter(CompoundTag.class::isInstance).map(CompoundTag.class::cast)
+            //$$         .orElseThrow(() -> new IllegalStateException("could not encode sorter item stack"));
+            //#elseif MC >= 1.20.5
+            return (CompoundTag) stack.save(registry);
+            //#else
+            //$$ return stack.save(new CompoundTag());
+            //#endif
+        }
+
         static OfflineInventory open(MinecraftServer server, String name) throws IOException {
             UUID uuid = uuidFor(server, name);
             Path path = server.getWorldPath(LevelResource.ROOT).resolve("playerdata").resolve(uuid + ".dat");
-            if (Files.exists(path)) return new OfflineInventory(server, path, NbtIo.readCompressed(path, NbtAccounter.unlimitedHeap()), true);
+            if (Files.exists(path)) return new OfflineInventory(server, path, readCompressed(path), true);
             CompoundTag data = new CompoundTag();
             data.put("Inventory", new ListTag());
             data.putString("fgaOfflineSorterName", name);
@@ -1938,7 +2034,7 @@ public final class FakePlayerItemSortManager {
             UUID uuid = uuidFor(server, name);
             Path path = server.getWorldPath(LevelResource.ROOT).resolve("playerdata").resolve(uuid + ".dat");
             if (!Files.exists(path)) return null;
-            return new OfflineInventory(server, path, NbtIo.readCompressed(path, NbtAccounter.unlimitedHeap()), true);
+            return new OfflineInventory(server, path, readCompressed(path), true);
         }
 
         private Path path() { return path; }
@@ -1975,7 +2071,7 @@ public final class FakePlayerItemSortManager {
                 //#else
                 CompoundTag entry = inventory.getCompound(i);
                 int slot = entry.getByte("Slot");
-                ItemStack stack = ItemStack.parseOptional(registry, entry);
+                ItemStack stack = decodeItemStack(registry, entry);
                 //#endif
                 if (stack.isEmpty()) continue;
                 if (slot >= 0 && slot < MAIN_SIZE) main[slot] = stack;
@@ -2030,7 +2126,7 @@ public final class FakePlayerItemSortManager {
 
                 Files.createDirectories(path.getParent());
                 Path temp = path.resolveSibling(path.getFileName() + ".tmp");
-                NbtIo.writeCompressed(data, temp);
+                writeCompressed(data, temp);
                 try {
                     Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
                 } catch (AtomicMoveNotSupportedException e) {
@@ -2051,7 +2147,7 @@ public final class FakePlayerItemSortManager {
             //$$         .result().filter(CompoundTag.class::isInstance).map(CompoundTag.class::cast)
             //$$         .orElseThrow(() -> new IllegalStateException("could not encode sorter item stack"));
             //#else
-            CompoundTag saved = (CompoundTag) stack.save(registry);
+            CompoundTag saved = encodeItemStack(registry, stack);
             //#endif
             saved.putByte("Slot", (byte) slot);
             list.add(saved);

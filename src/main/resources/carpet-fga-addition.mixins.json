@@ -43,24 +43,30 @@
         ,"VillagerTradeOnlyMixin",
         "BrainVillagerPerformanceMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         ,"AgeableMobNoGrowthMixin",
         "TadpoleNoGrowthMixin",
-        "AbstractContainerMenuFullShulkerMixin",
-        "MinecraftServerTerrainRegenerationMixin",
-        "ChunkMapTrialStopAccessor",
-        "TrialSpawnerDataAccessor",
-        "TrialSpawnerDataMultiplierMixin",
-        "TrialSpawnerStateRewardMultiplierMixin",
-        "TrialSpawnerStateStopRefreshMixin",
         "WorkAtComposterNoBreadMixin",
         "VillagerUpgradeWhileTradingMixin"
         //#endif
+        //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
+        ,"AbstractContainerMenuFullShulkerMixin",
+        "MinecraftServerTerrainRegenerationMixin"
+        //#endif
+        //#if MC >= 1.20.1 && MC <= 26.2
+        ,"ChunkMapLoadedChunksAccessor"
+        //#endif
         //#if MC >= 1.21 && MC <= 26.2
+        ,"TrialSpawnerDataAccessor",
+        "TrialSpawnerDataMultiplierMixin",
+        "TrialSpawnerStateRewardMultiplierMixin",
+        "TrialSpawnerStateStopRefreshMixin"
+        //#endif
+        //#if MC >= 1.20.1 && MC <= 26.2
         ,"AnvilMenuNoPriorWorkPenaltyMixin",
         "PlayerExperienceLevelCostMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         ,"ResilientPlantBlockStateMixin",
         "ComparatorBlockThroughBlocksMixin",
         "LevelComparatorThroughBlocksMixin",
@@ -68,15 +74,15 @@
         "ShulkerAttackArmorStandMixin",
         "ShulkerBedrockLootingMixin"
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.20.1 && MC <= 1.21.5
         ,"EndPortalPlayerTpControlMixin",
         "EndGatewayPlayerTpControlMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         ,"StonecutterMenuWoodInputMixin",
         "StonecutterResultSlotWoodMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         ,"ClientboundUpdateRecipesDeepslateMixin",
         "StonecutterMenuDeepslateMixin"
         //#endif
@@ -85,8 +91,17 @@
         "ChunkMapPlayerLoadDistanceMixin",
         "DistanceManagerPlayerLoadDistanceAccessor",
         "ServerGamePacketListenerPlayerLoadDistanceMixin",
-        "EntityPlayerMPFakeMixin",
-        "AbstractMinecartFeatureMixin",
+        "EntityPlayerMPFakeMixin"
+        //#endif
+        //#if MC == 1.20.1
+        //$$ ,"EntityPlayerMPFakeMixin",
+        //$$ "LegacyChunkMapPlayerLoadDistanceAccessor",
+        //$$ "LegacyChunkMapPlayerLoadDistanceMixin",
+        //$$ "LegacyServerGamePacketListenerPlayerLoadDistanceMixin",
+        //$$ "DistanceManagerPlayerLoadDistanceAccessor"
+        //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1
+        ,"AbstractMinecartFeatureMixin",
         "BlockAttachedEntityItemFrameMixin",
         "EntityMinecartFeatureCleanupMixin",
         "EntityTickListItemFrameMixin",
@@ -121,10 +136,16 @@
         ,"RecipeBookMixin",
         "ServerPlaceRecipeMixin"
         //#endif
-        //#if MC >= 1.20.5 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         ,"BlockDropPreStackMixin",
-        "VehicleEntityMixin",
         "AbstractMinecartContainerMixin"
+        //#endif
+        //#if MC >= 1.20.5 && MC <= 26.2
+        ,"VehicleEntityMixin"
+        //#endif
+        //#if MC == 1.20.1
+        //$$ ,"LegacyMinecartPreStackMixin",
+        //$$ "LegacyBoatPreStackMixin"
         //#endif
         //#if MC >= 1.16.5 && MC < 26.0
         ,"EndDragonFightGatewayMixin",
@@ -153,9 +174,14 @@
         //$$ "DialogWarningServerCommonPacketListenerMixin",
         //$$ "DialogWarningServerConfigurationPacketListenerMixin"
         //#endif
-        //#if MC >= 1.21.1 && MC <= 1.21.5
-        ,"ClientDimensionIdPacketMixin",
-        "TeleportCommandMixin",
+        //#if MC == 1.20.1 || MC >= 1.21.1 && MC <= 1.21.5
+        ,"ClientDimensionIdPacketMixin"
+        //#endif
+        //#if MC == 1.20.1
+        //$$ ,"ClientboundRespawnPacketAccessor"
+        //#endif
+        //#if MC >= 1.20.1 && MC <= 1.21.5
+        ,"TeleportCommandMixin",
         "ServerPlayerSpectatorTeleportMixin",
         "EntitySelectorParserSpectatorTeleportMixin",
         "EntitySelectorSpectatorTeleportMixin"
@@ -163,13 +189,12 @@
     ],
     "client": [
         //#if MC >= 1.20.5
-        "FriendlyByteBufMixin"
-        //#endif
-        //#if MC >= 1.20.2
-        ,"ClientPacketListenerMixin"
-        //#endif
-        //#if MC >= 1.16.5 && MC < 1.20.2
-        //$$ ,"LegacyClientPacketListenerMixin"
+        "FriendlyByteBufMixin",
+        "ClientPacketListenerMixin"
+        //#elseif MC >= 1.20.2
+        //$$ "ClientPacketListenerMixin"
+        //#else
+        //$$ "LegacyClientPacketListenerMixin"
         //#endif
     ],
     "injectors": {

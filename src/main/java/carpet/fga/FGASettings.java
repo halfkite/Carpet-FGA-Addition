@@ -119,7 +119,7 @@ public class FGASettings {
         category = {FGA, FEATURE},
         options = {"false", "always", "adaptive"},
         validate = FGASettings.FakePlayerProfilePreloadValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String fakePlayerProfilePreload = "false";
 
@@ -141,7 +141,7 @@ public class FGASettings {
                 Messenger.m(source, "r fakePlayerProfilePreload must be false, always, or adaptive");
                 return null;
             }
-            //#if MC >= 1.21.1
+            //#if MC == 1.20.1 || MC >= 1.21.1
             FakePlayerProfilePreloadManager.clearAll();
             //#endif
             return newValue;
@@ -241,7 +241,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC >= 1.21 && MC <= 26.2
+            //#if MC >= 1.20.1 && MC <= 26.2
             return true;
             //#else
             //$$ return false;
@@ -262,7 +262,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC >= 1.21 && MC <= 1.21.11
+            //#if MC >= 1.20.1 && MC <= 1.21.11
             return true;
             //#else
             //$$ return false;
@@ -278,17 +278,17 @@ public class FGASettings {
     )
     public static boolean deepslateStonecuttingRecipes = false;
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     @Rule(
         desc = "Removes the anvil prior-work penalty and the 40-level too-expensive limit",
         category = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static boolean anvilNoPriorWorkPenalty = false;
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     public static final String EXPERIENCE_LEVEL_COST_29_30 = "29-30";
     public static final String EXPERIENCE_LEVEL_COST_0_1 = "0-1";
     private static final String LEGACY_EXPERIENCE_LEVEL_COST_29_30 = "30级后每级升级消耗经验与29到30一样";
@@ -300,13 +300,36 @@ public class FGASettings {
         options = {"false", "29-30", "0-1"},
         strict = false,
         validate = FGASettings.ExperienceLevelCostValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String experienceLevelCost = "false";
 
     public static boolean usesExperienceLevelCost29To30() {
         return EXPERIENCE_LEVEL_COST_29_30.equals(experienceLevelCost)
                 || LEGACY_EXPERIENCE_LEVEL_COST_29_30.equals(experienceLevelCost);
+    }
+
+    public static class Minecraft1_20_1Or1_21_1Condition implements
+            //#if MC >= 1.19
+            carpet.api.settings.Rule.Condition {
+            //#else
+            //$$ carpet.settings.Condition {
+            //#endif
+        @Override
+        public boolean
+                //#if MC >= 1.19
+                shouldRegister() {
+                //#else
+                //$$ isTrue() {
+                //#endif
+            //#if MC == 1.20.1
+            //$$ return true;
+            //#elseif MC == 1.21.1
+            return true;
+            //#else
+            //$$ return false;
+            //#endif
+        }
     }
 
     public static boolean usesExperienceLevelCost0To1() {
@@ -345,7 +368,7 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     @Rule(
         desc = "Allows wood products to be crafted in the stonecutter",
         category = {FGA, FEATURE},
@@ -355,7 +378,7 @@ public class FGASettings {
     public static boolean woodStonecuttingRecipes = false;
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     @Rule(
         desc = "Prevents villagers from crafting wheat into bread",
         category = {FGA, FEATURE},
@@ -371,14 +394,14 @@ public class FGASettings {
     public static boolean villagerUpgradeWhileTrading = false;
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     @Rule(
         desc = "Controls per-player chunk loading distance commands",
         category = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
         validate = FGASettings.PlayerLoadDistanceValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String playerLoadDistance = "false";
 
@@ -497,7 +520,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC >= 1.21 && MC <= 26.2
+            //#if MC >= 1.20.1 && MC <= 26.2
             return true;
             //#else
             //$$ return false;
@@ -535,14 +558,14 @@ public class FGASettings {
         }
     }
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     @Rule(
         desc = "Allows configured plants to survive without their normal support restrictions",
         category = {FGA, FEATURE},
         options = {"false", "true", "[]"},
         strict = false,
         validate = FGASettings.ResilientPlantsValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String resilientPlants = "false";
 
@@ -572,7 +595,7 @@ public class FGASettings {
         options = {"false", "[chain]", "[piston]", "[chain,piston]"},
         strict = false,
         validate = FGASettings.ComparatorThroughBlocksValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String comparatorThroughBlocks = "false";
 
@@ -597,12 +620,12 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     @Rule(
         desc = "Shulkers killed by shulker bullets always respawn a new shulker at the death spot, like Bedrock Edition",
         category = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static boolean shulkerBedrockDuplication = false;
 
@@ -610,7 +633,7 @@ public class FGASettings {
         desc = "Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly",
         category = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static boolean shulkerBedrockLooting = false;
 
@@ -620,7 +643,7 @@ public class FGASettings {
         options = {"false", "true", "pumpkin"},
         strict = false,
         validate = FGASettings.ShulkerAttackArmorStandValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String shulkerAttackArmorStand = "false";
 
@@ -681,21 +704,21 @@ public class FGASettings {
     @Rule(
         desc = "Removes item frames from server tick scheduling and validates them when support blocks change",
         category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
     )
     public static boolean itemFrameBlockification = false;
 
     @Rule(
         desc = "Lets players riding normal minecarts use firework rockets for configurable speed boosts",
         category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
     )
     public static boolean fireworkMinecartBoost = false;
 
     @Rule(
         desc = "Lets normal minecarts form persistent chain-linked trains",
         category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
     )
     public static boolean chainMinecartBinding = false;
 
@@ -704,7 +727,7 @@ public class FGASettings {
         category = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
     )
     public static String minecartFeatureCommandPermission = "false";
 
@@ -713,7 +736,7 @@ public class FGASettings {
         category = {FGA, FEATURE},
         options = {"false", "minecart", "boat", "all", "custom"},
         strict = false,
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_16OrNewerCondition.class
     )
     public static String vehicleStopOnDismount = "false";
 
@@ -723,13 +746,13 @@ public class FGASettings {
     )
     public static boolean voidWorldGeneration = false;
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
     @Rule(
         desc = "Controls access to terrain regeneration and clearing commands",
         category = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String terrainRegenerationCommandPermission = "ops";
     //#endif
@@ -740,9 +763,9 @@ public class FGASettings {
     )
     public static boolean fullShulkerBoxCrafting = false;
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     @Rule(desc = "Enables fake-player inventory sorting; mode and sorter options are managed by /fakePlayerItemSort", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            options = {"false", "true"}, strict = false, condition = Minecraft1_21OrNewerCondition.class)
+            options = {"false", "true"}, strict = false, condition = Minecraft1_20_1OrNewerCondition.class)
     public static boolean fakePlayerItemSort = false;
 
     public static boolean isFakePlayerItemSortEnabled() {
@@ -751,11 +774,11 @@ public class FGASettings {
     //#endif
     //#endif
 
-    //#if MC >= 1.21.1 && MC <= 1.21.5
+    //#if MC >= 1.20.1 && MC <= 1.21.5
     @Rule(
         desc = "Allows non-OP spectators to use /tp and /teleport on themselves only",
         category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static boolean spectatorFreeTeleport = false;
 
@@ -765,7 +788,7 @@ public class FGASettings {
         options = {"false", "true", "control"},
         strict = false,
         validate = FGASettings.PlayerTpEndControlValidator.class,
-        condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String PlayerTpEndControl = "false";
 
@@ -790,7 +813,7 @@ public class FGASettings {
     )
     public static boolean restorePre26BeeCollisionBox = false;
 
-    //#if MC >= 1.21.1
+    //#if MC == 1.20.1 || MC >= 1.21.1
     @Rule(
         desc = "Maps the client-visible ids for the Overworld, Nether, and End without changing server dimensions",
         category = {FGA, FEATURE},
@@ -910,13 +933,13 @@ public class FGASettings {
     )
     public static boolean hostileMobInventoryAccess = false;
 
-    //#if MC >= 1.21.1
+    //#if MC >= 1.20.1
     @Rule(
         desc = "Enables configurable ground item entity stack limits and controls access to /droppedItemStackLimit",
         category = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         validate = FGASettings.DroppedItemStackLimitValidator.class,
-        condition = FGASettings.Minecraft1_21_1Condition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static String droppedItemStackLimit = "false";
 
@@ -967,13 +990,13 @@ public class FGASettings {
 
     private static volatile Set<ResourceLocation> preStackMobTypes = Set.of();
 
-    //#if MC >= 1.20.5 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     @Rule(
         desc = "Enables unified entity-death and block-drop pre-stacking configured by /dropPreStack",
         category = {FGA, FEATURE},
         options = {"false", "true"},
         strict = false,
-        condition = FGASettings.Minecraft1_20_5OrNewerCondition.class
+        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     public static boolean preStackDroppedItems = false;
     //#endif
@@ -1027,7 +1050,7 @@ public class FGASettings {
 
     public static Double preStackEntityRange(Entity entity) {
         ResourceLocation id = preStackEntityId(entity);
-        //#if MC >= 1.20.5 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         if (preStackDroppedItems) {
             Double containerConfigured = DropPreStackConfig.containerEntityRange(id);
             if (containerConfigured != null) return containerConfigured;

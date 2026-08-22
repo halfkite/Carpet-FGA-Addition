@@ -2,7 +2,7 @@ package carpet.fga.mixin;
 
 import carpet.commands.PlayerCommand;
 import carpet.fga.FGASettings;
-//#if MC >= 1.21.1
+//#if MC == 1.20.1 || MC >= 1.21.1
 import carpet.fga.FakePlayerProfilePreloadManager;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = PlayerCommand.class, remap = false)
 public class PlayerCommandMixin {
 
-    //#if MC >= 1.21.1
+    //#if MC == 1.20.1 || MC >= 1.21.1
     @Inject(method = "spawn", at = @At("HEAD"), cancellable = true, remap = false)
     private static void carpetFga$preloadCommandFakePlayerProfile(
             CommandContext<CommandSourceStack> context, CallbackInfoReturnable<Integer> cir) {

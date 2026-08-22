@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
 package carpet.fga;
 
 import com.google.gson.*;
@@ -20,7 +20,11 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
+//#if MC >= 1.21
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+//#else
+//$$ import net.minecraft.world.level.chunk.ChunkStatus;
+//#endif
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.LevelResource;
@@ -286,7 +290,11 @@ public final class TerrainRegenerationManager {
 
     private static void prepareStorage(Task task, Path backup) throws IOException {
         ResourceKey<Level> key = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
+                //#if MC >= 1.21
                 ResourceLocation.parse(task.dimension));
+                //#else
+                //$$ new ResourceLocation(task.dimension));
+                //#endif
         Path dimensionPath = DimensionType.getStorageFolder(key, worldRoot);
         Files.createDirectories(backup);
         Set<String> copied = new HashSet<>();
@@ -302,10 +310,12 @@ public final class TerrainRegenerationManager {
                     if (!Files.isRegularFile(region)) return;
                     copyRegionFile(folder, type, pos, backup, copied);
                     if (task.type == Type.CLEAR && type.equals("region")) return;
-                    net.minecraft.world.level.chunk.storage.RegionStorageInfo info =
-                            new net.minecraft.world.level.chunk.storage.RegionStorageInfo("fga", key, type);
                     try (net.minecraft.world.level.chunk.storage.RegionFile file =
-                                 new net.minecraft.world.level.chunk.storage.RegionFile(info, region, folder, false)) {
+                                 new net.minecraft.world.level.chunk.storage.RegionFile(
+                                         //#if MC >= 1.21
+                                         new net.minecraft.world.level.chunk.storage.RegionStorageInfo("fga", key, type),
+                                         //#endif
+                                         region, folder, false)) {
                         file.clear(pos);
                     }
                 } catch (IOException exception) { throw new StorageException(exception); }
@@ -386,7 +396,11 @@ public final class TerrainRegenerationManager {
 
     private static ServerLevel level(MinecraftServer server, String id) {
         return server.getLevel(ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
+                //#if MC >= 1.21
                 ResourceLocation.parse(id)));
+                //#else
+                //$$ new ResourceLocation(id)));
+                //#endif
     }
 
     private static void forEachChunk(Task task, java.util.function.Consumer<ChunkPos> action) {

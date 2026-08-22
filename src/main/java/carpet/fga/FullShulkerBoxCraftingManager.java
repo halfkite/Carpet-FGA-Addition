@@ -42,7 +42,7 @@ import net.minecraft.core.component.DataComponents;
 //#endif
 
 import java.util.ArrayList;
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
 import java.util.ArrayDeque;
 import java.util.Deque;
 //#endif
@@ -57,14 +57,14 @@ import java.util.WeakHashMap;
 /** Server-side full-shulker crafting backed by ordinary crafting recipes. */
 public final class FullShulkerBoxCraftingManager {
     private static final int VANILLA_SHULKER_SIZE = 27;
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.2
     private static final int AMS_LARGE_SHULKER_SIZE = 54;
     //#endif
     private static final int MAX_OUTPUT_BOXES = 4096;
     private static final Map<CraftingContainer, Plan> PLANS = new WeakHashMap<>();
     private static final Map<CraftingContainer, String> LAST_NOTICE = new WeakHashMap<>();
     private static final Set<CraftingContainer> PROCESSING = new HashSet<>();
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
     private static final int MAIN_INVENTORY_SIZE = 36;
     private static final ThreadLocal<Deque<QuickResultContext>> QUICK_RESULT_CONTEXT =
             ThreadLocal.withInitial(ArrayDeque::new);
@@ -113,7 +113,7 @@ public final class FullShulkerBoxCraftingManager {
         return true;
     }
 
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
     public static void beginQuickResultClick(Player player) {
         QUICK_RESULT_CONTEXT.get().push(QuickResultContext.capture(player));
     }
@@ -142,7 +142,7 @@ public final class FullShulkerBoxCraftingManager {
         Inventory inventory = FGACompat.inventory(player);
         PROCESSING.add(crafting);
         try {
-            //#if MC >= 1.21 && MC <= 26.2
+//#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
             recordRestockTargets(crafting, player, plan.sourceSlots());
             //#endif
             consumeEmptyBoxes(inventory, plan.consumedEmptyBoxes());
@@ -191,7 +191,7 @@ public final class FullShulkerBoxCraftingManager {
         PLANS.clear();
         LAST_NOTICE.clear();
         PROCESSING.clear();
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
         QUICK_RESULT_CONTEXT.remove();
         //#endif
         lastRuleValue = false;
@@ -331,7 +331,7 @@ public final class FullShulkerBoxCraftingManager {
                 List.copyOf(outputBoxes), List.copyOf(returnedEmptyBoxes), List.copyOf(emptyBoxes)));
     }
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
     private static void recordRestockTargets(CraftingContainer crafting, Player player,
                                              List<Integer> sourceSlots) {
         Deque<QuickResultContext> contexts = QUICK_RESULT_CONTEXT.get();
@@ -457,7 +457,7 @@ public final class FullShulkerBoxCraftingManager {
     }
 
     private static int shulkerSize() {
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.2
         return AmsLargeShulkerBoxCompat.isEnabled() ? AMS_LARGE_SHULKER_SIZE : VANILLA_SHULKER_SIZE;
         //#else
         //$$ return VANILLA_SHULKER_SIZE;
@@ -506,7 +506,7 @@ public final class FullShulkerBoxCraftingManager {
                         List<ItemStack> returnedEmptyBoxes, List<InventoryBox> consumedEmptyBoxes) {
     }
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
     private record RestockTarget(int craftingSlot, ItemStack template) {
     }
 

@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.20.1 && MC <= 26.2
 package carpet.fga.mixin;
 
 import net.minecraft.server.level.ChunkHolder;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 //#endif
 
 @Mixin(ChunkMap.class)
-public interface ChunkMapTrialStopAccessor {
+public interface ChunkMapLoadedChunksAccessor {
     //#if MC >= 1.21.10
     //$$ @Accessor("visibleChunkMap")
     //$$ Long2ObjectLinkedOpenHashMap<ChunkHolder> carpetFga$getVisibleChunkMap();

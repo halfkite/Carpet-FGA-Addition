@@ -1,10 +1,14 @@
-//#if MC == 1.21.1
+//#if MC == 1.20.1 || MC == 1.21.1
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
 import carpet.fga.ItemFrameBlockificationManager;
 import net.minecraft.world.entity.Entity;
+//#if MC >= 1.20.5
 import net.minecraft.world.entity.decoration.BlockAttachedEntity;
+//#else
+//$$ import net.minecraft.world.entity.decoration.HangingEntity;
+//#endif
 import net.minecraft.world.entity.decoration.ItemFrame;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -12,7 +16,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(BlockAttachedEntity.class)
+@Mixin(
+        //#if MC >= 1.20.5
+        BlockAttachedEntity.class
+        //#else
+        //$$ HangingEntity.class
+        //#endif
+)
 public abstract class BlockAttachedEntityItemFrameMixin {
     @Unique private boolean carpetFga$itemFrameIndexed;
 

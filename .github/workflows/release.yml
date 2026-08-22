@@ -14,6 +14,7 @@ on:
         default: all
         options:
           - all
+          - '1.20.1'
           - '1.21'
           - '1.21.1'
           - '1.21.4'
@@ -94,14 +95,91 @@ jobs:
             --notes-file RELEASE_NOTES.md
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
-  publish:
-    name: Publish Minecraft ${{ matrix.mc_version }}
+  publish-github-modrinth:
+    name: Publish GitHub and Modrinth
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-*
+          path: release-assets
+
+      - name: Prepare formal JAR names
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
+          TARGET_SUBPROJECT: ${{ inputs.target_subproject }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $directories = @(Get-ChildItem 'release-assets' -Directory | Where-Object { $_.Name -like 'build-*' })
+          if ($env:TARGET_SUBPROJECT -ne 'all') {
+            $directories = @($directories | Where-Object { $_.Name -eq "build-$env:TARGET_SUBPROJECT" })
+          }
+          if ($directories.Count -eq 0) {
+            throw 'No matching build artifacts were downloaded'
+          }
+          foreach ($directory in $directories) {
+            $mcVersion = $directory.Name.Substring('build-'.Length)
+            $source = @(Get-ChildItem $directory.FullName -Filter '*.jar')
+            if ($source.Count -ne 1) {
+              throw "Expected exactly one JAR for $mcVersion, found $($source.Count)"
+            }
+            if ($env:RELEASE_TYPE -eq 'release') {
+              $publishedName = "carpet-fga-addition-$env:RELEASE_TAG-mc$mcVersion.jar"
+              Move-Item $source[0].FullName (Join-Path $directory.FullName $publishedName)
+            }
+          }
+
+      - name: Upload JARs to GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          mapfile -d '' jars < <(find release-assets -type f -name '*.jar' -print0)
+          if [[ ${#jars[@]} -eq 0 ]]; then
+            echo 'No JAR files found' >&2
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "${jars[@]}"
+
+      - name: Publish one version to Modrinth
+        uses: Kira-NT/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID || 'carpet-fga-addition' }}
+          modrinth-token: ${{ secrets.MODRINTH_API_TOKEN }}
+          files: release-assets/**/*.jar
+          name: ${{ inputs.release_tag }}
+          version: ${{ inputs.release_tag }}
+          version-type: ${{ inputs.release_type }}
+          loaders: fabric
+          game-versions: |
+            1.20.1
+            1.21
+            1.21.1
+            1.21.4
+            1.21.5
+            1.21.8
+            1.21.10
+            1.21.11
+            26.1.2
+            26.2
+          dependencies: |
+            carpet(required){modrinth:TQTTVgYE}{curseforge:349239}
+
+  publish-curseforge:
+    name: Publish CurseForge Minecraft ${{ matrix.mc_version }}
     needs: [prepare, build]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        mc_version: ${{ inputs.target_subproject == 'all' && fromJSON('["1.21","1.21.1","1.21.4","1.21.5","1.21.8","1.21.10","1.21.11","26.1.2","26.2"]') || fromJSON(format('["{0}"]', inputs.target_subproject)) }}
+        mc_version: ${{ inputs.target_subproject == 'all' && fromJSON('["1.20.1","1.21","1.21.1","1.21.4","1.21.5","1.21.8","1.21.10","1.21.11","26.1.2","26.2"]') || fromJSON(format('["{0}"]', inputs.target_subproject)) }}
 
     steps:
       - name: Download build artifact
@@ -110,7 +188,7 @@ jobs:
           name: build-${{ matrix.mc_version }}
           path: release-assets/${{ matrix.mc_version }}
 
-      - name: Read artifact metadata
+      - name: Prepare formal JAR name
         id: artifact
         shell: pwsh
         env:
@@ -124,31 +202,22 @@ jobs:
           if ($source.Count -ne 1) {
             throw "Expected exactly one downloaded JAR for $env:MC_VERSION, found $($source.Count)"
           }
-
           if ($env:RELEASE_TYPE -eq 'release') {
-            $publishedName = "carpet-fga-addition-$env:RELEASE_TAG-mc$env:MC_VERSION.jar"
-            $publishedPath = Join-Path $dir $publishedName
+            $publishedPath = Join-Path $dir "carpet-fga-addition-$env:RELEASE_TAG-mc$env:MC_VERSION.jar"
             Move-Item $source[0].FullName $publishedPath
           } else {
             $publishedPath = $source[0].FullName
-            $publishedName = $source[0].Name
           }
-
           "jar=$publishedPath" >> $env:GITHUB_OUTPUT
-          "version=$env:RELEASE_TAG-mc$env:MC_VERSION" >> $env:GITHUB_OUTPUT
 
-      - name: Publish to Modrinth and CurseForge
+      - name: Publish to CurseForge
         uses: Kira-NT/mc-publish@v3.3
         with:
-          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID || 'carpet-fga-addition' }}
-          modrinth-token: ${{ secrets.MODRINTH_API_TOKEN }}
           curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-          github-token: ${{ github.token }}
-          github-tag: ${{ needs.prepare.outputs.release_tag }}
           files: ${{ steps.artifact.outputs.jar }}
           name: ${{ inputs.release_tag }}
-          version: ${{ steps.artifact.outputs.version }}
+          version: ${{ inputs.release_tag }}
           version-type: ${{ inputs.release_type }}
           loaders: fabric
           game-versions: ${{ matrix.mc_version }}

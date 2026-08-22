@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC == 1.20.1 || MC == 1.21.1
 package carpet.fga;
 
 import com.google.gson.Gson;
@@ -40,7 +40,7 @@ public final class PlayerLoadDistanceConfig {
             if (players != null) {
                 for (Map.Entry<String, com.google.gson.JsonElement> raw : players.entrySet()) {
                     JsonObject value = raw.getValue().getAsJsonObject();
-                    int distance = PlayerLoadDistanceManager.parseDistance(value.get("distance").getAsString());
+                    int distance = PlayerLoadDistanceCompat.parseDistance(value.get("distance").getAsString());
                     String name = value.has("name") ? value.get("name").getAsString() : raw.getKey();
                     PERSISTENT.put(UUID.fromString(raw.getKey()), new Entry(name, distance));
                 }
@@ -87,7 +87,7 @@ public final class PlayerLoadDistanceConfig {
         PERSISTENT.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
             JsonObject value = new JsonObject();
             value.addProperty("name", entry.getValue().name());
-            value.addProperty("distance", PlayerLoadDistanceManager.formatDistance(entry.getValue().distance()));
+            value.addProperty("distance", PlayerLoadDistanceCompat.formatDistance(entry.getValue().distance()));
             players.add(entry.getKey().toString(), value);
         });
         root.add("players", players);

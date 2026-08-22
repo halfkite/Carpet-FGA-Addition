@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.20.1 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
@@ -7,8 +7,6 @@ import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 //#if MC >= 1.21.3
 //$$ import net.minecraft.world.item.crafting.SelectableRecipe;
 //$$ import net.minecraft.world.item.crafting.StonecutterRecipe;
-//#else
-import net.minecraft.world.item.crafting.RecipeHolder;
 //#endif
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,7 +26,7 @@ public abstract class ClientboundUpdateRecipesDeepslateMixin {
     //#if MC >= 1.21.3
     //$$ private SelectableRecipe.SingleInputSet<StonecutterRecipe> stonecutterRecipes;
     //#else
-    private List<RecipeHolder<?>> recipes;
+    private List<?> recipes;
     //#endif
 
     @Inject(method = "<init>", at = @At("RETURN"))

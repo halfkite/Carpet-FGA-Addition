@@ -1,7 +1,7 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.20.1 && MC <= 26.2
 package carpet.fga;
 
-import carpet.fga.mixin.ChunkMapTrialStopAccessor;
+import carpet.fga.mixin.ChunkMapLoadedChunksAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -59,7 +59,7 @@ public final class ComparatorThroughBlocks {
 
     public static void refreshLoadedComparators(MinecraftServer server) {
         for (ServerLevel level : server.getAllLevels()) {
-            ChunkMapTrialStopAccessor chunks = (ChunkMapTrialStopAccessor) level.getChunkSource().chunkMap;
+            ChunkMapLoadedChunksAccessor chunks = (ChunkMapLoadedChunksAccessor) level.getChunkSource().chunkMap;
             Set<String> seen = new LinkedHashSet<>();
             for (ChunkHolder holder :
                     //#if MC >= 1.21.10
@@ -68,7 +68,9 @@ public final class ComparatorThroughBlocks {
                     chunks.carpetFga$getLoadedChunks()) {
                     //#endif
                 LevelChunk chunk = holder.getTickingChunk();
+                //#if MC >= 1.20.5
                 if (chunk == null) chunk = holder.getChunkToSend();
+                //#endif
                 if (chunk == null || !seen.add(chunk.getPos().toString())) continue;
                 refreshChunk(level, chunk);
             }

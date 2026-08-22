@@ -1,5 +1,9 @@
-//#if MC >= 1.21.1
+//#if MC == 1.20.1 || MC >= 1.21.1
 package carpet.fga;
+
+//#if MC == 1.20.1
+//$$ import carpet.fga.mixin.ClientboundRespawnPacketAccessor;
+//#endif
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.GlobalPos;
@@ -7,7 +11,9 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundLoginPacket;
 import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
+//#if MC >= 1.20.2
 import net.minecraft.network.protocol.game.CommonPlayerSpawnInfo;
+//#endif
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -78,6 +84,7 @@ public final class ClientDimensionIdMapping {
                 levels.add(mapping.remap(level));
             }
             return new ClientboundLoginPacket(
+                    //#if MC >= 1.20.2
                     login.playerId(), login.hardcore(), Set.copyOf(levels), login.maxPlayers(),
                     login.chunkRadius(), login.simulationDistance(), login.reducedDebugInfo(),
                     login.showDeathScreen(), login.doLimitedCrafting(),
@@ -86,18 +93,38 @@ public final class ClientDimensionIdMapping {
                     //$$ login.onlineMode(),
                     //#endif
                     login.enforcesSecureChat());
+                    //#else
+                    //$$ login.playerId(), login.hardcore(), login.gameType(), login.previousGameType(),
+                    //$$ Set.copyOf(levels), login.registryHolder(), login.dimensionType(),
+                    //$$ mapping.remap(login.dimension()), login.seed(), login.maxPlayers(), login.chunkRadius(),
+                    //$$ login.simulationDistance(), login.reducedDebugInfo(), login.showDeathScreen(),
+                    //$$ login.isDebug(), login.isFlat(), remapDeathLocation(login.lastDeathLocation(), mapping),
+                    //$$ login.portalCooldown());
+                    //#endif
         }
         if (packet instanceof ClientboundRespawnPacket respawn) {
+            //#if MC >= 1.20.2
             return new ClientboundRespawnPacket(
                     remapSpawnInfo(respawn.commonPlayerSpawnInfo(), mapping), respawn.dataToKeep());
+            //#else
+            //$$ return new ClientboundRespawnPacket(respawn.getDimensionType(), mapping.remap(respawn.getDimension()),
+            //$$         respawn.getSeed(), respawn.getPlayerGameType(), respawn.getPreviousPlayerGameType(),
+            //$$         respawn.isDebug(), respawn.isFlat(),
+            //$$         ((ClientboundRespawnPacketAccessor) respawn).carpetFga$getDataToKeep(),
+            //$$         remapDeathLocation(respawn.getLastDeathLocation(), mapping), respawn.getPortalCooldown());
+            //#endif
         }
         return packet;
     }
 
+    private static Optional<GlobalPos> remapDeathLocation(Optional<GlobalPos> location, Mapping mapping) {
+        return location.map(position -> GlobalPos.of(mapping.remap(position.dimension()), position.pos()));
+    }
+
+    //#if MC >= 1.20.2
     private static CommonPlayerSpawnInfo remapSpawnInfo(CommonPlayerSpawnInfo info, Mapping mapping) {
         ResourceKey<Level> dimension = mapping.remap(info.dimension());
-        Optional<GlobalPos> deathLocation = info.lastDeathLocation().map(position ->
-                GlobalPos.of(mapping.remap(position.dimension()), position.pos()));
+        Optional<GlobalPos> deathLocation = remapDeathLocation(info.lastDeathLocation(), mapping);
         return new CommonPlayerSpawnInfo(
                 info.dimensionType(), dimension, info.seed(), info.gameType(), info.previousGameType(),
                 info.isDebug(), info.isFlat(), deathLocation, info.portalCooldown()
@@ -106,6 +133,7 @@ public final class ClientDimensionIdMapping {
                 //#endif
         );
     }
+    //#endif
 
     private static ResourceKey<Level> levelKey(ResourceLocation id) {
         return ResourceKey.create(Registries.DIMENSION, id);

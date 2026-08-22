@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC == 1.20.1 || MC == 1.21.1
 package carpet.fga;
 
 import carpet.utils.CommandHelper;
@@ -67,8 +67,8 @@ public final class PlayerLoadDistanceCommand {
             ServerPlayer player = target(context);
             if (player != context.getSource().getEntity() && !FGACompat.hasPermission(context.getSource(), 2)) throw new IllegalArgumentException("only OP may modify another player / 只有OP可以修改其他玩家");
             if (persistent && !FGACompat.hasPermission(context.getSource(), 2)) throw new IllegalArgumentException("only OP may persist settings / 只有OP可以持久化设置");
-            if (set) PlayerLoadDistanceManager.set(player, PlayerLoadDistanceManager.parseDistance(StringArgumentType.getString(context, "distance")), persistent);
-            else PlayerLoadDistanceManager.reset(player, persistent);
+            if (set) PlayerLoadDistanceCompat.set(player, PlayerLoadDistanceCompat.parseDistance(StringArgumentType.getString(context, "distance")), persistent);
+            else PlayerLoadDistanceCompat.reset(player, persistent);
             FGACompat.sendSuccess(context.getSource(), Component.literal("玩家加载距离已更新 / Player load distance updated").withStyle(ChatFormatting.GREEN), false);
             return statusSafe(context);
         } catch (Exception exception) {
@@ -80,7 +80,7 @@ public final class PlayerLoadDistanceCommand {
     private static int statusSafe(CommandContext<CommandSourceStack> context) {
         try {
             ServerPlayer player = target(context);
-            FGACompat.sendSuccess(context.getSource(), Component.literal("Player / 玩家=" + player.getGameProfile().getName() + "; configured=" + PlayerLoadDistanceManager.formatDistance(PlayerLoadDistanceManager.configured(player)) + "; effective=" + PlayerLoadDistanceManager.describeDistance(PlayerLoadDistanceManager.effective(player))).withStyle(ChatFormatting.GRAY), false);
+            FGACompat.sendSuccess(context.getSource(), Component.literal("Player / 玩家=" + player.getGameProfile().getName() + "; configured=" + PlayerLoadDistanceCompat.formatDistance(PlayerLoadDistanceCompat.configured(player)) + "; effective=" + PlayerLoadDistanceCompat.describeDistance(PlayerLoadDistanceCompat.effective(player))).withStyle(ChatFormatting.GRAY), false);
             return 1;
         } catch (Exception exception) {
             context.getSource().sendFailure(Component.literal(exception.getMessage() == null ? exception.toString() : exception.getMessage()));

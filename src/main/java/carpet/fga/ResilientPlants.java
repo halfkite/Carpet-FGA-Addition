@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.20.1 && MC <= 26.2
 package carpet.fga;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -17,7 +17,12 @@ import java.util.stream.Collectors;
 public final class ResilientPlants {
     private static final TagKey<Block> CANDIDATE_TAG = TagKey.create(
             Registries.BLOCK,
-            ResourceLocation.fromNamespaceAndPath("carpet-fga-addition", "resilient_plant_candidates"));
+            //#if MC >= 1.21
+            ResourceLocation.fromNamespaceAndPath("carpet-fga-addition", "resilient_plant_candidates")
+            //#else
+            //$$ new ResourceLocation("carpet-fga-addition", "resilient_plant_candidates")
+            //#endif
+    );
 
     private static final Set<String> VANILLA_NON_BUSH_CANDIDATES = Set.of(
             "minecraft:bamboo",

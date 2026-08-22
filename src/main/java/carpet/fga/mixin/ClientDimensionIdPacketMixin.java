@@ -1,14 +1,24 @@
-//#if MC >= 1.21.1
+//#if MC == 1.20.1 || MC >= 1.21.1
 package carpet.fga.mixin;
 
 import carpet.fga.ClientDimensionIdMapping;
 import net.minecraft.network.protocol.Packet;
+//#if MC >= 1.20.2
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
+//#else
+//$$ import net.minecraft.server.network.ServerGamePacketListenerImpl;
+//#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-@Mixin(ServerCommonPacketListenerImpl.class)
+@Mixin(
+        //#if MC >= 1.20.2
+        ServerCommonPacketListenerImpl.class
+        //#else
+        //$$ ServerGamePacketListenerImpl.class
+        //#endif
+)
 public abstract class ClientDimensionIdPacketMixin {
     @ModifyVariable(
             method =
