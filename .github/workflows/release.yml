@@ -78,11 +78,22 @@ jobs:
           PREVIOUS_TAG: ${{ inputs.previous_tag }}
         run: |
           set -euo pipefail
-          args=(--head "$GITHUB_SHA" --tag "$RELEASE_TAG" --output RELEASE_NOTES.md)
-          if [[ -n "$PREVIOUS_TAG" ]]; then
-            args+=(--previous-tag "$PREVIOUS_TAG")
+          version_notes="docs/releases/$RELEASE_TAG.md"
+          if [[ -f "$version_notes" ]]; then
+            cp "$version_notes" RELEASE_NOTES.md
+          else
+            args=(--head "$GITHUB_SHA" --tag "$RELEASE_TAG" --output RELEASE_NOTES.md)
+            if [[ -n "$PREVIOUS_TAG" ]]; then
+              args+=(--previous-tag "$PREVIOUS_TAG")
+            fi
+            python scripts/python/release_notes.py "${args[@]}"
           fi
-          python scripts/python/release_notes.py "${args[@]}"
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: RELEASE_NOTES.md
 
       - name: Create tag and GitHub Release
         id: release
@@ -125,6 +136,12 @@ jobs:
         with:
           pattern: build-*
           path: release-assets
+
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: release-metadata
 
       - name: Prepare formal JAR names
         shell: pwsh
@@ -178,6 +195,7 @@ jobs:
           name: ${{ inputs.release_tag }}
           version: ${{ inputs.release_tag }}
           version-type: ${{ inputs.release_type }}
+          changelog-file: release-metadata/RELEASE_NOTES.md
           loaders: fabric
           game-versions: |
             1.20.1
@@ -210,6 +228,12 @@ jobs:
           name: build-${{ matrix.mc_version }}
           path: release-assets/${{ matrix.mc_version }}
 
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: release-metadata
+
       - name: Prepare formal JAR name
         id: artifact
         shell: pwsh
@@ -241,6 +265,7 @@ jobs:
           name: ${{ inputs.release_tag }}
           version: ${{ inputs.release_tag }}
           version-type: ${{ inputs.release_type }}
+          changelog-file: release-metadata/RELEASE_NOTES.md
           loaders: fabric
           game-versions: ${{ matrix.mc_version }}
           dependencies: |
