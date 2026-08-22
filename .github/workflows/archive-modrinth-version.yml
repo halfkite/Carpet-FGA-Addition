@@ -1,0 +1,52 @@
+name: Archive Carpet FGA Modrinth Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_id:
+        description: 'Existing Modrinth version ID to archive'
+        required: true
+        type: string
+      expected_version:
+        description: 'Expected version number for safety validation'
+        required: true
+        type: string
+
+jobs:
+  archive:
+    name: Archive validated Modrinth version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate and archive version
+        shell: pwsh
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_API_TOKEN }}
+          MODRINTH_PROJECT: ${{ vars.MODRINTH_PROJECT_ID || 'carpet-fga-addition' }}
+          VERSION_ID: ${{ inputs.version_id }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $headers = @{
+            Authorization = $env:MODRINTH_TOKEN
+            'User-Agent' = 'halfkite/Carpet-FGA-Addition release repair'
+          }
+          $project = Invoke-RestMethod -Uri "https://api.modrinth.com/v2/project/$env:MODRINTH_PROJECT" -Headers $headers
+          $version = Invoke-RestMethod -Uri "https://api.modrinth.com/v2/version/$env:VERSION_ID" -Headers $headers
+          if ($version.project_id -ne $project.id) {
+            throw "Version $env:VERSION_ID does not belong to project $($project.id)"
+          }
+          if ($version.version_number -ne $env:EXPECTED_VERSION) {
+            throw "Version number is $($version.version_number), expected $env:EXPECTED_VERSION"
+          }
+          if ($version.files.Count -le 1) {
+            throw "Refusing to archive a version that does not contain multiple files"
+          }
+          $payload = @{ status = 'archived' } | ConvertTo-Json
+          $request = @{
+            Method = 'Patch'
+            Uri = "https://api.modrinth.com/v2/version/$env:VERSION_ID"
+            Headers = $headers
+            ContentType = 'application/json'
+            Body = $payload
+          }
+          Invoke-RestMethod @request

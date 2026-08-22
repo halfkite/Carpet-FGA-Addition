@@ -2,7 +2,7 @@
 
 仓库的正式发布由 `.github/workflows/release.yml` 负责。它会按照 `build.gradle` 中的发布矩阵构建 Minecraft `1.20.1`、`1.21`、`1.21.1`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2` 和 `26.2`，跳过不发布的 `1.21.3`。
 
-以后需要发布时，告诉维护者“发布”并提供版本号即可。维护者在 GitHub Actions 手动运行 `Release Carpet FGA Addition`，输入例如 `1.5.1`。`release` 类型会从提交记录生成简短更新日志，创建同名 GitHub Release，构建所选版本，并将成功的 JAR 同步到 GitHub、Modrinth 和 CurseForge；正式版上传前会把 JAR 重命名为不含 Gradle 构建时间戳的 `carpet-fga-addition-版本-mc版本.jar`。选择 `beta` 类型时保留原始时间戳文件名，并以 beta 版本发布。GitHub Release 只附加可安装的 JAR，Modrinth 将全部 Minecraft 版本归入同一个纯版本号条目。
+以后需要发布时，告诉维护者“发布”并提供版本号即可。维护者在 GitHub Actions 手动运行 `Release Carpet FGA Addition`，输入例如 `1.5.1`。`release` 类型会从提交记录生成简短更新日志，创建同名 GitHub Release，构建所选版本，并将成功的 JAR 同步到 GitHub、Modrinth 和 CurseForge；正式版上传前会把 JAR 重命名为不含 Gradle 构建时间戳的 `carpet-fga-addition-版本-mc版本.jar`。选择 `beta` 类型时保留原始时间戳文件名，并以 beta 版本发布。GitHub Release 只附加可安装的 JAR。Modrinth 和 CurseForge 都为每个 Minecraft 版本创建独立条目，每个条目只包含对应版本的一个 JAR；Modrinth 使用 `版本+mc游戏版本` 作为唯一版本号，避免启动器选择错误文件。
 
 ## 仓库设置
 

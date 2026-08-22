@@ -57,16 +57,21 @@ jobs:
             'User-Agent' = 'halfkite/Carpet-FGA-Addition release metadata updater'
           }
           $versions = Invoke-RestMethod -Uri "https://api.modrinth.com/v2/project/$env:MODRINTH_PROJECT/version" -Headers $headers
-          $matches = @($versions | Where-Object { $_.version_number -eq $env:RELEASE_TAG })
-          if ($matches.Count -ne 1) {
-            throw "Expected one Modrinth version for $env:RELEASE_TAG, found $($matches.Count)"
+          $matches = @($versions | Where-Object {
+            $_.version_number -eq $env:RELEASE_TAG -or
+            $_.version_number.StartsWith("$env:RELEASE_TAG+mc")
+          })
+          if ($matches.Count -eq 0) {
+            throw "No Modrinth versions found for $env:RELEASE_TAG"
           }
           $payload = @{ changelog = Get-Content -Raw 'RELEASE_NOTES.md' } | ConvertTo-Json
-          $request = @{
-            Method = 'Patch'
-            Uri = "https://api.modrinth.com/v2/version/$($matches[0].id)"
-            Headers = $headers
-            ContentType = 'application/json'
-            Body = $payload
+          foreach ($version in $matches) {
+            $request = @{
+              Method = 'Patch'
+              Uri = "https://api.modrinth.com/v2/version/$($version.id)"
+              Headers = $headers
+              ContentType = 'application/json'
+              Body = $payload
+            }
+            Invoke-RestMethod @request
           }
-          Invoke-RestMethod @request
