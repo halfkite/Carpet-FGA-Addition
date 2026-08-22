@@ -36,6 +36,15 @@ on:
         options:
           - release
           - beta
+      publish_destination:
+        description: 'Platforms to publish; narrower choices are for safe retries'
+        required: false
+        type: choice
+        default: all
+        options:
+          - all
+          - github-modrinth
+          - curseforge
 
 permissions:
   contents: write
@@ -84,20 +93,30 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git show-ref --tags --verify --quiet "refs/tags/$RELEASE_TAG"; then
-            echo "Tag already exists: $RELEASE_TAG" >&2
-            exit 1
+            tag_commit="$(git rev-list -n 1 "$RELEASE_TAG")"
+            if ! git merge-base --is-ancestor "$tag_commit" "$GITHUB_SHA"; then
+              echo "Tag $RELEASE_TAG points outside the current release history: $tag_commit" >&2
+              exit 1
+            fi
+          else
+            git tag -a "$RELEASE_TAG" "$GITHUB_SHA" -m "Release $RELEASE_TAG"
+            git push origin "$RELEASE_TAG"
           fi
-          git tag -a "$RELEASE_TAG" "$GITHUB_SHA" -m "Release $RELEASE_TAG"
-          git push origin "$RELEASE_TAG"
-          gh release create "$RELEASE_TAG" \
-            --target "$GITHUB_SHA" \
-            --title "$RELEASE_TAG" \
-            --notes-file RELEASE_NOTES.md
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Reusing existing GitHub Release $RELEASE_TAG"
+          else
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$RELEASE_TAG" \
+              --notes-file RELEASE_NOTES.md
+          fi
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
   publish-github-modrinth:
     name: Publish GitHub and Modrinth
     needs: [prepare, build]
+    if: ${{ inputs.publish_destination == 'all' || inputs.publish_destination == 'github-modrinth' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -146,7 +165,9 @@ jobs:
             echo 'No JAR files found' >&2
             exit 1
           fi
-          gh release upload "$RELEASE_TAG" "${jars[@]}"
+          gh release upload "$RELEASE_TAG" "${jars[@]}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
 
       - name: Publish one version to Modrinth
         uses: Kira-NT/mc-publish@v3.3
@@ -175,6 +196,7 @@ jobs:
   publish-curseforge:
     name: Publish CurseForge Minecraft ${{ matrix.mc_version }}
     needs: [prepare, build]
+    if: ${{ inputs.publish_destination == 'all' || inputs.publish_destination == 'curseforge' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
