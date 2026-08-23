@@ -6,7 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-//#if MC >= 1.21.1
+//#if MC >= 1.21
 import net.minecraft.world.level.block.EndGatewayBlock;
 //#else
 //$$ import net.minecraft.world.level.block.entity.TheEndGatewayBlockEntity;
@@ -18,14 +18,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(
-        //#if MC >= 1.21.1
+        //#if MC >= 1.21
         EndGatewayBlock.class
         //#else
         //$$ TheEndGatewayBlockEntity.class
         //#endif
 )
 public abstract class EndGatewayPlayerTpControlMixin {
-    //#if MC >= 1.21.1
+    //#if MC >= 1.21
     @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
     private void carpetFga$controlPlayerGateway(BlockState state, Level level, BlockPos pos, Entity entity,
                                                 CallbackInfo ci) {

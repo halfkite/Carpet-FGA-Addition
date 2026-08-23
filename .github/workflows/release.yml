@@ -234,7 +234,7 @@ jobs:
           modrinth-token: ${{ secrets.MODRINTH_API_TOKEN }}
           files: ${{ steps.artifact.outputs.jar }}
           name: ${{ inputs.release_tag }}
-          version: ${{ format('{0}+mc{1}', inputs.release_tag, matrix.mc_version) }}
+          version: ${{ inputs.target_subproject == 'all' && format('{0}+mc{1}', inputs.release_tag, matrix.mc_version) || inputs.release_tag }}
           version-type: ${{ inputs.release_type }}
           changelog-file: release-metadata/RELEASE_NOTES.md
           loaders: fabric

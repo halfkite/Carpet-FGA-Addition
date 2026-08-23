@@ -3,9 +3,10 @@ package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
 import net.minecraft.world.inventory.AnvilMenu;
-import net.minecraft.world.entity.player.Player;
-//#if MC < 1.21
-//$$ import net.minecraft.world.entity.player.Abilities;
+//#if MC <= 1.21.1
+import net.minecraft.world.entity.player.Abilities;
+//#else
+//$$ import net.minecraft.world.entity.player.Player;
 //#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,17 +23,17 @@ public abstract class AnvilMenuNoPriorWorkPenaltyMixin {
         }
     }
 
-    //#if MC >= 1.21
-    @Redirect(method = "createResult", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/entity/player/Player;hasInfiniteMaterials()Z", ordinal = 1))
-    private boolean carpetFga$bypassTooExpensiveLimit(Player player) {
-        return FGASettings.anvilNoPriorWorkPenalty || player.hasInfiniteMaterials();
+    //#if MC <= 1.21.1
+    @Redirect(method = "createResult", at = @At(value = "FIELD",
+            target = "Lnet/minecraft/world/entity/player/Abilities;instabuild:Z", ordinal = 1))
+    private boolean carpetFga$bypassTooExpensiveLimit(Abilities abilities) {
+        return FGASettings.anvilNoPriorWorkPenalty || abilities.instabuild;
     }
     //#else
-//$$     @Redirect(method = "createResult", at = @At(value = "FIELD",
-//$$             target = "Lnet/minecraft/world/entity/player/Abilities;instabuild:Z", ordinal = 1))
-//$$     private boolean carpetFga$bypassTooExpensiveLimit(Abilities abilities) {
-//$$         return FGASettings.anvilNoPriorWorkPenalty || abilities.instabuild;
+//$$     @Redirect(method = "createResult", at = @At(value = "INVOKE",
+//$$             target = "Lnet/minecraft/world/entity/player/Player;hasInfiniteMaterials()Z", ordinal = 1))
+//$$     private boolean carpetFga$bypassTooExpensiveLimit(Player player) {
+//$$         return FGASettings.anvilNoPriorWorkPenalty || player.hasInfiniteMaterials();
 //$$     }
     //#endif
 }
