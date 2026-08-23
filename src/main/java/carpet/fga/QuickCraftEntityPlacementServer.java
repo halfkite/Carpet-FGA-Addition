@@ -728,8 +728,8 @@ public final class QuickCraftEntityPlacementServer {
     }
 
     private static boolean isListOf(ListTag list, int type) {
-        for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).getId() != type) return false;
+        for (Tag element : list) {
+            if (element.getId() != type) return false;
         }
         return true;
     }
