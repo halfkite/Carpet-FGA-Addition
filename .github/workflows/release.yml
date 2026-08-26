@@ -174,7 +174,7 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           set -euo pipefail
-          mapfile -d '' jars < <(find release-assets -type f -name '*.jar' -print0)
+          mapfile -d '' jars < <(find release-assets -type f -name "carpet-fga-addition-$RELEASE_TAG-mc*.jar" -print0)
           if [[ ${#jars[@]} -eq 0 ]]; then
             echo 'No JAR files found' >&2
             exit 1
@@ -233,8 +233,18 @@ jobs:
           "files<<FGA_FILES" >> $env:GITHUB_OUTPUT
           ($files -join "`n") >> $env:GITHUB_OUTPUT
           "FGA_FILES" >> $env:GITHUB_OUTPUT
+          $gameVersions = @('1.21', '1.21.1', '1.21.2', '1.21.3', '1.21.4', '1.21.5', '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11', '26.1', '26.1.1', '26.1.2', '26.2')
+          if ($env:TARGET_SUBPROJECT -ne 'all') {
+            $gameVersions = switch ($env:TARGET_SUBPROJECT) {
+              '1.21.3' { @('1.21.2', '1.21.3') }
+              '1.21.8' { @('1.21.6', '1.21.7', '1.21.8') }
+              '1.21.10' { @('1.21.9', '1.21.10') }
+              '26.1.2' { @('26.1', '26.1.1', '26.1.2') }
+              default { @($env:TARGET_SUBPROJECT) }
+            }
+          }
           "game_versions<<FGA_VERSIONS" >> $env:GITHUB_OUTPUT
-          ($publishedVersions -join "`n") >> $env:GITHUB_OUTPUT
+          ($gameVersions -join "`n") >> $env:GITHUB_OUTPUT
           "FGA_VERSIONS" >> $env:GITHUB_OUTPUT
 
       - name: Publish to Modrinth
@@ -296,6 +306,16 @@ jobs:
             $publishedPath = $source[0].FullName
           }
           "jar=$publishedPath" >> $env:GITHUB_OUTPUT
+          $gameVersions = switch ($env:MC_VERSION) {
+            '1.21.3' { @('1.21.2', '1.21.3') }
+            '1.21.8' { @('1.21.6', '1.21.7', '1.21.8') }
+            '1.21.10' { @('1.21.9', '1.21.10') }
+            '26.1.2' { @('26.1', '26.1.1', '26.1.2') }
+            default { @($env:MC_VERSION) }
+          }
+          "game_versions<<FGA_VERSIONS" >> $env:GITHUB_OUTPUT
+          ($gameVersions -join "`n") >> $env:GITHUB_OUTPUT
+          "FGA_VERSIONS" >> $env:GITHUB_OUTPUT
 
       - name: Publish to CurseForge
         uses: Kira-NT/mc-publish@v3.3
@@ -308,6 +328,6 @@ jobs:
           version-type: ${{ inputs.release_type }}
           changelog-file: release-metadata/RELEASE_NOTES.md
           loaders: fabric
-          game-versions: ${{ matrix.mc_version }}
+          game-versions: ${{ steps.artifact.outputs.game_versions }}
           dependencies: |
             carpet(required){modrinth:TQTTVgYE}{curseforge:349239}
