@@ -14,7 +14,6 @@ on:
         default: all
         options:
           - all
-          - '1.20.1'
           - '1.21'
           - '1.21.1'
           - '1.21.3'
@@ -148,7 +147,8 @@ jobs:
           TARGET_SUBPROJECT: ${{ inputs.target_subproject }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $directories = @(Get-ChildItem 'release-assets' -Directory | Where-Object { $_.Name -like 'build-*' })
+          $publishedVersions = @('1.21', '1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.8', '1.21.10', '1.21.11', '26.1.2', '26.2')
+          $directories = @(Get-ChildItem 'release-assets' -Directory | Where-Object { $_.Name -like 'build-*' -and $publishedVersions -contains $_.Name.Substring('build-'.Length) })
           if ($env:TARGET_SUBPROJECT -ne 'all') {
             $directories = @($directories | Where-Object { $_.Name -eq "build-$env:TARGET_SUBPROJECT" })
           }
@@ -184,21 +184,18 @@ jobs:
             --clobber
 
   publish-modrinth:
-    name: Publish Modrinth Minecraft ${{ matrix.mc_version }}
+    name: Publish Modrinth
     needs: [prepare, build]
     if: ${{ inputs.publish_destination == 'all' || inputs.publish_destination == 'modrinth' || inputs.publish_destination == 'github-modrinth' }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        mc_version: ${{ inputs.target_subproject == 'all' && fromJSON('["1.20.1","1.21","1.21.1","1.21.3","1.21.4","1.21.5","1.21.8","1.21.10","1.21.11","26.1.2","26.2"]') || fromJSON(format('["{0}"]', inputs.target_subproject)) }}
 
     steps:
-      - name: Download build artifact
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: build-${{ matrix.mc_version }}
-          path: release-assets/${{ matrix.mc_version }}
+          pattern: build-*
+          path: release-assets
+          merge-multiple: true
 
       - name: Download release notes
         uses: actions/download-artifact@v4
@@ -206,40 +203,53 @@ jobs:
           name: release-notes
           path: release-metadata
 
-      - name: Prepare formal JAR name
+      - name: Prepare formal JAR names
         id: artifact
         shell: pwsh
         env:
-          MC_VERSION: ${{ matrix.mc_version }}
           RELEASE_TAG: ${{ inputs.release_tag }}
           RELEASE_TYPE: ${{ inputs.release_type }}
+          TARGET_SUBPROJECT: ${{ inputs.target_subproject }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $dir = Join-Path 'release-assets' $env:MC_VERSION
-          $source = @(Get-ChildItem $dir -Filter '*.jar')
-          if ($source.Count -ne 1) {
-            throw "Expected exactly one downloaded JAR for $env:MC_VERSION, found $($source.Count)"
+          $publishedVersions = @('1.21', '1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.8', '1.21.10', '1.21.11', '26.1.2', '26.2')
+          if ($env:TARGET_SUBPROJECT -ne 'all') {
+            $publishedVersions = @($env:TARGET_SUBPROJECT)
           }
-          if ($env:RELEASE_TYPE -eq 'release') {
-            $publishedPath = Join-Path $dir "carpet-fga-addition-$env:RELEASE_TAG-mc$env:MC_VERSION.jar"
-            Move-Item $source[0].FullName $publishedPath
-          } else {
-            $publishedPath = $source[0].FullName
+          $files = @()
+          foreach ($mcVersion in $publishedVersions) {
+            $dir = Join-Path 'release-assets' "build-$mcVersion"
+            $source = @(Get-ChildItem $dir -Filter '*.jar')
+            if ($source.Count -ne 1) {
+              throw "Expected exactly one downloaded JAR for $mcVersion, found $($source.Count)"
+            }
+            if ($env:RELEASE_TYPE -eq 'release') {
+              $publishedPath = Join-Path $dir "carpet-fga-addition-$env:RELEASE_TAG-mc$mcVersion.jar"
+              Move-Item $source[0].FullName $publishedPath
+              $files += $publishedPath
+            } else {
+              $files += $source[0].FullName
+            }
           }
-          "jar=$publishedPath" >> $env:GITHUB_OUTPUT
+          "files<<FGA_FILES" >> $env:GITHUB_OUTPUT
+          ($files -join "`n") >> $env:GITHUB_OUTPUT
+          "FGA_FILES" >> $env:GITHUB_OUTPUT
+          "game_versions<<FGA_VERSIONS" >> $env:GITHUB_OUTPUT
+          ($publishedVersions -join "`n") >> $env:GITHUB_OUTPUT
+          "FGA_VERSIONS" >> $env:GITHUB_OUTPUT
 
       - name: Publish to Modrinth
         uses: Kira-NT/mc-publish@v3.3
         with:
           modrinth-id: ${{ vars.MODRINTH_PROJECT_ID || 'carpet-fga-addition' }}
           modrinth-token: ${{ secrets.MODRINTH_API_TOKEN }}
-          files: ${{ steps.artifact.outputs.jar }}
+          files: ${{ steps.artifact.outputs.files }}
           name: ${{ inputs.release_tag }}
-          version: ${{ inputs.target_subproject == 'all' && format('{0}+mc{1}', inputs.release_tag, matrix.mc_version) || inputs.release_tag }}
+          version: ${{ inputs.release_tag }}
           version-type: ${{ inputs.release_type }}
           changelog-file: release-metadata/RELEASE_NOTES.md
           loaders: fabric
-          game-versions: ${{ matrix.mc_version }}
+          game-versions: ${{ steps.artifact.outputs.game_versions }}
           dependencies: |
             carpet(required){modrinth:TQTTVgYE}{curseforge:349239}
 
@@ -251,7 +261,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mc_version: ${{ inputs.target_subproject == 'all' && fromJSON('["1.20.1","1.21","1.21.1","1.21.3","1.21.4","1.21.5","1.21.8","1.21.10","1.21.11","26.1.2","26.2"]') || fromJSON(format('["{0}"]', inputs.target_subproject)) }}
+        mc_version: ${{ inputs.target_subproject == 'all' && fromJSON('["1.21","1.21.1","1.21.3","1.21.4","1.21.5","1.21.8","1.21.10","1.21.11","26.1.2","26.2"]') || fromJSON(format('["{0}"]', inputs.target_subproject)) }}
 
     steps:
       - name: Download build artifact
