@@ -195,7 +195,6 @@ jobs:
         with:
           pattern: build-*
           path: release-assets
-          merge-multiple: true
 
       - name: Download release notes
         uses: actions/download-artifact@v4
