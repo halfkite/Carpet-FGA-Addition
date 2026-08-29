@@ -28,6 +28,8 @@ versions/mainProject
 .tmp-yarn/
 gradle-local.bat
 *.log
+__pycache__/
+*.py[cod]
 git-push-*
 scripts/logs/
 scripts/**/*.bak

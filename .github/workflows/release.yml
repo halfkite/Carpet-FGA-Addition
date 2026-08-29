@@ -1,333 +1,442 @@
 name: Release Carpet FGA Addition
+run-name: Publish ${{ github.event.release.tag_name || inputs.tag }}
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
-      release_tag:
-        description: 'New release tag, for example 1.4.10'
+      tag:
+        description: 'Existing published GitHub Release tag'
         required: true
         type: string
-      target_subproject:
-        description: 'Minecraft version to publish, or all'
+      destinations:
+        description: 'External platform repair target'
         required: false
         type: choice
         default: all
         options:
           - all
-          - '1.21'
-          - '1.21.1'
-          - '1.21.3'
-          - '1.21.4'
-          - '1.21.5'
-          - '1.21.8'
-          - '1.21.10'
-          - '1.21.11'
-          - '26.1.2'
-          - '26.2'
-      previous_tag:
-        description: 'Previous tag for the changelog; leave empty to detect it'
+          - modrinth
+          - curseforge
+      versions:
+        description: 'Build projects to repair, comma-separated, or all'
         required: false
         type: string
-      release_type:
-        description: 'Formal release removes the build timestamp from the JAR name; beta keeps it'
-        required: false
-        type: choice
-        default: release
-        options:
-          - release
-          - beta
-      publish_destination:
-        description: 'Platforms to publish; narrower choices are for safe retries'
-        required: false
-        type: choice
         default: all
-        options:
-          - all
-          - github
-          - modrinth
-          - github-modrinth
-          - curseforge
 
 permissions:
+  actions: read
   contents: write
 
-env:
-  RELEASE_TAG: ${{ inputs.release_tag }}
-  RELEASE_TYPE: ${{ inputs.release_type }}
+concurrency:
+  group: publish-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build release artifacts
-    uses: ./.github/workflows/build.yml
-    with:
-      target_subproject: ${{ inputs.target_subproject || 'all' }}
-      ref: ${{ github.sha }}
-
-  prepare:
-    name: Create release and changelog
-    needs: build
+  inspect:
+    name: Inspect existing GitHub Release
     runs-on: ubuntu-latest
     outputs:
-      release_tag: ${{ steps.release.outputs.tag }}
+      tag: ${{ steps.context.outputs.tag }}
+      commit: ${{ steps.context.outputs.commit }}
+      prerelease: ${{ steps.context.outputs.prerelease }}
+      matrix: ${{ steps.context.outputs.matrix }}
+      versions: ${{ steps.context.outputs.versions }}
+      all_versions: ${{ steps.context.outputs.all_versions }}
+      is_all_versions: ${{ steps.context.outputs.is_all_versions }}
+      publisher_commit: ${{ steps.context.outputs.publisher_commit }}
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Generate short changelog
-        env:
-          PREVIOUS_TAG: ${{ inputs.previous_tag }}
-        run: |
-          set -euo pipefail
-          version_notes="docs/releases/$RELEASE_TAG.md"
-          if [[ -f "$version_notes" ]]; then
-            cp "$version_notes" RELEASE_NOTES.md
-          else
-            args=(--head "$GITHUB_SHA" --tag "$RELEASE_TAG" --output RELEASE_NOTES.md)
-            if [[ -n "$PREVIOUS_TAG" ]]; then
-              args+=(--previous-tag "$PREVIOUS_TAG")
-            fi
-            python scripts/python/release_notes.py "${args[@]}"
-          fi
-
-      - name: Upload release notes
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-notes
-          path: RELEASE_NOTES.md
-
-      - name: Create tag and GitHub Release
+      - name: Select existing Release tag
         id: release
+        shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git show-ref --tags --verify --quiet "refs/tags/$RELEASE_TAG"; then
-            tag_commit="$(git rev-list -n 1 "$RELEASE_TAG")"
-            if ! git merge-base --is-ancestor "$tag_commit" "$GITHUB_SHA"; then
-              echo "Tag $RELEASE_TAG points outside the current release history: $tag_commit" >&2
+          tag="$EVENT_TAG"
+          if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
+            tag="$INPUT_TAG"
+            if [[ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
+              echo "Manual repair runs must be dispatched from the default branch $DEFAULT_BRANCH" >&2
               exit 1
             fi
-          else
-            git tag -a "$RELEASE_TAG" "$GITHUB_SHA" -m "Release $RELEASE_TAG"
-            git push origin "$RELEASE_TAG"
           fi
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Reusing existing GitHub Release $RELEASE_TAG"
-          else
-            gh release create "$RELEASE_TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --target "$GITHUB_SHA" \
-              --title "$RELEASE_TAG" \
-              --notes-file RELEASE_NOTES.md
+          if [[ -z "$tag" ]]; then
+            echo 'Release tag is empty' >&2
+            exit 1
           fi
-          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          printf 'tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
 
-  publish-github:
-    name: Publish GitHub
-    needs: [prepare, build]
-    if: ${{ inputs.publish_destination == 'all' || inputs.publish_destination == 'github' || inputs.publish_destination == 'github-modrinth' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Check out publisher helper
+        uses: actions/checkout@v4
         with:
-          pattern: build-*
-          path: release-assets
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || format('refs/tags/{0}', steps.release.outputs.tag) }}
+          fetch-depth: 1
+          path: publisher
 
-      - name: Prepare formal JAR names
-        shell: pwsh
-        env:
-          RELEASE_TAG: ${{ inputs.release_tag }}
-          RELEASE_TYPE: ${{ inputs.release_type }}
-          TARGET_SUBPROJECT: ${{ inputs.target_subproject }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $publishedVersions = @('1.21', '1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.8', '1.21.10', '1.21.11', '26.1.2', '26.2')
-          $directories = @(Get-ChildItem 'release-assets' -Directory | Where-Object { $_.Name -like 'build-*' -and $publishedVersions -contains $_.Name.Substring('build-'.Length) })
-          if ($env:TARGET_SUBPROJECT -ne 'all') {
-            $directories = @($directories | Where-Object { $_.Name -eq "build-$env:TARGET_SUBPROJECT" })
-          }
-          if ($directories.Count -eq 0) {
-            throw 'No matching build artifacts were downloaded'
-          }
-          foreach ($directory in $directories) {
-            $mcVersion = $directory.Name.Substring('build-'.Length)
-            $source = @(Get-ChildItem $directory.FullName -Filter '*.jar')
-            if ($source.Count -ne 1) {
-              throw "Expected exactly one JAR for $mcVersion, found $($source.Count)"
-            }
-            if ($env:RELEASE_TYPE -eq 'release') {
-              $publishedName = "carpet-fga-addition-$env:RELEASE_TAG-mc$mcVersion.jar"
-              Move-Item $source[0].FullName (Join-Path $directory.FullName $publishedName)
-            }
-          }
+      - name: Check out Release source
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          fetch-depth: 1
+          path: release-source
 
-      - name: Upload JARs to GitHub Release
+      - name: Read GitHub Release metadata
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
           set -euo pipefail
-          mapfile -d '' jars < <(find release-assets -type f -name "carpet-fga-addition-$RELEASE_TAG-mc*.jar" -print0)
-          if [[ ${#jars[@]} -eq 0 ]]; then
-            echo 'No JAR files found' >&2
-            exit 1
-          fi
-          gh release upload "$RELEASE_TAG" "${jars[@]}" \
+          gh release view "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --clobber
+            --json tagName,name,body,isDraft,isPrerelease,targetCommitish \
+            > release.json
 
-  publish-modrinth:
-    name: Publish Modrinth
-    needs: [prepare, build]
-    if: ${{ inputs.publish_destination == 'all' || inputs.publish_destination == 'modrinth' || inputs.publish_destination == 'github-modrinth' }}
+      - name: Validate Release and publication metadata
+        id: context
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          TARGET_VERSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.versions || 'all' }}
+        run: |
+          set -euo pipefail
+          commit="$(git -C release-source rev-parse HEAD)"
+          publisher_commit="$(git -C publisher rev-parse HEAD)"
+          python publisher/scripts/python/release_metadata.py inspect-release \
+            --repo-root release-source \
+            --release-json release.json \
+            --tag "$RELEASE_TAG" \
+            --commit "$commit" \
+            --target "$TARGET_VERSIONS" \
+            --output release-context.json \
+            --github-output "$GITHUB_OUTPUT"
+          printf 'publisher_commit=%s\n' "$publisher_commit" >> "$GITHUB_OUTPUT"
+
+          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            prerelease="$(python -c "import json; print(str(json.load(open('release-context.json'))['prerelease']).lower())")"
+            if [[ "$prerelease" == 'true' ]]; then
+              echo 'External platform repair is disabled for prereleases' >&2
+              exit 1
+            fi
+          fi
+
+      - name: Upload immutable Release context
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-context
+          path: release-context.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+
+  build:
+    name: Build Release tag
+    needs: inspect
+    if: ${{ github.event_name == 'release' }}
+    uses: ./.github/workflows/build.yml
+    with:
+      target_subproject: all
+      ref: ${{ needs.inspect.outputs.commit }}
+      release_version: ${{ needs.inspect.outputs.tag }}
+
+  package-release:
+    name: Package built Release JARs
+    needs: [inspect, build]
+    if: ${{ github.event_name == 'release' }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Download build artifacts
+      - name: Check out publisher helper
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
+          fetch-depth: 1
+          path: publisher
+
+      - name: Download Release context
+        uses: actions/download-artifact@v4
+        with:
+          name: release-context
+          path: release-context
+
+      - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: build-*
-          path: release-assets
+          path: build-artifacts
 
-      - name: Download release notes
+      - name: Validate and name final JARs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/release_metadata.py assemble-build \
+            --context release-context/release-context.json \
+            --artifacts-root build-artifacts \
+            --build-versions '${{ needs.build.outputs.versions }}' \
+            --build-commit '${{ needs.build.outputs.commit }}' \
+            --output-dir release-package
+
+      - name: Upload validated Release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-package
+          path: release-package
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+
+  package-dispatch:
+    name: Collect existing GitHub Release Assets
+    needs: inspect
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out current publisher helper
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
+          fetch-depth: 1
+          path: publisher
+
+      - name: Download Release context
         uses: actions/download-artifact@v4
         with:
-          name: release-notes
-          path: release-metadata
+          name: release-context
+          path: release-context
 
-      - name: Prepare formal JAR names
-        id: artifact
-        shell: pwsh
+      - name: Download existing GitHub Release JARs
+        shell: bash
         env:
-          RELEASE_TAG: ${{ inputs.release_tag }}
-          RELEASE_TYPE: ${{ inputs.release_type }}
-          TARGET_SUBPROJECT: ${{ inputs.target_subproject }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.inspect.outputs.tag }}
         run: |
-          $ErrorActionPreference = 'Stop'
-          $publishedVersions = @('1.21', '1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.8', '1.21.10', '1.21.11', '26.1.2', '26.2')
-          if ($env:TARGET_SUBPROJECT -ne 'all') {
-            $publishedVersions = @($env:TARGET_SUBPROJECT)
-          }
-          $files = @()
-          foreach ($mcVersion in $publishedVersions) {
-            $dir = Join-Path 'release-assets' "build-$mcVersion"
-            $source = @(Get-ChildItem $dir -Filter '*.jar')
-            if ($source.Count -ne 1) {
-              throw "Expected exactly one downloaded JAR for $mcVersion, found $($source.Count)"
-            }
-            if ($env:RELEASE_TYPE -eq 'release') {
-              $publishedPath = Join-Path $dir "carpet-fga-addition-$env:RELEASE_TAG-mc$mcVersion.jar"
-              Move-Item $source[0].FullName $publishedPath
-              $files += $publishedPath
-            } else {
-              $files += $source[0].FullName
-            }
-          }
-          "files<<FGA_FILES" >> $env:GITHUB_OUTPUT
-          ($files -join "`n") >> $env:GITHUB_OUTPUT
-          "FGA_FILES" >> $env:GITHUB_OUTPUT
-          $gameVersions = @('1.21', '1.21.1', '1.21.2', '1.21.3', '1.21.4', '1.21.5', '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11', '26.1', '26.1.1', '26.1.2', '26.2')
-          if ($env:TARGET_SUBPROJECT -ne 'all') {
-            $gameVersions = switch ($env:TARGET_SUBPROJECT) {
-              '1.21.3' { @('1.21.2', '1.21.3') }
-              '1.21.8' { @('1.21.6', '1.21.7', '1.21.8') }
-              '1.21.10' { @('1.21.9', '1.21.10') }
-              '26.1.2' { @('26.1', '26.1.1', '26.1.2') }
-              default { @($env:TARGET_SUBPROJECT) }
-            }
-          }
-          "game_versions<<FGA_VERSIONS" >> $env:GITHUB_OUTPUT
-          ($gameVersions -join "`n") >> $env:GITHUB_OUTPUT
-          "FGA_VERSIONS" >> $env:GITHUB_OUTPUT
+          set -euo pipefail
+          mkdir -p existing-assets
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "carpet-fga-addition-$RELEASE_TAG-mc*.jar" \
+            --dir existing-assets
 
-      - name: Publish to Modrinth
-        uses: Kira-NT/mc-publish@v3.3
+      - name: Validate existing Release Assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/release_metadata.py assemble-assets \
+            --context release-context/release-context.json \
+            --assets-root existing-assets \
+            --output-dir release-package
+
+      - name: Upload validated repair package
+        uses: actions/upload-artifact@v4
         with:
-          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID || 'carpet-fga-addition' }}
-          modrinth-token: ${{ secrets.MODRINTH_API_TOKEN }}
-          files: ${{ steps.artifact.outputs.files }}
-          name: ${{ inputs.release_tag }}
-          version: ${{ inputs.release_tag }}
-          version-type: ${{ inputs.release_type }}
-          changelog-file: release-metadata/RELEASE_NOTES.md
-          loaders: fabric
-          game-versions: ${{ steps.artifact.outputs.game_versions }}
-          dependencies: |
-            carpet(required){modrinth:TQTTVgYE}{curseforge:349239}
+          name: release-package
+          path: release-package
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
 
-  publish-curseforge:
-    name: Publish CurseForge Minecraft ${{ matrix.mc_version }}
-    needs: [prepare, build]
-    if: ${{ inputs.publish_destination == 'all' || inputs.publish_destination == 'curseforge' }}
+  publish-github:
+    name: Publish GitHub Release Assets
+    needs: [inspect, package-release]
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out publisher helper
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
+          fetch-depth: 1
+          path: publisher
+
+      - name: Download validated Release package
+        uses: actions/download-artifact@v4
+        with:
+          name: release-package
+          path: release-package
+
+      - name: Upload or verify GitHub Release Assets
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.inspect.outputs.tag }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/github_release_assets.py \
+            --manifest release-package/release-manifest.json \
+            --repository "$GITHUB_REPOSITORY" \
+            --tag "$RELEASE_TAG"
+
+  publish-modrinth:
+    name: Publish Modrinth Minecraft ${{ matrix.mc_version }}
+    needs: [inspect, package-release, package-dispatch, publish-github]
+    if: >-
+      ${{
+        always() &&
+        needs.inspect.result == 'success' &&
+        needs.inspect.outputs.prerelease != 'true' &&
+        (
+          (
+            github.event_name == 'release' &&
+            needs.package-release.result == 'success' &&
+            needs.publish-github.result == 'success'
+          ) ||
+          (
+            github.event_name == 'workflow_dispatch' &&
+            needs.package-dispatch.result == 'success' &&
+            (inputs.destinations == 'all' || inputs.destinations == 'modrinth')
+          )
+        )
+      }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        mc_version: ${{ inputs.target_subproject == 'all' && fromJSON('["1.21","1.21.1","1.21.3","1.21.4","1.21.5","1.21.8","1.21.10","1.21.11","26.1.2","26.2"]') || fromJSON(format('["{0}"]', inputs.target_subproject)) }}
-
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.inspect.outputs.matrix) }}
     steps:
-      - name: Download build artifact
+      - name: Check out publisher helper
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
+          fetch-depth: 1
+          path: publisher
+
+      - name: Download validated Release package
         uses: actions/download-artifact@v4
         with:
-          name: build-${{ matrix.mc_version }}
-          path: release-assets/${{ matrix.mc_version }}
+          name: release-package
+          path: release-package
 
-      - name: Download release notes
-        uses: actions/download-artifact@v4
-        with:
-          name: release-notes
-          path: release-metadata
-
-      - name: Prepare formal JAR name
-        id: artifact
-        shell: pwsh
+      - name: Create or reconcile tag-only Modrinth Version
+        shell: bash
         env:
-          MC_VERSION: ${{ matrix.mc_version }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
-          RELEASE_TYPE: ${{ inputs.release_type }}
+          MODRINTH_API_TOKEN: ${{ secrets.MODRINTH_API_TOKEN }}
+          MODRINTH_PROJECT: ${{ vars.MODRINTH_PROJECT_ID || 'Nfhbipsz' }}
         run: |
-          $ErrorActionPreference = 'Stop'
-          $dir = Join-Path 'release-assets' $env:MC_VERSION
-          $source = @(Get-ChildItem $dir -Filter '*.jar')
-          if ($source.Count -ne 1) {
-            throw "Expected exactly one downloaded JAR for $env:MC_VERSION, found $($source.Count)"
-          }
-          if ($env:RELEASE_TYPE -eq 'release') {
-            $publishedPath = Join-Path $dir "carpet-fga-addition-$env:RELEASE_TAG-mc$env:MC_VERSION.jar"
-            Move-Item $source[0].FullName $publishedPath
-          } else {
-            $publishedPath = $source[0].FullName
-          }
-          "jar=$publishedPath" >> $env:GITHUB_OUTPUT
-          $gameVersions = switch ($env:MC_VERSION) {
-            '1.21.3' { @('1.21.2', '1.21.3') }
-            '1.21.8' { @('1.21.6', '1.21.7', '1.21.8') }
-            '1.21.10' { @('1.21.9', '1.21.10') }
-            '26.1.2' { @('26.1', '26.1.1', '26.1.2') }
-            default { @($env:MC_VERSION) }
-          }
-          "game_versions<<FGA_VERSIONS" >> $env:GITHUB_OUTPUT
-          ($gameVersions -join "`n") >> $env:GITHUB_OUTPUT
-          "FGA_VERSIONS" >> $env:GITHUB_OUTPUT
+          set -euo pipefail
+          python publisher/scripts/python/modrinth_publish.py \
+            --manifest release-package/release-manifest.json \
+            --project "$MODRINTH_PROJECT" \
+            --build-project '${{ matrix.mc_version }}'
 
-      - name: Publish to CurseForge
-        uses: Kira-NT/mc-publish@v3.3
+  publish-curseforge:
+    name: Publish CurseForge Minecraft ${{ matrix.mc_version }}
+    needs: [inspect, package-release, package-dispatch, publish-github]
+    if: >-
+      ${{
+        always() &&
+        needs.inspect.result == 'success' &&
+        needs.inspect.outputs.prerelease != 'true' &&
+        (
+          (
+            github.event_name == 'release' &&
+            needs.package-release.result == 'success' &&
+            needs.publish-github.result == 'success'
+          ) ||
+          (
+            github.event_name == 'workflow_dispatch' &&
+            needs.package-dispatch.result == 'success' &&
+            (inputs.destinations == 'all' || inputs.destinations == 'curseforge')
+          )
+        )
+      }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.inspect.outputs.matrix) }}
+    steps:
+      - name: Check out publisher helper
+        uses: actions/checkout@v4
         with:
-          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
+          fetch-depth: 1
+          path: publisher
+
+      - name: Download validated Release package
+        uses: actions/download-artifact@v4
+        with:
+          name: release-package
+          path: release-package
+
+      - name: Validate CurseForge project identity
+        id: curseforge-project
+        shell: bash
+        env:
+          CURSEFORGE_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/curseforge_state.py validate-project \
+            --project "$CURSEFORGE_PROJECT" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Read project publication metadata
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/release_metadata.py platform-entry \
+            --manifest release-package/release-manifest.json \
+            --build-project '${{ matrix.mc_version }}' \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Check CurseForge marker and upload history
+        id: curseforge
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/curseforge_state.py precheck \
+            --manifest release-package/release-manifest.json \
+            --build-project '${{ matrix.mc_version }}' \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --event-name "$GITHUB_EVENT_NAME" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Update existing CurseForge metadata
+        if: ${{ steps.curseforge.outputs.should_upload == 'false' }}
+        shell: bash
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/curseforge_state.py update \
+            --manifest release-package/release-manifest.json \
+            --build-project '${{ matrix.mc_version }}' \
+            --project '${{ steps.curseforge-project.outputs.project_id }}' \
+            --file-id '${{ steps.curseforge.outputs.file_id }}'
+
+      - name: Upload to CurseForge
+        id: upload
+        if: ${{ steps.curseforge.outputs.should_upload == 'true' }}
+        uses: Kira-NT/mc-publish@52307b03863581dec6b652b83e597aec02ebb075
+        with:
+          curseforge-id: ${{ steps.curseforge-project.outputs.project_id }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-          files: ${{ steps.artifact.outputs.jar }}
-          name: ${{ inputs.release_tag }}
-          version: ${{ inputs.release_tag }}
-          version-type: ${{ inputs.release_type }}
-          changelog-file: release-metadata/RELEASE_NOTES.md
+          files: ${{ steps.metadata.outputs.jar }}
+          name: ${{ needs.inspect.outputs.tag }}
+          version: ${{ needs.inspect.outputs.tag }}
+          version-type: release
+          changelog-file: release-package/CHANGELOG.md
           loaders: fabric
-          game-versions: ${{ steps.artifact.outputs.game_versions }}
-          dependencies: |
-            carpet(required){modrinth:TQTTVgYE}{curseforge:349239}
+          game-versions: ${{ steps.metadata.outputs.game_versions }}
+          dependencies: ${{ steps.metadata.outputs.dependencies }}
+          retry-attempts: 1
+
+      - name: Persist CurseForge file ID on GitHub Asset
+        if: ${{ steps.curseforge.outputs.should_upload == 'true' }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/curseforge_state.py mark \
+            --repository "$GITHUB_REPOSITORY" \
+            --asset-id '${{ steps.curseforge.outputs.asset_id }}' \
+            --file-id '${{ steps.upload.outputs.curseforge-version }}'

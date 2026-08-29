@@ -8,24 +8,32 @@ on:
   workflow_dispatch:
     inputs:
       target_subproject:
-        description: 'Minecraft version to build, or all'
+        description: 'Minecraft build project to build, comma-separated projects, or all'
         required: false
-        type: choice
+        type: string
         default: all
-        options:
-          - all
-          - '1.21'
-          - '1.21.1'
-          - '1.21.4'
-          - '1.21.5'
-          - '1.21.8'
-          - '1.21.10'
-          - '1.21.11'
-          - '26.1.2'
-          - '26.2'
+
+permissions:
+  contents: read
 
 jobs:
+  release-metadata-checks:
+    name: Validate release metadata and workflows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Run release metadata unit tests
+        shell: bash
+        run: python -m unittest discover -s scripts/python -p 'test_*.py' -v
+
+      - name: Lint GitHub Actions workflows
+        shell: bash
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12
+
   build:
+    needs: release-metadata-checks
     uses: ./.github/workflows/build.yml
     with:
       target_subproject: ${{ inputs.target_subproject || 'all' }}
