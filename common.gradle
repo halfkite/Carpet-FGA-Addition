@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 final int mcVersion = project.mcVersion
 final boolean unobfuscated = mcVersion >= 26_00_00
 
@@ -61,9 +63,17 @@ loom {
 }
 
 processResources {
+    def rawMinecraftDependencyVersions = project.findProperty('minecraft_dependency_versions')
+    def minecraftDependencyVersions = rawMinecraftDependencyVersions == null ? [] :
+            rawMinecraftDependencyVersions.toString().split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+    if (rawMinecraftDependencyVersions != null && minecraftDependencyVersions.isEmpty()) {
+        throw new GradleException("minecraft_dependency_versions of ${project.path} is set but contains no version")
+    }
     def properties = [
             version: project.version,
-            minecraft_dependency: project.minecraft_dependency,
+            minecraft_dependency: minecraftDependencyVersions.isEmpty()
+                    ? JsonOutput.toJson(project.minecraft_dependency as String)
+                    : JsonOutput.toJson(minecraftDependencyVersions),
             carpet_dependency: project.carpet_dependency,
             fabric_api_dependency: mcVersion >= 1_21_00 && mcVersion <= 26_02_00
                     ? '"fabric-api": "*",' : '',
