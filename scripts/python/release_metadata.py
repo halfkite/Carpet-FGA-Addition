@@ -209,6 +209,7 @@ def project_metadata(repo_root: Path, build_project: str, tag: str) -> dict[str,
         "build_project": build_project,
         "minecraft_version": properties["minecraft_version"],
         "minecraft_dependency": properties["minecraft_dependency"],
+        "carpet_dependency": properties["carpet_dependency"],
         "artifact_mc_version": artifact_label,
         "game_versions": game_versions,
         "java": "25" if build_project.startswith("26.") else "21",
@@ -297,11 +298,26 @@ def _validate_jar(jar: Path, entry: dict[str, Any]) -> dict[str, Any]:
     fabric = _read_fabric_mod_json(jar)
     if fabric.get("id") != MOD_ID:
         raise MetadataError(f"{jar} has unexpected mod id {fabric.get('id')!r}")
-    actual_dependency = (fabric.get("depends") or {}).get("minecraft")
-    if actual_dependency != entry["minecraft_dependency"]:
+    dependencies = fabric.get("depends")
+    if not isinstance(dependencies, dict):
+        raise MetadataError(f"{jar} has an invalid fabric.mod.json depends object")
+    actual_minecraft_dependency = dependencies.get("minecraft")
+    if actual_minecraft_dependency != entry["minecraft_dependency"]:
         raise MetadataError(
-            f"{jar} declares Minecraft {actual_dependency!r}; expected {entry['minecraft_dependency']!r}"
+            f"{jar} declares Minecraft {actual_minecraft_dependency!r}; "
+            f"expected {entry['minecraft_dependency']!r}"
         )
+    actual_carpet_dependency = dependencies.get("carpet")
+    if actual_carpet_dependency != entry["carpet_dependency"]:
+        raise MetadataError(
+            f"{jar} declares Carpet {actual_carpet_dependency!r}; "
+            f"expected {entry['carpet_dependency']!r}"
+        )
+    has_fabric_api_dependency = "fabric-api" in dependencies
+    if entry["fabric_api_required"] and not dependencies.get("fabric-api"):
+        raise MetadataError(f"{jar} must declare a fabric-api dependency for Minecraft 1.21+")
+    if not entry["fabric_api_required"] and has_fabric_api_dependency:
+        raise MetadataError(f"{jar} must not declare a fabric-api dependency below Minecraft 1.21")
     expected_version = entry["modrinth_version_number"]
     if fabric.get("version") != expected_version:
         raise MetadataError(

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import importlib.util
+import json
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 MODULE_PATH = Path(__file__).with_name("modrinth_publish.py")
@@ -19,6 +22,7 @@ class ModrinthPublishTest(unittest.TestCase):
             "title": "Release title",
             "body": "Changes",
             "modrinth_version_number": "1.5.4",
+            "modrinth_project_id": "Nfhbipsz",
             "is_all_versions": True,
             "all_versions": ["1.20.1", "1.21.1"],
             "all_entries": [
@@ -53,6 +57,40 @@ class ModrinthPublishTest(unittest.TestCase):
         self.assertEqual("1.5.4", expected["version_number"])
         self.assertEqual(["fabric"], expected["loaders"])
         self.assertEqual(["1.21", "1.21.1"], expected["game_versions"])
+
+    def test_project_slug_may_resolve_to_expected_canonical_id(self):
+        self.assertEqual(
+            "Nfhbipsz",
+            modrinth_publish.validate_project_identity(self.manifest(), "Nfhbipsz"),
+        )
+
+    def test_wrong_canonical_project_id_fails_before_publication(self):
+        with self.assertRaises(modrinth_publish.ModrinthError):
+            modrinth_publish.validate_project_identity(self.manifest(), "wrong-project")
+
+    def test_wrong_manifest_project_id_fails_before_publication(self):
+        manifest = self.manifest()
+        manifest["modrinth_project_id"] = "wrong-project"
+        with self.assertRaises(modrinth_publish.ModrinthError):
+            modrinth_publish.validate_project_identity(manifest, "Nfhbipsz")
+
+    def test_publish_stops_after_resolving_wrong_canonical_project(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            manifest_path = Path(temporary) / "manifest.json"
+            manifest_path.write_text(json.dumps(self.manifest()), encoding="utf-8")
+            with mock.patch.object(
+                modrinth_publish.ModrinthClient,
+                "request",
+                return_value={"id": "wrong-project"},
+            ) as request:
+                with self.assertRaises(modrinth_publish.ModrinthError):
+                    modrinth_publish.publish(
+                        manifest_path,
+                        "token",
+                        "configured-slug",
+                        "1.21.1",
+                    )
+            request.assert_called_once_with("GET", "/project/configured-slug")
 
     def test_title_and_changelog_changes_are_patchable(self):
         expected = modrinth_publish.expected_metadata(self.manifest(), "Nfhbipsz", "1.21.1")

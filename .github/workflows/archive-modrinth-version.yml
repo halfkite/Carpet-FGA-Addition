@@ -31,6 +31,9 @@ jobs:
             'User-Agent' = 'halfkite/Carpet-FGA-Addition release repair'
           }
           $project = Invoke-RestMethod -Uri "https://api.modrinth.com/v2/project/$env:MODRINTH_PROJECT" -Headers $headers
+          if ($project.id -ne 'Nfhbipsz') {
+            throw "Configured Modrinth project resolves to $($project.id), expected Nfhbipsz"
+          }
           $version = Invoke-RestMethod -Uri "https://api.modrinth.com/v2/version/$env:VERSION_ID" -Headers $headers
           if ($version.project_id -ne $project.id) {
             throw "Version $env:VERSION_ID does not belong to project $($project.id)"

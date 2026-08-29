@@ -19,6 +19,32 @@ SPEC.loader.exec_module(release_metadata)
 class ReleaseMetadataTest(unittest.TestCase):
     repo_root = Path(__file__).resolve().parents[2]
 
+    @staticmethod
+    def write_test_jar(
+        path: Path,
+        *,
+        version: str,
+        minecraft_dependency: str,
+        carpet_dependency: str | None,
+        fabric_api_dependency: str | None,
+    ) -> None:
+        depends = {"minecraft": minecraft_dependency}
+        if carpet_dependency is not None:
+            depends["carpet"] = carpet_dependency
+        if fabric_api_dependency is not None:
+            depends["fabric-api"] = fabric_api_dependency
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.writestr(
+                "fabric.mod.json",
+                json.dumps(
+                    {
+                        "id": "carpet-fga-addition",
+                        "version": version,
+                        "depends": depends,
+                    }
+                ),
+            )
+
     def test_repository_settings_have_no_independent_121_project(self):
         versions, publish_versions = release_metadata.load_release_settings(self.repo_root)
         self.assertEqual(17, len(versions))
@@ -45,6 +71,35 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertIn("fromJSON(needs.prepare.outputs.matrix)", build_workflow)
         self.assertNotIn("gh release create", release_workflow)
         self.assertNotIn("git tag", release_workflow)
+
+    def test_dispatch_uses_default_branch_helper_and_separate_release_source(self):
+        release_workflow = (self.repo_root / ".github/workflows/release.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("path: publisher", release_workflow)
+        self.assertIn("path: release-source", release_workflow)
+        self.assertIn("github.event_name == 'workflow_dispatch' && github.sha", release_workflow)
+        self.assertIn("git -C release-source rev-parse HEAD", release_workflow)
+        self.assertIn("--repo-root release-source", release_workflow)
+        self.assertIn("publisher/scripts/python/release_metadata.py", release_workflow)
+        self.assertNotIn("python scripts/python/", release_workflow)
+        dispatch_job = release_workflow.split("  package-dispatch:", 1)[1].split(
+            "  publish-github:", 1
+        )[0]
+        self.assertIn("gh release download", dispatch_job)
+        self.assertNotIn("gradlew", dispatch_job)
+        self.assertNotIn("uses: ./.github/workflows/build.yml", dispatch_job)
+
+    def test_external_project_identity_guards_are_present(self):
+        release_workflow = (self.repo_root / ".github/workflows/release.yml").read_text(
+            encoding="utf-8"
+        )
+        archive_workflow = (
+            self.repo_root / ".github/workflows/archive-modrinth-version.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("validate-project", release_workflow)
+        self.assertIn("steps.curseforge-project.outputs.project_id", release_workflow)
+        self.assertIn("$project.id -ne 'Nfhbipsz'", archive_workflow)
 
     def test_all_publish_compatibility_ranges(self):
         _, publish_versions = release_metadata.load_release_settings(self.repo_root)
@@ -146,17 +201,13 @@ class ReleaseMetadataTest(unittest.TestCase):
             artifact_dir = root / "artifacts" / "build-1.21.1"
             artifact_dir.mkdir(parents=True)
             jar = artifact_dir / "built.jar"
-            with zipfile.ZipFile(jar, "w") as archive:
-                archive.writestr(
-                    "fabric.mod.json",
-                    json.dumps(
-                        {
-                            "id": "carpet-fga-addition",
-                            "version": "1.5.4",
-                            "depends": {"minecraft": ">=1.21 <=1.21.1"},
-                        }
-                    ),
-                )
+            self.write_test_jar(
+                jar,
+                version="1.5.4",
+                minecraft_dependency=">=1.21 <=1.21.1",
+                carpet_dependency=">=1.4.147",
+                fabric_api_dependency="*",
+            )
             digest = hashlib.sha256(jar.read_bytes()).hexdigest()
             (artifact_dir / "build-manifest-1.21.1.json").write_text(
                 json.dumps(
@@ -174,6 +225,72 @@ class ReleaseMetadataTest(unittest.TestCase):
             self.assertEqual("1.5.4", package["modrinth_version_number"])
             self.assertEqual("1.5.4", package["curseforge_version"])
             self.assertTrue((root / "package" / "dist" / entry["jar_name"]).is_file())
+
+    def test_jar_validation_requires_exact_carpet_dependency(self):
+        entry = release_metadata.project_metadata(self.repo_root, "1.21.1", "1.5.4")
+        with tempfile.TemporaryDirectory() as temporary:
+            jar = Path(temporary) / "missing-carpet.jar"
+            self.write_test_jar(
+                jar,
+                version="1.5.4",
+                minecraft_dependency=entry["minecraft_dependency"],
+                carpet_dependency=None,
+                fabric_api_dependency="*",
+            )
+            with self.assertRaises(release_metadata.MetadataError):
+                release_metadata._validate_jar(jar, entry)
+
+            jar = Path(temporary) / "wrong-carpet.jar"
+            self.write_test_jar(
+                jar,
+                version="1.5.4",
+                minecraft_dependency=entry["minecraft_dependency"],
+                carpet_dependency=">=0",
+                fabric_api_dependency="*",
+            )
+            with self.assertRaises(release_metadata.MetadataError):
+                release_metadata._validate_jar(jar, entry)
+
+    def test_jar_validation_requires_fabric_api_for_minecraft_121_and_newer(self):
+        entry = release_metadata.project_metadata(self.repo_root, "1.21.1", "1.5.4")
+        with tempfile.TemporaryDirectory() as temporary:
+            jar = Path(temporary) / "missing-fabric-api.jar"
+            self.write_test_jar(
+                jar,
+                version="1.5.4",
+                minecraft_dependency=entry["minecraft_dependency"],
+                carpet_dependency=entry["carpet_dependency"],
+                fabric_api_dependency=None,
+            )
+            with self.assertRaises(release_metadata.MetadataError):
+                release_metadata._validate_jar(jar, entry)
+
+    def test_jar_validation_rejects_fabric_api_below_minecraft_121(self):
+        entry = release_metadata.project_metadata(self.repo_root, "1.20.1", "1.5.4")
+        with tempfile.TemporaryDirectory() as temporary:
+            jar = Path(temporary) / "unexpected-fabric-api.jar"
+            self.write_test_jar(
+                jar,
+                version="1.5.4",
+                minecraft_dependency=entry["minecraft_dependency"],
+                carpet_dependency=entry["carpet_dependency"],
+                fabric_api_dependency="*",
+            )
+            with self.assertRaises(release_metadata.MetadataError):
+                release_metadata._validate_jar(jar, entry)
+
+    def test_jar_validation_accepts_low_version_without_fabric_api(self):
+        entry = release_metadata.project_metadata(self.repo_root, "1.20.1", "1.5.4")
+        with tempfile.TemporaryDirectory() as temporary:
+            jar = Path(temporary) / "valid.jar"
+            self.write_test_jar(
+                jar,
+                version="1.5.4",
+                minecraft_dependency=entry["minecraft_dependency"],
+                carpet_dependency=entry["carpet_dependency"],
+                fabric_api_dependency=None,
+            )
+            release_metadata._validate_jar(jar, entry)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 import importlib.util
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 MODULE_PATH = Path(__file__).with_name("curseforge_state.py")
@@ -13,6 +14,30 @@ SPEC.loader.exec_module(curseforge_state)
 
 
 class CurseForgeStateTest(unittest.TestCase):
+    def test_expected_project_id_is_accepted(self):
+        self.assertEqual("1660840", curseforge_state.validate_project_identity("1660840"))
+
+    def test_wrong_project_id_fails_before_publication(self):
+        with self.assertRaises(curseforge_state.CurseForgeStateError):
+            curseforge_state.validate_project_identity("9999999")
+
+    def test_update_stops_before_metadata_lookup_for_wrong_project(self):
+        with mock.patch.object(
+            curseforge_state, "curseforge_game_version_ids"
+        ) as game_version_ids, mock.patch.object(
+            curseforge_state.urllib.request, "urlopen"
+        ) as urlopen:
+            with self.assertRaises(curseforge_state.CurseForgeStateError):
+                curseforge_state.update_curseforge_metadata(
+                    Path("missing-manifest.json"),
+                    "1.21.1",
+                    "9999999",
+                    "12345",
+                    "token",
+                )
+        game_version_ids.assert_not_called()
+        urlopen.assert_not_called()
+
     def test_marker_is_exact_and_numeric(self):
         self.assertEqual("12345", curseforge_state.marker_file_id({"label": "CF:12345"}))
         self.assertIsNone(curseforge_state.marker_file_id({"label": "CF:1.21.1"}))

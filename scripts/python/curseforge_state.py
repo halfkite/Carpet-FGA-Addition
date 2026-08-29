@@ -22,6 +22,16 @@ class CurseForgeStateError(RuntimeError):
 
 
 CURSEFORGE_API_ROOT = "https://minecraft.curseforge.com/api"
+EXPECTED_PROJECT_ID = "1660840"
+
+
+def validate_project_identity(project_id: str) -> str:
+    normalized = str(project_id).strip()
+    if normalized != EXPECTED_PROJECT_ID:
+        raise CurseForgeStateError(
+            f"Configured CurseForge project is {normalized!r}; expected {EXPECTED_PROJECT_ID!r}"
+        )
+    return normalized
 
 
 class JsonClient:
@@ -333,6 +343,7 @@ def curseforge_game_version_ids(game_version_names: list[str], token: str) -> li
 def update_curseforge_metadata(
     manifest_path: Path, build_project: str, project_id: str, file_id: str, token: str
 ) -> None:
+    project_id = validate_project_identity(project_id)
     if not token:
         raise CurseForgeStateError("CURSEFORGE_TOKEN is required")
     if not re.fullmatch(r"\d+", file_id):
@@ -396,6 +407,10 @@ def build_parser() -> argparse.ArgumentParser:
     update.add_argument("--build-project", required=True)
     update.add_argument("--project", default="1660840")
     update.add_argument("--file-id", required=True)
+
+    validate_project = subparsers.add_parser("validate-project")
+    validate_project.add_argument("--project", required=True)
+    validate_project.add_argument("--github-output", type=Path)
     return parser
 
 
@@ -428,6 +443,12 @@ def main() -> int:
                 args.file_id,
                 os.environ.get("CURSEFORGE_TOKEN", ""),
             )
+        elif args.command == "validate-project":
+            project_id = validate_project_identity(args.project)
+            if args.github_output:
+                write_github_output(args.github_output, "project_id", project_id)
+            else:
+                print(project_id)
     except (OSError, json.JSONDecodeError, CurseForgeStateError) as exc:
         print(f"CurseForge state error: {exc}", file=sys.stderr)
         return 1

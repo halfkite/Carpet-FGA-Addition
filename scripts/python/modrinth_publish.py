@@ -17,10 +17,25 @@ from typing import Any
 
 
 API_ROOT = "https://api.modrinth.com/v2"
+EXPECTED_PROJECT_ID = "Nfhbipsz"
 
 
 class ModrinthError(RuntimeError):
     pass
+
+
+def validate_project_identity(manifest: dict[str, Any], canonical_project_id: str) -> str:
+    if canonical_project_id != EXPECTED_PROJECT_ID:
+        raise ModrinthError(
+            f"Configured Modrinth project resolves to {canonical_project_id!r}; "
+            f"expected {EXPECTED_PROJECT_ID!r}"
+        )
+    if manifest.get("modrinth_project_id") != EXPECTED_PROJECT_ID:
+        raise ModrinthError(
+            f"Release manifest targets Modrinth project {manifest.get('modrinth_project_id')!r}; "
+            f"expected {EXPECTED_PROJECT_ID!r}"
+        )
+    return canonical_project_id
 
 
 class ModrinthClient:
@@ -229,7 +244,9 @@ def publish(
     manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
     client = ModrinthClient(token)
     project = client.request("GET", f"/project/{urllib.parse.quote(configured_project, safe='')}")
-    canonical_project_id = project["id"]
+    if not isinstance(project, dict):
+        raise ModrinthError("Modrinth project lookup returned an unexpected response")
+    canonical_project_id = validate_project_identity(manifest, str(project.get("id") or ""))
     expected = expected_metadata(manifest, canonical_project_id, build_project)
     files = local_files(manifest, build_project)
     expected_filename = next(iter(files))

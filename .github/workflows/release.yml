@@ -45,6 +45,7 @@ jobs:
       versions: ${{ steps.context.outputs.versions }}
       all_versions: ${{ steps.context.outputs.all_versions }}
       is_all_versions: ${{ steps.context.outputs.is_all_versions }}
+      publisher_commit: ${{ steps.context.outputs.publisher_commit }}
     steps:
       - name: Select existing Release tag
         id: release
@@ -70,11 +71,19 @@ jobs:
           fi
           printf 'tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
 
-      - name: Check out Release tag
+      - name: Check out publisher helper
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || format('refs/tags/{0}', steps.release.outputs.tag) }}
+          fetch-depth: 1
+          path: publisher
+
+      - name: Check out Release source
         uses: actions/checkout@v4
         with:
           ref: refs/tags/${{ steps.release.outputs.tag }}
           fetch-depth: 1
+          path: release-source
 
       - name: Read GitHub Release metadata
         shell: bash
@@ -96,15 +105,17 @@ jobs:
           TARGET_VERSIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.versions || 'all' }}
         run: |
           set -euo pipefail
-          commit="$(git rev-parse HEAD)"
-          python scripts/python/release_metadata.py inspect-release \
-            --repo-root . \
+          commit="$(git -C release-source rev-parse HEAD)"
+          publisher_commit="$(git -C publisher rev-parse HEAD)"
+          python publisher/scripts/python/release_metadata.py inspect-release \
+            --repo-root release-source \
             --release-json release.json \
             --tag "$RELEASE_TAG" \
             --commit "$commit" \
             --target "$TARGET_VERSIONS" \
             --output release-context.json \
             --github-output "$GITHUB_OUTPUT"
+          printf 'publisher_commit=%s\n' "$publisher_commit" >> "$GITHUB_OUTPUT"
 
           if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
             prerelease="$(python -c "import json; print(str(json.load(open('release-context.json'))['prerelease']).lower())")"
@@ -139,11 +150,12 @@ jobs:
     if: ${{ github.event_name == 'release' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check out resolved Release commit
+      - name: Check out publisher helper
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.inspect.outputs.commit }}
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
           fetch-depth: 1
+          path: publisher
 
       - name: Download Release context
         uses: actions/download-artifact@v4
@@ -161,7 +173,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/python/release_metadata.py assemble-build \
+          python publisher/scripts/python/release_metadata.py assemble-build \
             --context release-context/release-context.json \
             --artifacts-root build-artifacts \
             --build-versions '${{ needs.build.outputs.versions }}' \
@@ -183,11 +195,12 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check out resolved Release commit
+      - name: Check out current publisher helper
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.inspect.outputs.commit }}
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
           fetch-depth: 1
+          path: publisher
 
       - name: Download Release context
         uses: actions/download-artifact@v4
@@ -212,7 +225,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/python/release_metadata.py assemble-assets \
+          python publisher/scripts/python/release_metadata.py assemble-assets \
             --context release-context/release-context.json \
             --assets-root existing-assets \
             --output-dir release-package
@@ -232,11 +245,12 @@ jobs:
     if: ${{ github.event_name == 'release' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check out resolved Release commit
+      - name: Check out publisher helper
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.inspect.outputs.commit }}
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
           fetch-depth: 1
+          path: publisher
 
       - name: Download validated Release package
         uses: actions/download-artifact@v4
@@ -251,7 +265,7 @@ jobs:
           RELEASE_TAG: ${{ needs.inspect.outputs.tag }}
         run: |
           set -euo pipefail
-          python scripts/python/github_release_assets.py \
+          python publisher/scripts/python/github_release_assets.py \
             --manifest release-package/release-manifest.json \
             --repository "$GITHUB_REPOSITORY" \
             --tag "$RELEASE_TAG"
@@ -283,11 +297,12 @@ jobs:
       max-parallel: 1
       matrix: ${{ fromJSON(needs.inspect.outputs.matrix) }}
     steps:
-      - name: Check out resolved Release commit
+      - name: Check out publisher helper
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.inspect.outputs.commit }}
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
           fetch-depth: 1
+          path: publisher
 
       - name: Download validated Release package
         uses: actions/download-artifact@v4
@@ -302,7 +317,7 @@ jobs:
           MODRINTH_PROJECT: ${{ vars.MODRINTH_PROJECT_ID || 'Nfhbipsz' }}
         run: |
           set -euo pipefail
-          python scripts/python/modrinth_publish.py \
+          python publisher/scripts/python/modrinth_publish.py \
             --manifest release-package/release-manifest.json \
             --project "$MODRINTH_PROJECT" \
             --build-project '${{ matrix.mc_version }}'
@@ -334,11 +349,12 @@ jobs:
       max-parallel: 1
       matrix: ${{ fromJSON(needs.inspect.outputs.matrix) }}
     steps:
-      - name: Check out resolved Release commit
+      - name: Check out publisher helper
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.inspect.outputs.commit }}
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
           fetch-depth: 1
+          path: publisher
 
       - name: Download validated Release package
         uses: actions/download-artifact@v4
@@ -346,12 +362,23 @@ jobs:
           name: release-package
           path: release-package
 
+      - name: Validate CurseForge project identity
+        id: curseforge-project
+        shell: bash
+        env:
+          CURSEFORGE_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/curseforge_state.py validate-project \
+            --project "$CURSEFORGE_PROJECT" \
+            --github-output "$GITHUB_OUTPUT"
+
       - name: Read project publication metadata
         id: metadata
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/python/release_metadata.py platform-entry \
+          python publisher/scripts/python/release_metadata.py platform-entry \
             --manifest release-package/release-manifest.json \
             --build-project '${{ matrix.mc_version }}' \
             --github-output "$GITHUB_OUTPUT"
@@ -363,7 +390,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          python scripts/python/curseforge_state.py precheck \
+          python publisher/scripts/python/curseforge_state.py precheck \
             --manifest release-package/release-manifest.json \
             --build-project '${{ matrix.mc_version }}' \
             --repository "$GITHUB_REPOSITORY" \
@@ -377,13 +404,12 @@ jobs:
         shell: bash
         env:
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
-          CURSEFORGE_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
         run: |
           set -euo pipefail
-          python scripts/python/curseforge_state.py update \
+          python publisher/scripts/python/curseforge_state.py update \
             --manifest release-package/release-manifest.json \
             --build-project '${{ matrix.mc_version }}' \
-            --project "$CURSEFORGE_PROJECT" \
+            --project '${{ steps.curseforge-project.outputs.project_id }}' \
             --file-id '${{ steps.curseforge.outputs.file_id }}'
 
       - name: Upload to CurseForge
@@ -391,7 +417,7 @@ jobs:
         if: ${{ steps.curseforge.outputs.should_upload == 'true' }}
         uses: Kira-NT/mc-publish@52307b03863581dec6b652b83e597aec02ebb075
         with:
-          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
+          curseforge-id: ${{ steps.curseforge-project.outputs.project_id }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           files: ${{ steps.metadata.outputs.jar }}
           name: ${{ needs.inspect.outputs.tag }}
@@ -410,7 +436,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          python scripts/python/curseforge_state.py mark \
+          python publisher/scripts/python/curseforge_state.py mark \
             --repository "$GITHUB_REPOSITORY" \
             --asset-id '${{ steps.curseforge.outputs.asset_id }}' \
             --file-id '${{ steps.upload.outputs.curseforge-version }}'
