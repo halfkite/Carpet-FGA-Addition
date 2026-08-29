@@ -25,7 +25,7 @@ Workflow 不创建或移动 Tag，不创建 Release，也不改写 Release 标�
 4. 将最终 JAR 上传到当前 GitHub Release。Release Assets 只包含可安装 JAR；同名且摘要相同会跳过，摘要不同则失败。
 5. 正式 Release 发布到 Modrinth 和 CurseForge；prerelease 到此停止，只保留 GitHub Assets。
 
-Modrinth 每个发行 JAR 对应一条 Version。所有 Version 的 `version_number` 都直接等于 GitHub Tag；workflow 先按项目 ID 与 Tag 取得候选集合，再用确定性的最终 JAR 文件名定位具体条目，不依赖可变显示名称。标题或正文变化只更新原条目的可变 metadata。每条 Version 都能声明自己的 Minecraft 版本和依赖，因此 Fabric API 仅在 Minecraft 1.21+ 条目中标记为 required。`MODRINTH_PROJECT_ID` 可以填写 ID 或 slug，但解析后的 canonical project id 必须严格等于 `Nfhbipsz`，否则在创建、更新或归档 Version 前失败。
+Modrinth 每个发行 JAR 对应一条 Version。所有 Version 的显示名称 `name` 和 `version_number` 都直接等于 GitHub Tag；workflow 先按项目 ID 与 Tag 取得候选集合，再用确定性的最终 JAR 文件名定位具体条目，不依赖可变显示名称。名称或正文变化只更新原条目的可变 metadata。每条 Version 都能声明自己的 Minecraft 版本和依赖，因此 Fabric API 仅在 Minecraft 1.21+ 条目中标记为 required。`MODRINTH_PROJECT_ID` 可以填写 ID 或 slug，但解析后的 canonical project id 必须严格等于 `Nfhbipsz`，否则在创建、更新或归档 Version 前失败。
 
 CurseForge 每个 JAR 独立上传，但 display name/version 都直接使用 GitHub Tag。任何上传或 metadata update 前都会校验项目 ID 必须严格等于 `1660840`，Repository Variable 配错时不会向其他项目写入。上传成功后，CurseForge file ID 会写入对应 GitHub Release Asset 的 label（`CF:<file-id>`），作为补发时的稳定标记。
 

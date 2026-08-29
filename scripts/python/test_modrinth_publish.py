@@ -54,6 +54,7 @@ class ModrinthPublishTest(unittest.TestCase):
 
     def test_expected_version_number_is_exact_tag(self):
         expected = modrinth_publish.expected_metadata(self.manifest(), "Nfhbipsz", "1.21.1")
+        self.assertEqual("1.5.4", expected["name"])
         self.assertEqual("1.5.4", expected["version_number"])
         self.assertEqual(["fabric"], expected["loaders"])
         self.assertEqual(["1.21", "1.21.1"], expected["game_versions"])
@@ -98,9 +99,15 @@ class ModrinthPublishTest(unittest.TestCase):
         existing["name"] = "Old title"
         existing["changelog"] = "Old changes"
         patch = modrinth_publish.mutable_patch(existing, expected)
-        self.assertEqual("Release title for Minecraft 1.21-1.21.1", patch["name"])
+        self.assertEqual("1.5.4", patch["name"])
         self.assertEqual("Changes", patch["changelog"])
         self.assertEqual(2, len(patch))
+
+    def test_legacy_minecraft_suffix_only_patches_name(self):
+        expected = modrinth_publish.expected_metadata(self.manifest(), "Nfhbipsz", "1.21.1")
+        existing = dict(expected)
+        existing["name"] = "Release title for Minecraft 1.21-1.21.1"
+        self.assertEqual({"name": "1.5.4"}, modrinth_publish.mutable_patch(existing, expected))
 
     def test_remote_dependency_null_fields_do_not_cause_a_patch_loop(self):
         expected = modrinth_publish.expected_metadata(self.manifest(), "Nfhbipsz", "1.21.1")

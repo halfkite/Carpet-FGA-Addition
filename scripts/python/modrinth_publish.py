@@ -103,7 +103,7 @@ def expected_metadata(
     entry = manifest_entry(manifest, build_project)
     return {
         "project_id": canonical_project_id,
-        "name": f"{manifest['title']} for Minecraft {entry['artifact_mc_version']}",
+        "name": tag,
         "version_number": tag,
         "changelog": manifest["body"],
         "dependencies": entry["modrinth_dependencies"],
