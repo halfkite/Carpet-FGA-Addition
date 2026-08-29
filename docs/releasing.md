@@ -4,7 +4,7 @@
 
 ## Minecraft 1.21 / 1.21.1 兼容说明
 
-`versions/1.21.1` 构建的 `mc1.21.1.jar` 在 `fabric.mod.json` 中通过精确版本数组声明同时兼容 Minecraft `1.21` 与 `1.21.1`（`"minecraft": ["1.21","1.21.1"]`，仅精确匹配这两个版本，不包含快照或预发布版）。Minecraft 1.21 服务端可以直接安装 `mc1.21.1.jar` 运行。多版本兼容声明由 `versions/1.21.1/gradle.properties` 的 `minecraft_dependency_versions` 属性配置（逗号分隔的精确版本列表，构建时生成 JSON 数组）。
+`versions/1.21.1` 构建的 `mc1.21.1.jar` 在 `fabric.mod.json` 中通过版本范围谓词声明同时兼容 Minecraft `1.21` 与 `1.21.1`（`"minecraft": ">=1.21 <=1.21.1"`，与仓库其他共享 artifact 的依赖写法一致）。Minecraft 1.21 服务端可以直接安装 `mc1.21.1.jar` 运行。兼容范围由 `versions/1.21.1/gradle.properties` 的 `minecraft_dependency` 属性配置（Fabric Loader 版本谓词，空格分隔表示 AND）。
 
 当前发布流程仍会临时发布独立的 `mc1.21.jar`（其依赖为精确 `1.21`）。后续统一重构 GitHub Actions 发布矩阵时才会取消独立的 1.21 发布，并同步更新各平台的支持列表与规则文档。
 
