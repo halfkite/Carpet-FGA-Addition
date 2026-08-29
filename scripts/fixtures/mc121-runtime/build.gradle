@@ -1,0 +1,33 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version '1.17.14'
+}
+
+repositories {
+    maven {
+        url = 'https://masa.dy.fi/maven'
+        content { includeModule('carpet', 'fabric-carpet') }
+    }
+}
+
+def fgaJar = findProperty('fgaJar')
+if (fgaJar == null || !file(fgaJar).isFile()) {
+    throw new GradleException('Pass -PfgaJar=<path-to-the-built-1.21.1-jar>')
+}
+
+dependencies {
+    minecraft 'com.mojang:minecraft:1.21'
+    mappings loom.officialMojangMappings()
+    modImplementation 'net.fabricmc:fabric-loader:0.15.11'
+    modImplementation 'carpet:fabric-carpet:1.21-1.4.147+v240613'
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.102.0+1.21'
+    modLocalRuntime files(fgaJar)
+}
+
+loom {
+    runs {
+        server {
+            server()
+            runDir findProperty('runDir') ?: 'run'
+        }
+    }
+}

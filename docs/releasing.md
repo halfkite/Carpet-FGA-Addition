@@ -1,16 +1,42 @@
 # 发布流程
 
-仓库的正式发布由 `.github/workflows/release.yml` 负责。它会按照 `build.gradle` 中的发布矩阵构建 Minecraft `1.20.1`、`1.21`、`1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2` 和 `26.2`。
+正式发布由 GitHub Release 驱动。维护者先在 GitHub Releases 页面创建 Release，填写已有 Tag、标题和正文，然后点击 Publish。`.github/workflows/release.yml` 收到 `release: published` 后会 checkout 该 Tag 实际指向的 commit，而不是默认分支最新 commit。
 
-## Minecraft 1.21 / 1.21.1 兼容说明
+Workflow 不创建或移动 Tag，不创建 Release，也不改写 Release 标题或正文。Tag 是 GitHub、Modrinth 和 CurseForge 的唯一发布版本号；三个平台都直接使用相同 Tag，不追加 Minecraft 版本、构建项目名或其他后缀。GitHub Release body 会原样作为 Modrinth 和 CurseForge changelog。
 
-`versions/1.21.1` 构建的 `mc1.21.1.jar` 在 `fabric.mod.json` 中通过版本范围谓词声明同时兼容 Minecraft `1.21` 与 `1.21.1`（`"minecraft": ">=1.21 <=1.21.1"`，与仓库其他共享 artifact 的依赖写法一致）。Minecraft 1.21 服务端可以直接安装 `mc1.21.1.jar` 运行。兼容范围由 `versions/1.21.1/gradle.properties` 的 `minecraft_dependency` 属性配置（Fabric Loader 版本谓词，空格分隔表示 AND）。
+发布构建会将 Tag 作为 `publication_version` 传给 Gradle，因此发行 JAR 内的 `fabric.mod.json.version` 也必须与 Tag 完全一致。归档任务关闭文件时间戳并使用可复现文件顺序，使同一 Tag commit 的补跑能够得到相同摘要；普通 CI 和本地开发构建仍使用原有的时间戳开发版本。
 
-当前发布流程仍会临时发布独立的 `mc1.21.jar`（其依赖为精确 `1.21`）。后续统一重构 GitHub Actions 发布矩阵时才会取消独立的 1.21 发布，并同步更新各平台的支持列表与规则文档。
+## 发布项目与 Minecraft 1.21 兼容
 
-`1.21` 预处理节点长期保留，作为预处理与 CI 回归节点（`build.yml` 会分别构建 1.21 与 1.21.1 两个版本），它不代表对外的发布形态。
+`settings.json.publishVersions` 是唯一发行项目列表。`.github/workflows/build.yml` 的 `prepare` job checkout 指定 ref 后读取该数组并输出 JSON matrix，后续构建通过 `fromJSON(needs.prepare.outputs.matrix)` 展开，不在 workflow 中维护第二份版本列表。
 
-以后需要发布时，告诉维护者“发布”并提供版本号即可。维护者在 GitHub Actions 手动运行 `Release Carpet FGA Addition`，输入例如 `1.5.1`。`release` 类型会从提交记录生成简短更新日志，创建同名 GitHub Release，构建所选版本，并将成功的 JAR 同步到 GitHub、Modrinth 和 CurseForge；正式版上传前会把 JAR 重命名为不含 Gradle 构建时间戳的 `carpet-fga-addition-版本-mc版本.jar`。选择 `beta` 类型时保留原始时间戳文件名，并以 beta 版本发布。GitHub Release 只附加可安装的 JAR。Modrinth 和 CurseForge 都为每个 Minecraft 版本创建独立条目，每个条目只包含对应版本的一个 JAR；Modrinth 使用 `版本+mc游戏版本` 作为唯一版本号，避免启动器选择错误文件。
+多版本 Gradle/Preprocessor 结构不再包含独立 `1.21` 项目。Minecraft 1.21 和 1.21.1 共用 `versions/1.21.1` 构建的 JAR：
+
+- `fabric.mod.json` 声明 `"minecraft": ">=1.21 <=1.21.1"`；
+- 最终文件名使用兼容范围，例如 `carpet-fga-addition-1.5.4-mc1.21-1.21.1.jar`；
+- Modrinth 和 CurseForge 同时标记 Minecraft 1.21、1.21.1；
+- CI 使用独立 runtime fixture，在真实 Minecraft 1.21 + Fabric Loader + Carpet + Fabric API 环境中加载该 `1.21.1` 正式 JAR。
+
+## 自动发布顺序
+
+1. 校验已有 GitHub Release、Tag、标题和正文，解析 Tag commit，并确认 Tag 等于 `gradle.properties` 中的 `mod_version`。
+2. 调用 `build.yml`，按 `settings.json.publishVersions` 构建全部发行项目。
+3. 校验每个 build artifact 的 commit、SHA-256 和 `fabric.mod.json`，按 `artifact_mc_version` 生成最终文件名。
+4. 将最终 JAR 上传到当前 GitHub Release。Release Assets 只包含可安装 JAR；同名且摘要相同会跳过，摘要不同则失败。
+5. 正式 Release 发布到 Modrinth 和 CurseForge；prerelease 到此停止，只保留 GitHub Assets。
+
+Modrinth 每个发行 JAR 对应一条 Version。所有 Version 的 `version_number` 都直接等于 GitHub Tag；workflow 先按项目 ID 与 Tag 取得候选集合，再用确定性的最终 JAR 文件名定位具体条目，不依赖可变显示名称。标题或正文变化只更新原条目的可变 metadata。每条 Version 都能声明自己的 Minecraft 版本和依赖，因此 Fabric API 仅在 Minecraft 1.21+ 条目中标记为 required。
+
+CurseForge 每个 JAR 独立上传，但 display name/version 都直接使用 GitHub Tag。上传成功后，CurseForge file ID 会写入对应 GitHub Release Asset 的 label（`CF:<file-id>`），作为补发时的稳定标记。
+
+## 失败重试
+
+- GitHub 构建、打包或 Assets 上传失败：在原 workflow run 中使用 “Re-run failed jobs”。
+- Modrinth 或 CurseForge 失败：从默认分支手动运行 `Release Carpet FGA Addition`，输入已有 Release Tag，并选择目标平台。
+- 手动补发不会重新构建，而是下载并校验当前 GitHub Release Assets。
+- CurseForge 可按 `settings.json.publishVersions` 中的构建项目名补发；Minecraft 1.21 对应项目名为 `1.21.1`，不接受 `1.21`。
+- Modrinth 和 CurseForge 都可按 `settings.json.publishVersions` 中的构建项目名补发。
+- CurseForge Asset marker 缺失且历史上传步骤状态不明确时，workflow 会拒绝再次上传，避免产生重复文件。
 
 ## 仓库设置
 
@@ -18,13 +44,7 @@
 
 - Secret `MODRINTH_API_TOKEN`
 - Secret `CURSEFORGE_TOKEN`
-- Repository variable `MODRINTH_PROJECT_ID`（可选，未设置时使用项目 slug `carpet-fga-addition`）
-- Repository variable `CURSEFORGE_PROJECT_ID`（可选，当前默认使用项目 `1660840`）
+- Repository variable `MODRINTH_PROJECT_ID`（可选，默认 `Nfhbipsz`）
+- Repository variable `CURSEFORGE_PROJECT_ID`（可选，默认 `1660840`）
 
-Token 只存在于 GitHub Secrets，不写入仓库。两个项目 ID 不是凭猜测写死的，首次配置仓库时填入对应项目的真实 ID。
-
-## 构建检查
-
-`Gradle build` 会在 push、Pull Request 和手动运行时检查发布矩阵。可以用 `target_subproject` 只构建一个版本；正式发布也支持只发布一个版本，适合先验证新 Minecraft 版本。
-
-构建成功只代表 JAR 构建和打包通过，不代表已经完成游戏内测试。发布前仍应确认对应版本的服务端启动和功能实测结果。
+建议使用 GitHub Ruleset 禁止已发布 Tag 被强制移动或删除。

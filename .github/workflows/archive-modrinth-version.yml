@@ -21,7 +21,7 @@ jobs:
         shell: pwsh
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_API_TOKEN }}
-          MODRINTH_PROJECT: ${{ vars.MODRINTH_PROJECT_ID || 'carpet-fga-addition' }}
+          MODRINTH_PROJECT: ${{ vars.MODRINTH_PROJECT_ID || 'Nfhbipsz' }}
           VERSION_ID: ${{ inputs.version_id }}
           EXPECTED_VERSION: ${{ inputs.expected_version }}
         run: |
