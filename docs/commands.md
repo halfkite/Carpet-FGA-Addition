@@ -8,8 +8,8 @@
 |---|---|---|---|
 | `/player` 区域操作 | `fakePlayerRangeControl` | Carpet 玩家权限/全版本 | 让假人执行区域放置、交互、攻击或连续任务。 |
 | `/droppedItemStackLimit` | `droppedItemStackLimit` | 规则权限/全部支持版本 | 配置地面、玩家背包和容器的独立堆叠上限，背包或容器上限启用时需要 FGA 客户端。 |
-| `/dropPreStack` | `preStackDroppedItems` | 与掉落物上限权限/1.20.5-26.2 | 配置生物、方块和容器掉落预堆叠。 |
-| `/villagerPerformance` | `villagerPerformanceOptimization` | 规则权限/1.20.1+ | 配置村民交易、赠礼和流浪商人保护。 |
+| `/dropPreStack` | `preStackDroppedItems` | 与掉落物上限权限/1.21-26.2 | 配置生物、方块和容器掉落预堆叠。 |
+| `/villagerPerformance` | `villagerPerformanceOptimization` | 规则权限/1.21+ | 配置村民交易、赠礼和流浪商人保护。 |
 | `/fakePlayerItemSort` | 1.21-26.2（不含 1.21.3）分类规则 | `commandPlayer`/1.21-26.2（不含 1.21.3） | 配置分类器核心，网页、重构、补货和线程参数仅在 1.21.1 可用。 |
 | `/player <name> bot_sort` | 1.21-26.2（不含 1.21.3）分类规则 | `commandPlayer`/1.21-26.2（不含 1.21.3） | 启动或停止指定假人的分类任务，重构语法仅在 1.21.1 可用。 |
 | `/minecart` | 矿车烟花与锁链规则 | `minecartFeatureCommandPermission`/1.21.1 | 配置烟花矿车速度与锁链列车距离。 |
@@ -47,7 +47,7 @@
 ```
 
 输入使用方块坐标，实际向外取整到完整区块，所有 X/Z 参数都可按 Tab 补全玩家自身坐标或视线指向方块坐标，预览会显示精确区块数和实际生效范围。预览中的绿色确认按钮可直接点击执行确认；确认只加入队列，世界会在下次服务器重启时修改。可以确认多个任务并在下一次重启统一执行。`regenerate` 删除旧区块并按原版正常生成；`clear` 将每个 section 的 palette 通过全空气网络数据替换为空气，同时清除方块实体、非玩家实体、POI、计划刻、高度图和旧光照数据，并清除实际范围水平外沿八格内的相邻流体，覆盖原版水与下界熔岩的最大水平传播距离；含水方块只取消含水状态。清空范围与外沿涉及的 Region 都会在执行前备份。失败任务可在修复原因后使用 `retry` 继续，且不会覆盖原始备份。
-| `/log playerHealth` | `playerHealthDisplay` | Carpet Logger/1.16.5+ | 切换当前玩家的 Tab 生命值订阅。 |
+| `/log playerHealth` | `playerHealthDisplay` | Carpet Logger/1.21+ | 切换当前玩家的 Tab 生命值订阅。 |
 | `/fga` | FGA 功能入口 | 版本门控 | 查看帮助、状态并访问 FGA 命令别名。 |
 
 ## `/player` 区域操作
@@ -241,7 +241,7 @@
 
 ### 权限与版本
 
-这是 Carpet Logger 的玩家订阅命令，订阅状态只影响执行命令的玩家。规则生效版本为 `1.16.5+`；需要服务端安装 Carpet。
+这是 Carpet Logger 的玩家订阅命令，订阅状态只影响执行命令的玩家。规则生效版本为 `1.21+`；需要服务端安装 Carpet。
 
 ## `/playerLoadDistance` 与 `/fga playerLoadDistance`
 
@@ -283,7 +283,7 @@
 
 ## 深板岩切石规则
 
-使用 `/carpet deepslateStonecuttingRecipes false|true` 控制，仅在 `1.17.1-1.21.11` 注册，只过滤 FGA 自己的深板岩直接切石配方，不提供独立命令
+使用 `/carpet deepslateStonecuttingRecipes false|true` 控制，仅在 `1.21-1.21.11` 注册，只过滤 FGA 自己的深板岩直接切石配方，不提供独立命令
 
 ## 其他命令
 

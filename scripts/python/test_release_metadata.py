@@ -47,11 +47,11 @@ class ReleaseMetadataTest(unittest.TestCase):
 
     def test_repository_settings_have_no_independent_121_project(self):
         versions, publish_versions = release_metadata.load_release_settings(self.repo_root)
-        self.assertEqual(17, len(versions))
+        self.assertEqual(9, len(versions))
         self.assertNotIn("1.21", versions)
         self.assertNotIn("1.21", publish_versions)
         self.assertIn("1.21.1", publish_versions)
-        self.assertEqual(10, len(publish_versions))
+        self.assertEqual(9, len(publish_versions))
 
     def test_repository_has_no_independent_121_build_references(self):
         build_gradle = (self.repo_root / "build.gradle").read_text(encoding="utf-8")
@@ -111,7 +111,6 @@ class ReleaseMetadataTest(unittest.TestCase):
         }
         self.assertEqual(
             {
-                "1.20.1": ["1.20", "1.20.1"],
                 "1.21.1": ["1.21", "1.21.1"],
                 "1.21.3": ["1.21.2", "1.21.3"],
                 "1.21.4": ["1.21.4"],
@@ -265,8 +264,22 @@ class ReleaseMetadataTest(unittest.TestCase):
             with self.assertRaises(release_metadata.MetadataError):
                 release_metadata._validate_jar(jar, entry)
 
+    @staticmethod
+    def below_121_platform_entry() -> dict:
+        # Self-contained entry for a hypothetical build platform below
+        # Minecraft 1.21. The repository no longer maintains one, but
+        # _validate_jar must keep enforcing the fabric-api gate regardless of
+        # which platforms the repository currently ships.
+        return {
+            "build_project": "legacy-below-121",
+            "minecraft_dependency": ">=1.20 <=1.20.1",
+            "carpet_dependency": ">=1.4.112",
+            "fabric_api_required": False,
+            "modrinth_version_number": "1.5.4",
+        }
+
     def test_jar_validation_rejects_fabric_api_below_minecraft_121(self):
-        entry = release_metadata.project_metadata(self.repo_root, "1.20.1", "1.5.4")
+        entry = self.below_121_platform_entry()
         with tempfile.TemporaryDirectory() as temporary:
             jar = Path(temporary) / "unexpected-fabric-api.jar"
             self.write_test_jar(
@@ -280,7 +293,7 @@ class ReleaseMetadataTest(unittest.TestCase):
                 release_metadata._validate_jar(jar, entry)
 
     def test_jar_validation_accepts_low_version_without_fabric_api(self):
-        entry = release_metadata.project_metadata(self.repo_root, "1.20.1", "1.5.4")
+        entry = self.below_121_platform_entry()
         with tempfile.TemporaryDirectory() as temporary:
             jar = Path(temporary) / "valid.jar"
             self.write_test_jar(

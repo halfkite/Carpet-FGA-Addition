@@ -8,14 +8,14 @@
 
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
 |---|---|---|---|---|---|
-| `fakePlayerNameLength` | 整数 | `-1` | `-1`、`1-128` | 1.18+ | 控制假人名称长度；`-1` 使用原版限制。 |
+| `fakePlayerNameLength` | 整数 | `-1` | `-1`、`1-128` | 1.21+ | 控制假人名称长度；`-1` 使用原版限制。 |
 | `fakePlayerRangeControl` | 布尔 | `false` | `false`、`true` | 全版本 | 启用假人区域放置、交互、破坏和连续任务。 |
-| `endGatewayRegeneration` | 布尔 | `false` | `false`、`true` | 1.16.5+ | 记录并再生被破坏的原版末地折跃门，只恢复折跃门方块。 |
-| `wanderingTraderNoDespawn` | 枚举 | `false` | `false`、`true`、`controlled` | 1.16.5-26.1.2 | 控制流浪商人自然消失；`controlled` 只保护命中名单的名称或脚下方块。 |
+| `endGatewayRegeneration` | 布尔 | `false` | `false`、`true` | 1.21+ | 记录并再生被破坏的原版末地折跃门，只恢复折跃门方块。 |
+| `wanderingTraderNoDespawn` | 枚举 | `false` | `false`、`true`、`controlled` | 1.21-26.1.2 | 控制流浪商人自然消失；`controlled` 只保护命中名单的名称或脚下方块。 |
 | `fakePlayerProfilePreload` | 枚举 | `false` | `false`、`always`、`adaptive` | 1.21.1 | 异步预加载假人档案，减少召唤时的阻塞。 |
 | `fgaUnicodeArgumentsSupport` | 布尔 | `false` | `false`、`true` | 全版本 | 允许未加引号的命令参数包含中文和其他 Unicode 字符。 |
-| `recipeBookAlwaysUnlocked` | 布尔 | `false` | `false`、`true` | 1.16.5+ | 玩家进入服务器时自动获得全部已注册配方，每名玩家自动发放冷却一分钟；同时保留已保存的配方解锁进度，不会清空配方数据。 |
-| `playerHealthDisplay` | 枚举 | `false` | `true`、`false`、`nofake` | 1.16.5+ | 只在多人游戏列表最右侧显示生命值；不创建计分板或头顶显示。默认关闭，可通过 `/carpet playerHealthDisplay true` 开启。 |
+| `recipeBookAlwaysUnlocked` | 布尔 | `false` | `false`、`true` | 1.21+ | 玩家进入服务器时自动获得全部已注册配方，每名玩家自动发放冷却一分钟；同时保留已保存的配方解锁进度，不会清空配方数据。 |
+| `playerHealthDisplay` | 枚举 | `false` | `true`、`false`、`nofake` | 1.21+ | 只在多人游戏列表最右侧显示生命值；不创建计分板或头顶显示。默认关闭，可通过 `/carpet playerHealthDisplay true` 开启。 |
 | `itemFrameBlockification` | 布尔 | `false` | `false`、`true` | 1.21.1 | 将普通与荧光展示框移出服务端实体 tick 调度，改为支撑方块变化时验证；保留原版客户端显示、交互、掉落、地图和比较器行为。 |
 | `fireworkMinecartBoost` | 布尔 | `false` | `false`、`true` | 1.21.1 | 玩家乘坐普通矿车时可使用烟花火箭，以配置速度满速运行并在结束后线性减速。 |
 | `chainMinecartBinding` | 布尔 | `false` | `false`、`true` | 1.21.1 | 使用锁链依次右击两辆普通矿车，将其连接为持久保存的线性列车。 |
@@ -45,12 +45,12 @@
 | `experienceLevelCost` | 字符串 | `false` | `false`、`29-30`、`0-1` | 1.21.1 | 扁平化升级经验消耗。`29-30` 模式在 30 级及以后固定使用 29 到 30 的 107 点经验；`0-1` 模式所有等级固定使用 0 到 1 的 7 点经验。 |
 | `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2（不含 1.21.3） | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
-| `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.20.1+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |
+| `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.21+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |
 | `hostileMobInventoryAccess` | 布尔 | `false` | `false`、`true` | 全版本 | 空手潜行右键敌对生物时打开其原版装备栏。 |
 | `droppedItemStackLimit` | 枚举 | `false` | `false`、`true`、`ops`、`0-4` | 全部支持版本 | 配置地面、玩家背包和容器三类独立堆叠上限，背包或容器上限启用时需要 FGA 客户端，只有地面上限时保持纯服务端。 |
 | `droppedItemMergeDistance` | 小数 | `-1` | `-1`、`0-16` | 1.21.1+ | 设置地面物品水平合并距离；`-1` 保持原版。 |
 | `unlimitedFillCommands` | 布尔 | `false` | `false`、`true` | 1.21.8+ | 移除 `/fill` 和 `/fillbiome` 体积限制，保留原版安全检查。 |
-| `preStackDroppedItems` | 布尔 | `false` | `false`、`true` | 1.20.5-26.2 | 启用 `/dropPreStack` 的生物、方块和容器掉落预堆叠。 |
+| `preStackDroppedItems` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 启用 `/dropPreStack` 的生物、方块和容器掉落预堆叠。 |
 | `zombifiedPiglinDropReduction` | 枚举 | `false` | `false`、`goldEquipment`、`rottenFlesh`、`all` | 全版本 | 减少僵尸猪灵指定掉落。 |
 | `piglinBarterItemExclusions` | 列表 | `false` | `false`、`ironBoots`、`potions`、物品 ID 列表 | 全版本 | 排除指定猪灵 barter 结果。 |
 
@@ -68,7 +68,7 @@
 
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
 |---|---|---|---|---|---|
-| `deepslateStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.17.1-1.21.11` | 让深板岩在切石机中的表现与 26.1+ 一样；只控制 FGA 新增配方，不过滤原版、数据包和模组配方。`1.16.5`、`26.1.2`、`26.2` 不注册该规则 |
+| `deepslateStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-1.21.11` | 让深板岩在切石机中的表现与 26.1+ 一样；只控制 FGA 新增配方，不过滤原版、数据包和模组配方。`26.1.2`、`26.2` 不注册该规则 |
 | `woodStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-26.2`（不含 1.21.3） | 允许使用切石机合成木制品；原木或菌柄可切出 4 个楼梯或 8 个台阶，木板可切出 1 个楼梯或 2 个台阶，竹马赛克台阶为 4 个、竹马赛克楼梯为 2 个；竹块、去皮竹块和 9 根竹子都可作为竹块配方的等价输入，木桶和箱子等配方按实际输入数量由服务端校验 |
 | `playerLoadDistance` | 权限字符串 | `false` | `false`、`true`、`ops`、`0-4` | `1.21.1` | 启用每名玩家独立的区块发送与跟踪覆盖，不改变模拟距离。`false` 时命令不可用 |
 | `trialSpawnerPlayerMultiplier` | 整数 | `100` | `1-10000` | `1.21-26.2` | 每名命中筛选的玩家按该人数参与普通与不祥试炼的刷怪和奖励规模，`1` 为原版 |

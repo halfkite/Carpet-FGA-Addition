@@ -4,7 +4,7 @@ Carpet FGA Addition is a server-focused Fabric Carpet extension for fake players
 
 ## Supported builds
 
-Carpet FGA Addition is available for Minecraft `1.16.5`, `1.17.1`, `1.18.2`, `1.19.2`, `1.19.4`, `1.20.1`, `1.20.4`, `1.20.6`, `1.21`, `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, and `26.2`. Minecraft `1.21` and `1.21.1` share the `mc1.21-1.21.1` release JAR; there is no separate `mc1.21` build.
+The current maintenance line starts at Minecraft `1.21` with nine build platforms: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, and `26.2`, covering every compatible Minecraft release from `1.21` through `1.21.11` and from `26.1` through `26.2`. Minecraft `1.21` and `1.21.1` share the `mc1.21-1.21.1` release JAR; there is no separate `mc1.21` build. Minecraft `1.20.6` and earlier are end-of-life; older releases remain available on the GitHub Releases page (`1.5.5` and earlier).
 
 ## Features
 
@@ -27,8 +27,8 @@ Carpet FGA Addition is available for Minecraft `1.16.5`, `1.17.1`, `1.18.2`, `1.
 - Recipe-book unlock behavior, hidden inventory advancement optimization, player-list health, and client-visible dimension IDs.
 - Minecraft `1.21-26.2` (excluding `1.21.3`): core fake-player sorting with offline `quickopen`, online `summon`, whitelist, names, and shulker handling; `1.21.1` additionally keeps restock, rebuild, disk cache, worker tuning, and Dashboard/API features.
 - Minecraft `1.21-26.2`: full shulker boxes support multi-material, tag, data-pack, and mod recipes with Shift/Q refill behavior and soft compatibility for Carpet AMS Addition `largeShulkerBox` 54-slot boxes.
-- Minecraft `1.17.1-1.21.11`: deepslate can be stonecut directly into the same deepslate products provided by vanilla 26.1+.
-- Minecraft `1.17.1-1.21.11`: `deepslateStonecuttingRecipes` makes deepslate behave in the stonecutter like vanilla 26.1+
+- Minecraft `1.21-1.21.11`: deepslate can be stonecut directly into the same deepslate products provided by vanilla 26.1+.
+- Minecraft `1.21-1.21.11`: `deepslateStonecuttingRecipes` makes deepslate behave in the stonecutter like vanilla 26.1+
 - Minecraft `1.21-26.2`: farmer villagers can retain wheat instead of crafting bread, and villagers can finish upgrading while their trading screen stays open
 - Minecraft `1.21.1`: `/playerLoadDistance` manages temporary or persistent per-player chunk sending and tracking distances
 - Minecraft `1.21-26.2`: trial spawner equivalent-player scaling by name prefix and one-shot stop-and-refresh for loaded spawners with optional rewards

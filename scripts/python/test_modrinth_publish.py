@@ -24,26 +24,27 @@ class ModrinthPublishTest(unittest.TestCase):
             "modrinth_version_number": "1.5.4",
             "modrinth_project_id": "Nfhbipsz",
             "is_all_versions": True,
-            "all_versions": ["1.20.1", "1.21.1"],
+            "all_versions": ["1.21.1", "1.21.3"],
             "all_entries": [
-                {"jar_name": "carpet-fga-addition-1.5.4-mc1.20-1.20.1.jar"},
                 {"jar_name": "carpet-fga-addition-1.5.4-mc1.21-1.21.1.jar"},
+                {"jar_name": "carpet-fga-addition-1.5.4-mc1.21.2-1.21.3.jar"},
             ],
             "files": [
-                {
-                    "build_project": "1.20.1",
-                    "artifact_mc_version": "1.20-1.20.1",
-                    "jar_name": "carpet-fga-addition-1.5.4-mc1.20-1.20.1.jar",
-                    "game_versions": ["1.20", "1.20.1"],
-                    "modrinth_dependencies": [
-                        {"project_id": "TQTTVgYE", "dependency_type": "required"}
-                    ],
-                },
                 {
                     "build_project": "1.21.1",
                     "artifact_mc_version": "1.21-1.21.1",
                     "jar_name": "carpet-fga-addition-1.5.4-mc1.21-1.21.1.jar",
                     "game_versions": ["1.21", "1.21.1"],
+                    "modrinth_dependencies": [
+                        {"project_id": "TQTTVgYE", "dependency_type": "required"},
+                        {"project_id": "P7dR8mSH", "dependency_type": "required"},
+                    ],
+                },
+                {
+                    "build_project": "1.21.3",
+                    "artifact_mc_version": "1.21.2-1.21.3",
+                    "jar_name": "carpet-fga-addition-1.5.4-mc1.21.2-1.21.3.jar",
+                    "game_versions": ["1.21.2", "1.21.3"],
                     "modrinth_dependencies": [
                         {"project_id": "TQTTVgYE", "dependency_type": "required"},
                         {"project_id": "P7dR8mSH", "dependency_type": "required"},
@@ -129,7 +130,7 @@ class ModrinthPublishTest(unittest.TestCase):
             {
                 "id": "a",
                 "version_number": "1.5.4",
-                "files": [{"filename": "carpet-fga-addition-1.5.4-mc1.20-1.20.1.jar"}],
+                "files": [{"filename": "carpet-fga-addition-1.5.4-mc1.21.2-1.21.3.jar"}],
             },
             {
                 "id": "b",

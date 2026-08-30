@@ -8,14 +8,14 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 
 | Rule | Type | Default | Values | Versions | Description |
 |---|---|---|---|---|---|
-| `fakePlayerNameLength` | Integer | `-1` | `-1`, `1-128` | 1.18+ | Controls fake-player name length; `-1` keeps vanilla limits. |
+| `fakePlayerNameLength` | Integer | `-1` | `-1`, `1-128` | 1.21+ | Controls fake-player name length; `-1` keeps vanilla limits. |
 | `fakePlayerRangeControl` | Boolean | `false` | `false`, `true` | All supported versions | Enables fake-player range placing, interaction, breaking, and continuous tasks. |
-| `endGatewayRegeneration` | Boolean | `false` | `false`, `true` | 1.16.5+ | Regenerates destroyed vanilla End gateways without changing surrounding blocks. |
-| `wanderingTraderNoDespawn` | Enum | `false` | `false`, `true`, `controlled` | 1.16.5-26.1.2 | Controls natural wandering-trader despawning; `controlled` protects configured names or foot blocks. |
+| `endGatewayRegeneration` | Boolean | `false` | `false`, `true` | 1.21+ | Regenerates destroyed vanilla End gateways without changing surrounding blocks. |
+| `wanderingTraderNoDespawn` | Enum | `false` | `false`, `true`, `controlled` | 1.21-26.1.2 | Controls natural wandering-trader despawning; `controlled` protects configured names or foot blocks. |
 | `fakePlayerProfilePreload` | Enum | `false` | `false`, `always`, `adaptive` | 1.21.1 | Asynchronously preloads fake-player profiles. |
 | `fgaUnicodeArgumentsSupport` | Boolean | `false` | `false`, `true` | All supported versions | Allows unquoted command arguments to contain Unicode characters. |
-| `recipeBookAlwaysUnlocked` | Boolean | `false` | `false`, `true` | 1.16.5+ | Gives every player all registered recipes on login with a one-minute per-player cooldown while preserving saved unlock progress; it never clears recipe data. |
-| `playerHealthDisplay` | Enum | `false` | `true`, `false`, `nofake` | 1.16.5+ | Shows health only at the far right of the multiplayer player list. No scoreboard or nametag display is created. Disabled by default; use `/carpet playerHealthDisplay true` to enable it. |
+| `recipeBookAlwaysUnlocked` | Boolean | `false` | `false`, `true` | 1.21+ | Gives every player all registered recipes on login with a one-minute per-player cooldown while preserving saved unlock progress; it never clears recipe data. |
+| `playerHealthDisplay` | Enum | `false` | `true`, `false`, `nofake` | 1.21+ | Shows health only at the far right of the multiplayer player list. No scoreboard or nametag display is created. Disabled by default; use `/carpet playerHealthDisplay true` to enable it. |
 | `itemFrameBlockification` | Boolean | `false` | `false`, `true` | 1.21.1 | Removes normal and glowing item frames from server entity tick scheduling and validates support-block changes while preserving vanilla clients, interaction, drops, maps, and comparator behavior. |
 | `fireworkMinecartBoost` | Boolean | `false` | `false`, `true` | 1.21.1 | Lets a player riding a normal minecart consume a firework for a configurable full-speed boost followed by linear deceleration. |
 | `chainMinecartBinding` | Boolean | `false` | `false`, `true` | 1.21.1 | Uses chains to connect normal minecarts into persistent linear trains. |
@@ -45,12 +45,12 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `experienceLevelCost` | String | `false` | `false`, `29-30`, `0-1` | 1.21.1 | Flattens level-up costs. `29-30` fixes level 30 and above at 107 XP, the vanilla cost from level 29 to 30; `0-1` fixes every level at 7 XP, the vanilla cost from level 0 to 1. |
 | `villagerDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 (excluding 1.21.3) | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
 | `villagerUpgradeWhileTrading` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Lets villagers finish upgrading while the trading screen remains open and immediately refreshes their level, XP, and offers |
-| `villagerPerformanceOptimization` | Enum | `false` | `false`, `true`, `ops`, `1-4` | 1.20.1+ | Enables villager trade/gift optimization and controls `/villagerPerformance` access. |
+| `villagerPerformanceOptimization` | Enum | `false` | `false`, `true`, `ops`, `1-4` | 1.21+ | Enables villager trade/gift optimization and controls `/villagerPerformance` access. |
 | `hostileMobInventoryAccess` | Boolean | `false` | `false`, `true` | All supported versions | Opens hostile-mob equipment with an empty-handed sneak right-click. |
 | `droppedItemStackLimit` | Enum | `false` | `false`, `true`, `ops`, `0-4` | All supported versions | Configures independent ground, inventory, and container stack limits. Inventory or container limits require the FGA client; ground-only limits remain server-only. |
 | `droppedItemMergeDistance` | Decimal | `-1` | `-1`, `0-16` | 1.21.1+ | Sets the horizontal ground-item merge distance; `-1` keeps vanilla behavior. |
 | `unlimitedFillCommands` | Boolean | `false` | `false`, `true` | 1.21.8+ | Removes `/fill` and `/fillbiome` volume limits while keeping vanilla safety checks. |
-| `preStackDroppedItems` | Boolean | `false` | `false`, `true` | 1.20.5-26.2 | Enables entity, block, and container pre-stacking configured by `/dropPreStack`. |
+| `preStackDroppedItems` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Enables entity, block, and container pre-stacking configured by `/dropPreStack`. |
 | `zombifiedPiglinDropReduction` | Enum | `false` | `false`, `goldEquipment`, `rottenFlesh`, `all` | All supported versions | Removes selected zombified-piglin drops. |
 | `piglinBarterItemExclusions` | List | `false` | `false`, presets, or item IDs | All supported versions | Excludes selected piglin barter results. |
 
@@ -68,7 +68,7 @@ The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hi
 
 | Rule | Type | Default | Values | Effective versions | Description |
 |---|---|---|---|---|---|
-| `deepslateStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.17.1-1.21.11` | Makes deepslate behave in the stonecutter like it does in 26.1+. Only FGA recipes are controlled; vanilla, data-pack, and mod recipes are unchanged. The rule is not registered on `1.16.5`, `26.1.2`, or `26.2`. |
+| `deepslateStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.21-1.21.11` | Makes deepslate behave in the stonecutter like it does in 26.1+. Only FGA recipes are controlled; vanilla, data-pack, and mod recipes are unchanged. The rule is not registered on `26.1.2` or `26.2`. |
 | `woodStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.21-26.2` (excluding 1.21.3) | Allows wood products to be crafted in the stonecutter. Logs or stems yield 4 stairs or 8 slabs, planks yield 1 stair or 2 slabs, and bamboo mosaic slabs/stairs yield 4/2. Bamboo blocks, stripped bamboo blocks, and 9 bamboo are equivalent inputs for the bamboo conversion table, with server-side validation for each multi-input recipe. |
 | `playerLoadDistance` | Permission string | `false` | `false`, `true`, `ops`, `0-4` | `1.21.1` | Enables per-player chunk sending and tracking overrides without changing simulation distance. `false` disables the command. |
 | `trialSpawnerPlayerMultiplier` | Integer | `100` | `1-10000` | `1.21-26.2` | Counts each matching player as this many participants for normal and ominous trial mob and reward scale; `1` is vanilla |
