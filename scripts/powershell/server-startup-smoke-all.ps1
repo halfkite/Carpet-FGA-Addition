@@ -13,9 +13,8 @@ $progressPath = Join-Path $reportDir 'progress.log'
 $jdk21 = 'C:\Program Files\Java\jdk-21.0.11'
 $jdk25 = 'C:\Program Files\Java\jdk-25.0.3'
 $allVersions = @(
-    '1.16.5', '1.17.1', '1.18.2', '1.19.2', '1.19.4', '1.20.1',
-    '1.20.4', '1.20.6', '1.21.1', '1.21.3', '1.21.4',
-    '1.21.5', '1.21.8', '1.21.10', '1.21.11', '26.1.2', '26.2'
+    '1.21.1', '1.21.3', '1.21.4', '1.21.5',
+    '1.21.8', '1.21.10', '1.21.11', '26.1.2', '26.2'
 )
 $versions = if ([string]::IsNullOrWhiteSpace($VersionList)) {
     $allVersions
