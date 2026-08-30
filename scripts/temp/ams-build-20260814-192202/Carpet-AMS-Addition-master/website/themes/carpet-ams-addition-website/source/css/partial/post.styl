@@ -1,0 +1,147 @@
+.post-details {
+    color: #008B8B;
+    font-size: 0.9em;
+    width: 100%;
+    margin: 0 10px;
+    line-height: 1.8em;
+
+    a:not(.nonstyle) {
+        text-decoration: none;
+        color: #A3D2E2;
+        box-shadow: 0 1px 0 #555;
+
+        &:hover {
+            box-shadow: 0 1px 0 #A3D2E2;
+        }
+    }
+
+    .post-title {
+        margin-bottom: 10px;
+
+        h1 {
+            color: #00CED1;
+            font-size: 2em;
+            font-weight: normal;
+            margin-block: 0;
+        }
+    }
+
+    .post-meta {
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: #00CED1;
+    }
+
+    .post-content {
+        h1, h2, h3, h4, h5, h6 {
+            color: #00CED1;
+            margin-block: 0;
+            margin-inline: 0;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            line-height: 1.2em;
+        }
+
+        h1 {
+            font-size: 1.4em;
+        }
+
+        h2 {
+            font-size: 1.3em;
+        }
+
+        h3 {
+            font-size: 1.2em;
+        }
+
+        h4 {
+            font-size: 1.1em;
+        }
+
+        h5 {
+            font-size: 1em;
+        }
+
+        h6 {
+            font-size: 0.9em;
+        }
+
+        p {
+            margin-block: 0;
+            line-height: 1.8em;
+            text-align: left
+
+            &:not(:last-child) {
+                margin: 0 0 10px;
+            }
+        }
+
+        li {
+            line-height: 2em
+        }
+
+        img {
+            max-width: 100%;
+        }
+
+        blockquote {
+            margin-block: 0;
+            margin-inline: 0;
+            padding: 3px 10px;
+            background-color: #000000;
+            border-left: 7px solid #41e199;
+
+            & > p {
+                margin: 0 0;
+            }
+        }
+
+        kbd {
+            padding: 1px 3px;
+            background-color: #eee;
+            box-shadow: 1px 2px #999;
+            border-radius: 3px;
+        }
+
+        // `content color`
+        mark,
+        code:not(.hljs) {
+            padding: 2px 3px;
+            background-color: #41e199;
+            border-radius: 10px;
+            font-family: "Consolas", sans-serif;  /* 设置字体 */
+        }
+
+        table {
+            text-align: left;
+            border-collapse: collapse;
+            margin: 1em 0;
+            width: 100%;
+        }
+
+        th,
+        td {
+            padding: 5px;
+            border: 1px solid #00CED1;
+        }
+
+        tr:nth-child(even) {
+            background-color: #000000;
+        }
+
+        th {
+            font-weight: 400;
+            background-color: #00CED1v;
+        }
+    }
+
+    .katex > .katex-html {
+        white-space: normal;
+    }
+
+    .katex .base {
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+}
+

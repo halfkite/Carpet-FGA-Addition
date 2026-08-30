@@ -1,6 +1,6 @@
 # Carpet FGA Addition 规则
 
-> 文档版本：`1.5.0`
+> 文档版本：`1.5.1`
 
 所有规则通过 `/carpet <规则名> <值>` 管理。未特别说明时，规则默认关闭。
 
@@ -42,8 +42,10 @@
 | `shulkerBedrockLooting` | 布尔 | `false` | `false`、`true` | 1.21.1 | 潜影壳掉落同步基岩版：固定 50% 概率掉落，掉落时均匀掉落 1 至 1+抢夺等级 个潜影壳。 |
 | `shulkerAttackArmorStand` | 枚举 | `false` | `false`、`true`、`pumpkin` | 1.21.1 | 允许潜影贝瞄准并射击盔甲架；`true` 攻击所有盔甲架，`pumpkin` 仅攻击头戴雕刻南瓜的盔甲架。 |
 | `anvilNoPriorWorkPenalty` | 布尔 | `false` | `false`、`true` | 1.21.1 | 取消铁砧重复工作惩罚和 40 级“过于昂贵”限制；保留附魔冲突检查、材料消耗和正常附魔合并费用。 |
+| `enchantmentLevelLimitIncrease` | 字符串 | `false` | `false`、`0`、`1`、`0-254` | 1.21.1 | 将所有附魔的原版等级上限统一增加指定数值；命令直接输入数字，例如 `20` 让锋利上限由 5 变为 25。`false` 与 `0` 保持原版上限，最终等级最高为组件可保存的 255。 |
+| `enchantmentLevelAddition` | 布尔 | `false` | `false`、`true` | 1.21.1 | 铁砧合并同种附魔时将等级直接相加，例如 `2+2=4`、`2+3=5`；输入达到上限或相加超过上限时不生成结果。 |
 | `experienceLevelCost` | 字符串 | `false` | `false`、`29-30`、`0-1` | 1.21.1 | 扁平化升级经验消耗。`29-30` 模式在 30 级及以后固定使用 29 到 30 的 107 点经验；`0-1` 模式所有等级固定使用 0 到 1 的 7 点经验。 |
-| `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2（不含 1.21.3） | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
+| `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
 | `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.20.1+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |
 | `hostileMobInventoryAccess` | 布尔 | `false` | `false`、`true` | 全版本 | 空手潜行右键敌对生物时打开其原版装备栏。 |
@@ -69,7 +71,7 @@
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
 |---|---|---|---|---|---|
 | `deepslateStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.17.1-1.21.11` | 让深板岩在切石机中的表现与 26.1+ 一样；只控制 FGA 新增配方，不过滤原版、数据包和模组配方。`1.16.5`、`26.1.2`、`26.2` 不注册该规则 |
-| `woodStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-26.2`（不含 1.21.3） | 允许使用切石机合成木制品；原木或菌柄可切出 4 个楼梯或 8 个台阶，木板可切出 1 个楼梯或 2 个台阶，竹马赛克台阶为 4 个、竹马赛克楼梯为 2 个；竹块、去皮竹块和 9 根竹子都可作为竹块配方的等价输入，木桶和箱子等配方按实际输入数量由服务端校验 |
+| `woodStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-26.2` | 允许使用切石机合成木制品；原木或菌柄可切出 4 个楼梯或 8 个台阶，木板可切出 1 个楼梯或 2 个台阶，竹马赛克台阶为 4 个、竹马赛克楼梯为 2 个；竹块、去皮竹块和 9 根竹子都可作为竹块配方的等价输入，木桶和箱子等配方按实际输入数量由服务端校验 |
 | `playerLoadDistance` | 权限字符串 | `false` | `false`、`true`、`ops`、`0-4` | `1.21.1` | 启用每名玩家独立的区块发送与跟踪覆盖，不改变模拟距离。`false` 时命令不可用 |
 | `trialSpawnerPlayerMultiplier` | 整数 | `100` | `1-10000` | `1.21-26.2` | 每名命中筛选的玩家按该人数参与普通与不祥试炼的刷怪和奖励规模，`1` 为原版 |
 | `trialSpawnerPlayerFilter` | 字符串 | `false` | `false`、`true`、`bot_`、自定义前缀 | `1.21-26.2` | `false` 关闭多倍；`true` 匹配所有玩家；其他值按玩家名称区分大小写的前缀匹配，`bot_` 是预选项 |
@@ -87,7 +89,7 @@
 
 | 规则 | 类型 | 默认值 | 可选值 | 说明 |
 |---|---|---|---|---|
-| `fakePlayerItemSort` | 布尔 | `false` | `false`、`true` | `1.21-26.2`（不含 1.21.3） | 启用假人全物品分类核心，模式、白名单、潜影盒和语言由 `/fakePlayerItemSort` 管理；补货、重构、磁盘缓存、网页和线程参数仅在 `1.21.1` 启用。 |
+| `fakePlayerItemSort` | 布尔 | `false` | `false`、`true` | `1.21-26.2` | 启用假人全物品分类核心，模式、白名单、潜影盒和语言由 `/fakePlayerItemSort` 管理；补货、重构、磁盘缓存、网页和线程参数仅在 `1.21.1` 启用。 |
 
 分类配置保存在 `world/config/carpetfgaaddition/fake-player-item-sort.json`。`/fakePlayerItemSort mode summon` 使用在线 Carpet 假人，`mode quickopen` 直接读写离线 playerdata。旧版 `fakePlayerItemSort*` Carpet 配置只在首次启动时迁移到该 JSON，不再注册为规则。
 

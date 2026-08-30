@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.0`
+> Documentation version: `1.5.1`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default.
 
@@ -42,8 +42,10 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `shulkerBedrockLooting` | Boolean | `false` | `false`, `true` | 1.21.1 | Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly. |
 | `shulkerAttackArmorStand` | Enum | `false` | `false`, `true`, `pumpkin` | 1.21.1 | Lets shulkers target and shoot armor stands; `true` targets all armor stands, `pumpkin` targets only those wearing a carved pumpkin on the head. |
 | `anvilNoPriorWorkPenalty` | Boolean | `false` | `false`, `true` | 1.21.1 | Removes the anvil prior-work penalty and the 40-level “too expensive” limit while keeping enchantment conflicts, material costs, and normal enchantment-combination costs. |
+| `enchantmentLevelLimitIncrease` | String | `false` | `false`, `0`, `1`, `0-254` | 1.21.1 | Adds the configured amount to every enchantment's vanilla maximum; enter the number directly, for example `20` raises Sharpness from 5 to 25. `false` and `0` retain vanilla limits, and stored levels are capped at 255. |
+| `enchantmentLevelAddition` | Boolean | `false` | `false`, `true` | 1.21.1 | Adds matching enchantment levels when combining in an anvil, so `2+2=4` and `2+3=5`; no result is created when an input reaches or the sum exceeds the maximum. |
 | `experienceLevelCost` | String | `false` | `false`, `29-30`, `0-1` | 1.21.1 | Flattens level-up costs. `29-30` fixes level 30 and above at 107 XP, the vanilla cost from level 29 to 30; `0-1` fixes every level at 7 XP, the vanilla cost from level 0 to 1. |
-| `villagerDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 (excluding 1.21.3) | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
+| `villagerDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
 | `villagerUpgradeWhileTrading` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Lets villagers finish upgrading while the trading screen remains open and immediately refreshes their level, XP, and offers |
 | `villagerPerformanceOptimization` | Enum | `false` | `false`, `true`, `ops`, `1-4` | 1.20.1+ | Enables villager trade/gift optimization and controls `/villagerPerformance` access. |
 | `hostileMobInventoryAccess` | Boolean | `false` | `false`, `true` | All supported versions | Opens hostile-mob equipment with an empty-handed sneak right-click. |
@@ -69,7 +71,7 @@ The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hi
 | Rule | Type | Default | Values | Effective versions | Description |
 |---|---|---|---|---|---|
 | `deepslateStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.17.1-1.21.11` | Makes deepslate behave in the stonecutter like it does in 26.1+. Only FGA recipes are controlled; vanilla, data-pack, and mod recipes are unchanged. The rule is not registered on `1.16.5`, `26.1.2`, or `26.2`. |
-| `woodStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.21-26.2` (excluding 1.21.3) | Allows wood products to be crafted in the stonecutter. Logs or stems yield 4 stairs or 8 slabs, planks yield 1 stair or 2 slabs, and bamboo mosaic slabs/stairs yield 4/2. Bamboo blocks, stripped bamboo blocks, and 9 bamboo are equivalent inputs for the bamboo conversion table, with server-side validation for each multi-input recipe. |
+| `woodStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.21-26.2` | Allows wood products to be crafted in the stonecutter. Logs or stems yield 4 stairs or 8 slabs, planks yield 1 stair or 2 slabs, and bamboo mosaic slabs/stairs yield 4/2. Bamboo blocks, stripped bamboo blocks, and 9 bamboo are equivalent inputs for the bamboo conversion table, with server-side validation for each multi-input recipe. |
 | `playerLoadDistance` | Permission string | `false` | `false`, `true`, `ops`, `0-4` | `1.21.1` | Enables per-player chunk sending and tracking overrides without changing simulation distance. `false` disables the command. |
 | `trialSpawnerPlayerMultiplier` | Integer | `100` | `1-10000` | `1.21-26.2` | Counts each matching player as this many participants for normal and ominous trial mob and reward scale; `1` is vanilla |
 | `trialSpawnerPlayerFilter` | String | `false` | `false`, `true`, `bot_`, custom prefix | `1.21-26.2` | `false` disables scaling; `true` matches everyone; other values use a case-sensitive player-name prefix, with `bot_` as a preset |
@@ -85,7 +87,7 @@ The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hi
 
 | Rule | Type | Default | Values | Description |
 |---|---|---|---|---|
-| `fakePlayerItemSort` | Boolean | `false` | `false`, `true` | `1.21-26.2` (excluding 1.21.3) | Enables the fake-player sorter core; restock, rebuild, disk cache, dashboard, and worker tuning remain exclusive to `1.21.1`. |
+| `fakePlayerItemSort` | Boolean | `false` | `false`, `true` | `1.21-26.2` | Enables the fake-player sorter core; restock, rebuild, disk cache, dashboard, and worker tuning remain exclusive to `1.21.1`. |
 
 Sorter settings are stored in `world/config/carpetfgaaddition/fake-player-item-sort.json`. `/fakePlayerItemSort mode summon` uses online Carpet fake players; `mode quickopen` edits offline playerdata directly. Legacy `fakePlayerItemSort*` Carpet settings are migrated once at startup and are no longer registered as rules.
 

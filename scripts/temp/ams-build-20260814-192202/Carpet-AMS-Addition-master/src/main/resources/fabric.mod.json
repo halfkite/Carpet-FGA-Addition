@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "${id}",
+  "version": "${version}",
+  "name": "${name}",
+  "description": "A fabric-carpet extension mod. It offers some interesting and useful features.",
+  "authors": [
+    "1024_byteeeee",
+    "WenDavid"
+  ],
+  "contributors": [
+    "Rokuuuchan",
+    "SunnySlopes",
+    "Kir_Antipov" ,
+    "cdqtzrc",
+    "Crystal0404"
+  ],
+  "contact": {
+    "homepage": "https://minecraft-ams.github.io/carpetamsaddition/",
+    "sources": "https://github.com/Minecraft-AMS/Carpet-AMS-Addition",
+    "issues": "https://github.com/Minecraft-AMS/Carpet-AMS-Addition/issues"
+  },
+  "license": "LGPL-3.0",
+  "icon": "assets/carpetamsaddition/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "preLaunch": [
+      "carpetamsaddition.CarpetAMSAdditionPreLaunch"
+    ],
+    "main": [
+      "carpetamsaddition.CarpetAMSAdditionMod"
+    ],
+    "client": [
+      "carpetamsaddition.CarpetAMSAdditionClient"
+    ]
+  },
+  "mixins": [
+    "carpetamsaddition.mixins.json"
+  ],
+  "accessWidener": "carpetamsaddition.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.15.11",
+    "minecraft": "${minecraft_dependency}",
+    "carpet": "${carpet_dependency}"
+  }
+}

@@ -288,6 +288,43 @@ public class FGASettings {
     public static boolean anvilNoPriorWorkPenalty = false;
     //#endif
 
+    //#if MC == 1.21.1
+    @Rule(
+        desc = "Increases every enchantment's vanilla maximum level by the configured amount",
+        category = {FGA, FEATURE},
+        options = {"false", "0", "1"},
+        strict = false,
+        validate = FGASettings.EnchantmentLevelLimitIncreaseValidator.class,
+        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+    )
+    public static String enchantmentLevelLimitIncrease = "false";
+
+    @Rule(
+        desc = "Adds enchantment levels together when combining items in an anvil",
+        category = {FGA, FEATURE},
+        options = {"false", "true"},
+        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+    )
+    public static boolean enchantmentLevelAddition = false;
+
+    public static int enchantmentLevelLimitIncrease() {
+        return EnchantmentLevelRules.parseIncrease(enchantmentLevelLimitIncrease);
+    }
+
+    public static class EnchantmentLevelLimitIncreaseValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                               CarpetRule<String> currentRule,
+                               String newValue,
+                               String userInput) {
+            String normalized = EnchantmentLevelRules.normalizeIncrease(newValue);
+            if (normalized != null) return normalized;
+            Messenger.m(source, "r enchantmentLevelLimitIncrease must be false or an integer from 0 to 254");
+            return null;
+        }
+    }
+    //#endif
+
     //#if MC >= 1.20.1 && MC <= 26.2
     public static final String EXPERIENCE_LEVEL_COST_29_30 = "29-30";
     public static final String EXPERIENCE_LEVEL_COST_0_1 = "0-1";

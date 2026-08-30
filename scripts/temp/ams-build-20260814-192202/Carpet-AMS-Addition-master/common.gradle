@@ -1,0 +1,245 @@
+final int mcVersion = project.mcVersion as int
+final boolean unobfuscated = mcVersion >= 26_00_00
+
+apply plugin: 'maven-publish'
+apply plugin: 'com.github.hierynomus.license'
+apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
+apply plugin: 'com.replaymod.preprocess'
+
+preprocess {
+}
+
+repositories {
+	maven {
+		url = 'https://api.modrinth.com/maven'
+	}
+	maven {
+		url = 'https://masa.dy.fi/maven'
+	}
+	maven {
+		url = 'https://jitpack.io'
+	}
+    maven {
+        url = 'https://maven.1024byteeeee.top:1024/releases'
+    }
+}
+
+// https://github.com/FabricMC/fabric-loader/issues/783
+configurations {
+	//runtimeOnly.exclude group: 'net.fabricmc', module: 'fabric-loader'
+}
+
+dependencies {
+	def processDependency = { dep ->
+		// https://github.com/FabricMC/fabric-loader/issues/783
+		if (dep instanceof ModuleDependency) {
+			if (!(dep.group == 'net.fabricmc' && dep.name == 'fabric-loader')) {
+				dep.exclude group: 'net.fabricmc', module: 'fabric-loader'
+			}
+		}
+
+		return dep
+	}
+
+	def autoImplementation = {
+		Object... args -> processDependency(unobfuscated ? implementation(*args) : modImplementation(*args))
+	}
+	def autoRuntimeOnly = {
+		Object... args -> processDependency(unobfuscated ? runtimeOnly(*args) : modRuntimeOnly(*args))
+	}
+	def autoCompileOnly = {
+		Object... args -> processDependency(unobfuscated ? compileOnly(*args) : modCompileOnly(*args))
+	}
+
+	// loom
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
+	if (!unobfuscated) {
+		mappings loom.layered() {
+			officialMojangMappings()
+		}
+	}
+
+	autoImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// loom
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	autoImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// mods
+	//modImplementation("maven.modrinth:Carpet:${project.carpet_core_version}") // modrinth
+	autoImplementation "carpet:fabric-carpet:${project.carpet_core_version}" // masa
+
+	// library mods
+	include(autoImplementation("com.github.1024-byteeeee:AnnotationToolBox:${project.annotationtoolbox_version}"))
+	include(autoImplementation(annotationProcessor("io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}")))
+
+	// Dependencies
+    include(autoImplementation("top.1024byteeeee:tiny_yaml:${project.tiny_yaml_version}"))
+}
+
+loom {
+	runConfigs.all {
+		// to make sure it generates all "Minecraft Client (:subproject_name)" applications
+		ideConfigGenerated = true
+		runDir '../../run'
+		vmArgs '-Dmixin.debug.export=true'
+	}
+
+	runs {
+        mixinAudit {
+            server()
+            vmArgs '-Dcarpetamsaddition.mixin_audit=true'
+            ideConfigGenerated false
+        }
+        mixinAuditClient {
+            client()
+            vmArgs '-Dcarpetamsaddition.mixin_audit=true'
+            ideConfigGenerated false
+        }
+    }
+
+	accessWidenerPath = file("carpetamsaddition.accesswidener")
+}
+
+JavaVersion JAVA_VERSION
+if (mcVersion >= 260000) {
+    JAVA_VERSION = JavaVersion.VERSION_25
+} else if (mcVersion >= 12005) {
+	JAVA_VERSION = JavaVersion.VERSION_21
+} else if (mcVersion >= 11800) {
+	JAVA_VERSION = JavaVersion.VERSION_17
+} else if (mcVersion >= 11700) {
+	JAVA_VERSION = JavaVersion.VERSION_16
+} else {
+	JAVA_VERSION = JavaVersion.VERSION_1_8
+}
+JavaVersion MIXIN_COMPATIBILITY_LEVEL = JAVA_VERSION
+
+group = project.maven_group
+
+String modVersionSuffix = ''
+String artifactVersion = project.mod_version
+String artifactVersionSuffix = ''
+
+def env = [
+	isRelease: System.getenv("BUILD_RELEASE") == "true",
+	isJitpack: System.getenv("JITPACK") == "true",
+	buildNumber: System.getenv("BUILD_ID")
+]
+
+def config = [
+	baseName: env.isJitpack ? "${project.archives_base_name}-mc${project.minecraft_version}" : project.archives_base_name,
+	modSuffix: env.isRelease ? "" : (env.buildNumber != null ? "+build.${env.buildNumber}" : "-dev"),
+	artifactSuffix: env.isRelease ? "" : "-dev"
+]
+
+if (!env.isRelease) {
+	modVersionSuffix += config.modSuffix
+	artifactVersionSuffix = config.artifactSuffix
+}
+
+base.archivesName = config.baseName
+String fullModVersion = project.mod_version + modVersionSuffix
+String fullProjectVersion = env.isJitpack ? "v${project.mod_version}${modVersionSuffix}" : "v${project.mod_version}-mc${project.minecraft_version}${modVersionSuffix}"
+String fullArtifactVersion = env.isJitpack ? "${artifactVersion}${artifactVersionSuffix}" : "${artifactVersion}-mc${project.minecraft_version}${artifactVersionSuffix}"
+
+version = fullProjectVersion
+
+processResources {
+	from "carpetamsaddition.accesswidener"
+
+	inputs.property "version", fullModVersion
+
+	filesMatching("fabric.mod.json") {
+		def valueMap = [
+			"id": project.mod_id,
+			"name": project.mod_name,
+			"version": fullModVersion,
+			"carpet_dependency": project.carpet_dependency,
+			"minecraft_dependency": project.minecraft_dependency,
+		]
+		expand valueMap
+	}
+
+	filesMatching("carpetamsaddition.mixins.json") {
+		filter {
+			text -> text.replace("/*JAVA_VERSION*/", "JAVA_${MIXIN_COMPATIBILITY_LEVEL.ordinal() + 1}")
+		}
+	}
+}
+
+java {
+	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+	// if it is present.
+	// If you remove this line, sources will not be generated.
+	withSourcesJar()
+	sourceCompatibility = JAVA_VERSION
+	targetCompatibility = JAVA_VERSION
+}
+
+jar {
+    from(rootProject.file('LICENSE')) {
+        rename {
+            "${it}_${base.archivesName.get()}"
+        }
+    }
+}
+
+// https://github.com/hierynomus/license-gradle-plugin
+license {
+	// use "gradle licenseFormat" to apply license headers
+	header = rootProject.file('HEADER.txt')
+	include '**/*.java'
+	skipExistingHeaders = true
+
+	headerDefinitions {
+		// ref: https://github.com/mathieucarbou/license-maven-plugin/blob/4c42374bb737378f5022a3a36849d5e23ac326ea/license-maven-plugin/src/main/java/com/mycila/maven/plugin/license/header/HeaderType.java#L48
+		// modification: add a newline at the end
+		SLASHSTAR_STYLE_NEWLINE {
+			firstLine = "/*"
+			beforeEachLine = " * "
+			endLine = " */" + System.lineSeparator()
+			afterEachLine = ""
+			skipLinePattern = null
+			firstLineDetectionPattern = "(\\s|\\t)*/\\*.*\$"
+			lastLineDetectionPattern = ".*\\*/(\\s|\\t)*\$"
+			allowBlankLines = false
+			isMultiline = true
+			padLines = false
+		}
+	}
+	mapping {
+		java = 'SLASHSTAR_STYLE_NEWLINE'
+	}
+	ext {
+		name = project.mod_name
+		author = 'A Minecraft Server'
+		year = Calendar.getInstance().get(Calendar.YEAR).toString()
+	}
+}
+classes.dependsOn licenseFormatMain
+testClasses.dependsOn licenseFormatTest
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifactId = base.archivesName.get()
+            version = fullArtifactVersion
+        }
+    }
+
+    repositories {
+        maven {
+            url = fullArtifactVersion.endsWith("dev") ? "https://maven.1024byteeeee.top:1024/snapshots" : "https://maven.1024byteeeee.top:1024/releases"
+            credentials(PasswordCredentials) {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+        }
+    }
+}

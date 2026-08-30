@@ -10,8 +10,8 @@
 | `/droppedItemStackLimit` | `droppedItemStackLimit` | Rule permission/all supported versions | Configures independent ground, inventory, and container stack limits. Inventory or container limits require the FGA client. |
 | `/dropPreStack` | `preStackDroppedItems` | Drop configuration permission/1.20.5-26.2 | Configures entity, block, and container pre-stacking. |
 | `/villagerPerformance` | `villagerPerformanceOptimization` | Rule permission/1.20.1+ | Configures villager trades, gifts, and wandering-trader protection. |
-| `/fakePlayerItemSort` | 1.21-26.2 (excluding 1.21.3) sorter rules | `commandPlayer`/1.21-26.2 (excluding 1.21.3) | Configures the sorter core; dashboard, rebuild, restock, and worker settings are only available on 1.21.1. |
-| `/player <name> bot_sort` | 1.21-26.2 (excluding 1.21.3) sorter rules | `commandPlayer`/1.21-26.2 (excluding 1.21.3) | Starts or stops a target fake player's sorter job; rebuild syntax is only available on 1.21.1. |
+| `/fakePlayerItemSort` | 1.21-26.2 sorter rules | `commandPlayer`/1.21-26.2 | Configures the sorter core; dashboard, rebuild, restock, and worker settings are only available on 1.21.1. |
+| `/player <name> bot_sort` | 1.21-26.2 sorter rules | `commandPlayer`/1.21-26.2 | Starts or stops a target fake player's sorter job; rebuild syntax is only available on 1.21.1. |
 | `/minecart` | Minecart firework and chain rules | `minecartFeatureCommandPermission`/1.21.1 | Configures firework minecart speed and chain train distance. |
 | `/vehicleStop` | `vehicleStopOnDismount` | Self; OP manages online players/all supported versions | Configures per-player minecart and boat stopping on dismount. |
 | `/regenerateTerrain` | `voidWorldGeneration`, `terrainRegenerationCommandPermission` | Configured permission/1.21-26.2 | Queues normal-terrain regeneration or full-air clearing for the next restart. |
