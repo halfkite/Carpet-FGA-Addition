@@ -16,6 +16,9 @@ versions/mainProject
 
 # IDE
 .agents/
+.codex/
+.claude/
+.zcode/
 .idea/
 *.iml
 .vscode/
