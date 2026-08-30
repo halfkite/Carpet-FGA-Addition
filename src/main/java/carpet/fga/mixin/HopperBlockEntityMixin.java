@@ -2,6 +2,7 @@
 package carpet.fga.mixin;
 
 import carpet.fga.FGACompat;
+import carpet.fga.FGASettings;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -21,6 +22,9 @@ public abstract class HopperBlockEntityMixin {
     )
     private static void carpetFga$insertOversizedItemEntity(Container destination, ItemEntity itemEntity,
                                                              CallbackInfoReturnable<Boolean> cir) {
+        if (!FGASettings.isDroppedItemStackLimitEnabled()) {
+            return;
+        }
         ItemStack original = itemEntity.getItem();
         int batchLimit = Math.min(original.getMaxStackSize(),
                 //#if MC >= 1.20.5
