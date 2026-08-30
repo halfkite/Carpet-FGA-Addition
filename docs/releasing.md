@@ -27,7 +27,9 @@ Workflow 不创建或移动 Tag，不创建 Release，也不改写 Release 标�
 
 Modrinth 每个发行 JAR 对应一条 Version。所有 Version 的显示名称 `name` 和 `version_number` 都直接等于 GitHub Tag；workflow 先按项目 ID 与 Tag 取得候选集合，再用确定性的最终 JAR 文件名定位具体条目，不依赖可变显示名称。名称或正文变化只更新原条目的可变 metadata。每条 Version 都能声明自己的 Minecraft 版本和依赖，因此 Fabric API 仅在 Minecraft 1.21+ 条目中标记为 required。`MODRINTH_PROJECT_ID` 可以填写 ID 或 slug，但解析后的 canonical project id 必须严格等于 `Nfhbipsz`，否则在创建、更新或归档 Version 前失败。
 
-CurseForge 每个 JAR 独立上传，但 display name/version 都直接使用 GitHub Tag。任何上传或 metadata update 前都会校验项目 ID 必须严格等于 `1660840`，Repository Variable 配错时不会向其他项目写入。上传成功后，CurseForge file ID 会写入对应 GitHub Release Asset 的 label（`CF:<file-id>`），作为补发时的稳定标记。
+CurseForge 每个 JAR 独立上传，但 display name/version 都直接使用 GitHub Tag。任何上传或 metadata update 前都会校验项目 ID 必须严格等于 `1660840`，Repository Variable 配错时不会向其他项目写入。上传成功后，CurseForge file ID 会写入该 Tag 独立的 `refs/notes/carpet-fga-addition/curseforge/<tag>` Git notes ref；note 绑定 Release Tag 实际 commit，并按 `build_project` 保存 JAR 名、GitHub Asset ID、SHA-256 和 CurseForge file ID。GitHub Release Asset label 不再承载内部发布状态，因此 Release 页面显示正常 JAR 文件名。
+
+CurseForge matrix 运行前有独立的只读 `curseforge-state-audit` job。它一次校验当前所选全部 build project 的 Tag/commit、Release manifest、Git note、旧 `CF:<file-id>` label、Asset ID、JAR 名、SHA-256、项目 ID 和唯一性；任一状态缺失、损坏、重复或冲突都会阻止整个 CurseForge matrix。每个 matrix job 在写入前仍会重新读取远端状态并执行历史上传保护。notes 更新使用 non-force push，并在远端执行读后校验，并发冲突不会覆盖已有状态。
 
 ## 失败重试
 
@@ -37,7 +39,18 @@ CurseForge 每个 JAR 独立上传，但 display name/version 都直接使用 Gi
 - 手动补发不会重新构建，而是下载并校验当前 GitHub Release Assets。
 - CurseForge 可按 `settings.json.publishVersions` 中的构建项目名补发；Minecraft 1.21 对应项目名为 `1.21.1`，不接受 `1.21`。
 - Modrinth 和 CurseForge 都可按 `settings.json.publishVersions` 中的构建项目名补发。
-- CurseForge Asset marker 缺失且历史上传步骤状态不明确时，workflow 会拒绝再次上传，避免产生重复文件。
+- CurseForge Git note 与旧 Asset marker 都缺失且历史上传步骤状态不明确时，workflow 会拒绝再次上传，避免产生重复文件。
+
+## 迁移旧 CurseForge Asset label
+
+旧 Release 上的 `CF:<file-id>` label 必须先迁移到 Git notes，不能直接清空。手动补发会使用目标 Tag 自身的 `settings.json.publishVersions` 和 Release manifest；即使 publisher checkout 是当前默认分支的 shallow checkout，状态脚本也会显式 fetch `refs/tags/<tag>`，将 `refs/tags/<tag>^{commit}` 与 Release context 的完整 commit ID 严格比较，并通过 `git cat-file -e <commit>^{commit}` 确认旧 commit 对象可用。任一步失败都会停止。
+
+以 `1.5.4` 为例，迁移分两次 workflow dispatch：
+
+1. 选择 `destinations=curseforge`、一个 `versions` build project，并选择 `legacy_label_cleanup=canary`。全量（即本次选中的一个目标）只读 audit 通过后，workflow 先将旧 label 的 file ID 写入并验证 Git note，再更新 CurseForge metadata，最后只对该一个 Asset PATCH 空 label 并重新 GET。API 校验要求 `CF:<id>` 已消失，且 Asset name、ID、digest 和 `browser_download_url` 均不变。
+2. 人工打开 GitHub Release 页面，确认 canary 已回退显示 `asset.name`。确认后再选择 `versions=all` 和 `legacy_label_cleanup=confirmed`；workflow 会先对 Tag 自身的全部发布项目完成只读 audit 和 notes 迁移，全部 CurseForge matrix 成功后才串行清理其余旧 label。
+
+如果 GitHub 对空字符串 label 的实际行为与预期不同，canary 会失败；不要选择 `confirmed`，也不要尝试批量清理或改用 `null`。已经成功写入的 Git note 是持久状态，部分迁移可以安全补跑。`legacy_label_cleanup=none` 是默认值，只迁移/使用状态而不清理用户可见 label。Release body 不用于保存内部状态，仍原样发送到 Modrinth 和 CurseForge，不会混入 notes metadata。
 
 ## 仓库设置
 

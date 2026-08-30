@@ -101,6 +101,47 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertIn("steps.curseforge-project.outputs.project_id", release_workflow)
         self.assertIn("$project.id -ne 'Nfhbipsz'", archive_workflow)
 
+    def test_curseforge_state_audit_is_a_real_matrix_dependency(self):
+        release_workflow = (self.repo_root / ".github/workflows/release.yml").read_text(
+            encoding="utf-8"
+        )
+        audit_job = release_workflow.split("  curseforge-state-audit:", 1)[1].split(
+            "  publish-curseforge:", 1
+        )[0]
+        curseforge_job = release_workflow.split("  publish-curseforge:", 1)[1].split(
+            "  curseforge-label-cleanup:", 1
+        )[0]
+        self.assertIn(
+            "needs: [inspect, package-release, package-dispatch, publish-github]", audit_job
+        )
+        self.assertIn("curseforge_state.py audit", audit_job)
+        self.assertIn("--cleanup-mode", audit_job)
+        self.assertIn("curseforge-state-audit", curseforge_job.split("if:", 1)[0])
+        self.assertIn("needs.curseforge-state-audit.result == 'success'", curseforge_job)
+
+    def test_curseforge_file_id_is_not_written_to_asset_label(self):
+        release_workflow = (self.repo_root / ".github/workflows/release.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("curseforge_state.py mark", release_workflow)
+        self.assertNotIn("Persist CurseForge file ID on GitHub Asset", release_workflow)
+        self.assertIn("Persist uploaded CurseForge file ID in Git notes", release_workflow)
+        self.assertIn("steps.upload.outputs.curseforge-version", release_workflow)
+        self.assertIn("steps.upload.outputs.curseforge-files", release_workflow)
+        self.assertIn("steps.upload.outputs.curseforge-url", release_workflow)
+
+    def test_legacy_label_cleanup_is_canary_gated_and_post_publish(self):
+        release_workflow = (self.repo_root / ".github/workflows/release.yml").read_text(
+            encoding="utf-8"
+        )
+        cleanup_job = release_workflow.split("  curseforge-label-cleanup:", 1)[1]
+        self.assertIn("legacy_label_cleanup:", release_workflow)
+        self.assertIn("- canary", release_workflow)
+        self.assertIn("- confirmed", release_workflow)
+        self.assertIn("publish-curseforge", cleanup_job.split("if:", 1)[0])
+        self.assertIn("needs.publish-curseforge.result == 'success'", cleanup_job)
+        self.assertIn("curseforge_state.py clear-labels", cleanup_job)
+
     def test_all_publish_compatibility_ranges(self):
         _, publish_versions = release_metadata.load_release_settings(self.repo_root)
         actual = {
@@ -224,6 +265,10 @@ class ReleaseMetadataTest(unittest.TestCase):
             self.assertEqual("1.5.4", package["modrinth_version_number"])
             self.assertEqual("1.5.4", package["curseforge_version"])
             self.assertTrue((root / "package" / "dist" / entry["jar_name"]).is_file())
+            self.assertEqual(
+                "Changes", (root / "package" / "CHANGELOG.md").read_text(encoding="utf-8")
+            )
+            self.assertNotIn("refs/notes", package["body"])
 
     def test_jar_validation_requires_exact_carpet_dependency(self):
         entry = release_metadata.project_metadata(self.repo_root, "1.21.1", "1.5.4")

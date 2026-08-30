@@ -24,6 +24,15 @@ on:
         required: false
         type: string
         default: all
+      legacy_label_cleanup:
+        description: 'Legacy CF:<id> Asset label cleanup (run one canary before confirmed batch)'
+        required: false
+        type: choice
+        default: none
+        options:
+          - none
+          - canary
+          - confirmed
 
 permissions:
   actions: read
@@ -54,6 +63,8 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           EVENT_TAG: ${{ github.event.release.tag_name }}
           INPUT_TAG: ${{ inputs.tag }}
+          DESTINATIONS: ${{ inputs.destinations }}
+          LEGACY_LABEL_CLEANUP: ${{ inputs.legacy_label_cleanup }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
@@ -62,6 +73,10 @@ jobs:
             tag="$INPUT_TAG"
             if [[ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
               echo "Manual repair runs must be dispatched from the default branch $DEFAULT_BRANCH" >&2
+              exit 1
+            fi
+            if [[ "$LEGACY_LABEL_CLEANUP" != 'none' && "$DESTINATIONS" == 'modrinth' ]]; then
+              echo 'Legacy Asset label cleanup requires a CurseForge repair destination' >&2
               exit 1
             fi
           fi
@@ -322,13 +337,80 @@ jobs:
             --project "$MODRINTH_PROJECT" \
             --build-project '${{ matrix.mc_version }}'
 
-  publish-curseforge:
-    name: Publish CurseForge Minecraft ${{ matrix.mc_version }}
+  curseforge-state-audit:
+    name: Audit all selected CurseForge publication state
     needs: [inspect, package-release, package-dispatch, publish-github]
     if: >-
       ${{
         always() &&
         needs.inspect.result == 'success' &&
+        needs.inspect.outputs.prerelease != 'true' &&
+        (
+          (
+            github.event_name == 'release' &&
+            needs.package-release.result == 'success' &&
+            needs.publish-github.result == 'success'
+          ) ||
+          (
+            github.event_name == 'workflow_dispatch' &&
+            needs.package-dispatch.result == 'success' &&
+            (inputs.destinations == 'all' || inputs.destinations == 'curseforge')
+          )
+        )
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out publisher helper
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
+          fetch-depth: 1
+          path: publisher
+
+      - name: Download validated Release package
+        uses: actions/download-artifact@v4
+        with:
+          name: release-package
+          path: release-package
+
+      - name: Audit every selected CurseForge state entry
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CURSEFORGE_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
+          CLEANUP_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.legacy_label_cleanup || 'none' }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/curseforge_state.py audit \
+            --manifest release-package/release-manifest.json \
+            --context release-package/release-context.json \
+            --git-repository publisher \
+            --repository "$GITHUB_REPOSITORY" \
+            --project "$CURSEFORGE_PROJECT" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --event-name "$GITHUB_EVENT_NAME" \
+            --cleanup-mode "$CLEANUP_MODE" \
+            --output curseforge-state-audit.json
+
+      - name: Upload read-only CurseForge state audit
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: curseforge-state-audit
+          path: curseforge-state-audit.json
+          if-no-files-found: warn
+          overwrite: true
+          retention-days: 14
+
+  publish-curseforge:
+    name: Publish CurseForge Minecraft ${{ matrix.mc_version }}
+    needs: [inspect, package-release, package-dispatch, publish-github, curseforge-state-audit]
+    if: >-
+      ${{
+        always() &&
+        needs.inspect.result == 'success' &&
+        needs.curseforge-state-audit.result == 'success' &&
         needs.inspect.outputs.prerelease != 'true' &&
         (
           (
@@ -383,7 +465,7 @@ jobs:
             --build-project '${{ matrix.mc_version }}' \
             --github-output "$GITHUB_OUTPUT"
 
-      - name: Check CurseForge marker and upload history
+      - name: Check CurseForge state and upload history
         id: curseforge
         shell: bash
         env:
@@ -392,12 +474,32 @@ jobs:
           set -euo pipefail
           python publisher/scripts/python/curseforge_state.py precheck \
             --manifest release-package/release-manifest.json \
+            --context release-package/release-context.json \
+            --git-repository publisher \
             --build-project '${{ matrix.mc_version }}' \
             --repository "$GITHUB_REPOSITORY" \
+            --project '${{ steps.curseforge-project.outputs.project_id }}' \
             --run-id "$GITHUB_RUN_ID" \
             --run-attempt "$GITHUB_RUN_ATTEMPT" \
             --event-name "$GITHUB_EVENT_NAME" \
             --github-output "$GITHUB_OUTPUT"
+
+      - name: Migrate legacy CurseForge file ID to Git notes
+        if: ${{ steps.curseforge.outputs.state_source == 'legacy-label' }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/curseforge_state.py record \
+            --manifest release-package/release-manifest.json \
+            --context release-package/release-context.json \
+            --git-repository publisher \
+            --build-project '${{ matrix.mc_version }}' \
+            --repository "$GITHUB_REPOSITORY" \
+            --project '${{ steps.curseforge-project.outputs.project_id }}' \
+            --file-id '${{ steps.curseforge.outputs.file_id }}' \
+            --source legacy-label
 
       - name: Update existing CurseForge metadata
         if: ${{ steps.curseforge.outputs.should_upload == 'false' }}
@@ -429,14 +531,82 @@ jobs:
           dependencies: ${{ steps.metadata.outputs.dependencies }}
           retry-attempts: 1
 
-      - name: Persist CurseForge file ID on GitHub Asset
+      - name: Validate CurseForge upload outputs
+        id: validated-upload
+        if: ${{ steps.curseforge.outputs.should_upload == 'true' }}
+        shell: bash
+        env:
+          CURSEFORGE_VERSION: ${{ steps.upload.outputs.curseforge-version }}
+          CURSEFORGE_FILES: ${{ steps.upload.outputs.curseforge-files }}
+          CURSEFORGE_URL: ${{ steps.upload.outputs.curseforge-url }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/curseforge_state.py validate-upload \
+            --manifest release-package/release-manifest.json \
+            --build-project '${{ matrix.mc_version }}' \
+            --project '${{ steps.curseforge-project.outputs.project_id }}' \
+            --version "$CURSEFORGE_VERSION" \
+            --files "$CURSEFORGE_FILES" \
+            --url "$CURSEFORGE_URL" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Persist uploaded CurseForge file ID in Git notes
         if: ${{ steps.curseforge.outputs.should_upload == 'true' }}
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          python publisher/scripts/python/curseforge_state.py mark \
+          python publisher/scripts/python/curseforge_state.py record \
+            --manifest release-package/release-manifest.json \
+            --context release-package/release-context.json \
+            --git-repository publisher \
+            --build-project '${{ matrix.mc_version }}' \
             --repository "$GITHUB_REPOSITORY" \
-            --asset-id '${{ steps.curseforge.outputs.asset_id }}' \
-            --file-id '${{ steps.upload.outputs.curseforge-version }}'
+            --project '${{ steps.curseforge-project.outputs.project_id }}' \
+            --file-id '${{ steps.validated-upload.outputs.file_id }}' \
+            --source upload
+
+  curseforge-label-cleanup:
+    name: Clear verified legacy CurseForge Asset labels
+    needs:
+      [inspect, package-release, package-dispatch, curseforge-state-audit, publish-curseforge]
+    if: >-
+      ${{
+        always() &&
+        github.event_name == 'workflow_dispatch' &&
+        inputs.legacy_label_cleanup != 'none' &&
+        needs.inspect.result == 'success' &&
+        needs.curseforge-state-audit.result == 'success' &&
+        needs.publish-curseforge.result == 'success'
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out current publisher helper
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.inspect.outputs.publisher_commit }}
+          fetch-depth: 1
+          path: publisher
+
+      - name: Download validated Release package
+        uses: actions/download-artifact@v4
+        with:
+          name: release-package
+          path: release-package
+
+      - name: Clear labels after Git-note migration
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CURSEFORGE_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID || '1660840' }}
+          CLEANUP_MODE: ${{ inputs.legacy_label_cleanup }}
+        run: |
+          set -euo pipefail
+          python publisher/scripts/python/curseforge_state.py clear-labels \
+            --manifest release-package/release-manifest.json \
+            --context release-package/release-context.json \
+            --git-repository publisher \
+            --repository "$GITHUB_REPOSITORY" \
+            --project "$CURSEFORGE_PROJECT" \
+            --mode "$CLEANUP_MODE"
