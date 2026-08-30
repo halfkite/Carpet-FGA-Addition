@@ -9,6 +9,7 @@
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
 |---|---|---|---|---|---|
 | `fakePlayerNameLength` | 整数 | `-1` | `-1`、`1-128` | 1.21+ | 控制假人名称长度；`-1` 使用原版限制。 |
+| `fakePlayerNameLength` | 整数 | `-1` | `-1`、`1-128` | 1.21+ | 控制假人名称长度；`-1` 使用原版限制。 |
 | `fakePlayerRangeControl` | 布尔 | `false` | `false`、`true` | 全版本 | 启用假人区域放置、交互、破坏和连续任务。 |
 | `endGatewayRegeneration` | 布尔 | `false` | `false`、`true` | 1.21-1.21.11 | 记录并再生被破坏的原版末地折跃门，只恢复折跃门方块。 |
 | `wanderingTraderNoDespawn` | 枚举 | `false` | `false`、`true`、`controlled` | 1.21-1.21.11 | 控制流浪商人自然消失；`controlled` 只保护命中名单的名称或脚下方块。 |
@@ -46,10 +47,12 @@
 | `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2（不含 1.21.3） | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
 | `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.21+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |
+| `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.21+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |
 | `hostileMobInventoryAccess` | 布尔 | `false` | `false`、`true` | 全版本 | 空手潜行右键敌对生物时打开其原版装备栏。 |
 | `droppedItemStackLimit` | 枚举 | `false` | `false`、`true`、`ops`、`0-4` | 全部支持版本 | 配置地面、玩家背包和容器三类独立堆叠上限，背包或容器上限启用时需要 FGA 客户端，只有地面上限时保持纯服务端。 |
 | `droppedItemMergeDistance` | 小数 | `-1` | `-1`、`0-16` | 1.21.1+ | 设置地面物品水平合并距离；`-1` 保持原版。 |
 | `unlimitedFillCommands` | 布尔 | `false` | `false`、`true` | 1.21.8+ | 移除 `/fill` 和 `/fillbiome` 体积限制，保留原版安全检查。 |
+| `preStackDroppedItems` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 启用 `/dropPreStack` 的生物、方块和容器掉落预堆叠。 |
 | `preStackDroppedItems` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 启用 `/dropPreStack` 的生物、方块和容器掉落预堆叠。 |
 | `zombifiedPiglinDropReduction` | 枚举 | `false` | `false`、`goldEquipment`、`rottenFlesh`、`all` | 全版本 | 减少僵尸猪灵指定掉落。 |
 | `piglinBarterItemExclusions` | 列表 | `false` | `false`、`ironBoots`、`potions`、物品 ID 列表 | 全版本 | 排除指定猪灵 barter 结果。 |
@@ -68,6 +71,7 @@
 
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
 |---|---|---|---|---|---|
+| `deepslateStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-1.21.11` | 让深板岩在切石机中的表现与 26.1+ 一样；只控制 FGA 新增配方，不过滤原版、数据包和模组配方。`26.1.2`、`26.2` 不注册该规则 |
 | `deepslateStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-1.21.11` | 让深板岩在切石机中的表现与 26.1+ 一样；只控制 FGA 新增配方，不过滤原版、数据包和模组配方。`26.1.2`、`26.2` 不注册该规则 |
 | `woodStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-26.2`（不含 1.21.3） | 允许使用切石机合成木制品；原木或菌柄可切出 4 个楼梯或 8 个台阶，木板可切出 1 个楼梯或 2 个台阶，竹马赛克台阶为 4 个、竹马赛克楼梯为 2 个；竹块、去皮竹块和 9 根竹子都可作为竹块配方的等价输入，木桶和箱子等配方按实际输入数量由服务端校验 |
 | `playerLoadDistance` | 权限字符串 | `false` | `false`、`true`、`ops`、`0-4` | `1.21.1` | 启用每名玩家独立的区块发送与跟踪覆盖，不改变模拟距离。`false` 时命令不可用 |
