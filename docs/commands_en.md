@@ -8,8 +8,8 @@
 |---|---|---|---|
 | `/player` range actions | `fakePlayerRangeControl` | Carpet player permission/all versions | Runs fake-player range placement, interaction, attack, or continuous tasks. |
 | `/droppedItemStackLimit` | `droppedItemStackLimit` | Rule permission/all supported versions | Configures independent ground, inventory, and container stack limits. Inventory or container limits require the FGA client. |
-| `/dropPreStack` | `preStackDroppedItems` | Drop configuration permission/1.20.5-26.2 | Configures entity, block, and container pre-stacking. |
-| `/villagerPerformance` | `villagerPerformanceOptimization` | Rule permission/1.20.1+ | Configures villager trades, gifts, and wandering-trader protection. |
+| `/dropPreStack` | `preStackDroppedItems` | Drop configuration permission/1.21-26.2 | Configures entity, block, and container pre-stacking. |
+| `/villagerPerformance` | `villagerPerformanceOptimization` | Rule permission/1.21+ | Configures villager trades, gifts, and wandering-trader protection. |
 | `/fakePlayerItemSort` | 1.21-26.2 (excluding 1.21.3) sorter rules | `commandPlayer`/1.21-26.2 (excluding 1.21.3) | Configures the sorter core; dashboard, rebuild, restock, and worker settings are only available on 1.21.1. |
 | `/player <name> bot_sort` | 1.21-26.2 (excluding 1.21.3) sorter rules | `commandPlayer`/1.21-26.2 (excluding 1.21.3) | Starts or stops a target fake player's sorter job; rebuild syntax is only available on 1.21.1. |
 | `/minecart` | Minecart firework and chain rules | `minecartFeatureCommandPermission`/1.21.1 | Configures firework minecart speed and chain train distance. |
@@ -47,7 +47,7 @@ Related rules: `voidWorldGeneration`, `terrainRegenerationCommandPermission`
 ```
 
 Coordinates are block coordinates and expand to whole chunks. Every X/Z argument offers Tab suggestions for the player's position and targeted block, and previews show the exact chunk count and effective range. The green confirmation button executes the confirmation directly; confirmation only queues the task, and the world changes on the next server restart. Multiple confirmed tasks can run together. `regenerate` deletes and normally regenerates terrain. `clear` reads an all-air network payload into every section palette, clears block entities, non-player entities, POI, scheduled ticks, heightmaps, and lighting data, and removes adjacent fluids within eight blocks outside the effective horizontal border, covering the maximum horizontal spread of vanilla water and Nether lava; waterlogged blocks keep the block and lose only their waterlogged state. Region files touched by the clear range or its border are backed up before execution. A failed task can be retried without overwriting its original backup.
-| `/log playerHealth` | `playerHealthDisplay` | Carpet Logger/1.16.5+ | Toggles the current player's Tab health subscription. |
+| `/log playerHealth` | `playerHealthDisplay` | Carpet Logger/1.21+ | Toggles the current player's Tab health subscription. |
 | `/fga` | FGA features | Version-gated | Shows the FGA index and redirects FGA command roots. |
 
 ## `/player` range actions
@@ -241,7 +241,7 @@ Players can manage only themselves. Operators and the console can manage online 
 
 ### Permission and version
 
-This is a Carpet Logger player-subscription command. The subscription only affects the player who runs it. The rule is available on `1.16.5+` and requires Carpet on the server.
+This is a Carpet Logger player-subscription command. The subscription only affects the player who runs it. The rule is available on `1.21+` and requires Carpet on the server.
 
 ## `/playerLoadDistance` and `/fga playerLoadDistance`
 
@@ -283,7 +283,7 @@ The reward mode defaults to `none`. `none` skips rewards and refreshes immediate
 
 ## `/deepslateStonecuttingRecipes`
 
-This feature is controlled by `/carpet deepslateStonecuttingRecipes false|true` on versions `1.17.1-1.21.11`. It only toggles FGA's own direct deepslate stonecutting recipes. There is no standalone command
+This feature is controlled by `/carpet deepslateStonecuttingRecipes false|true` on versions `1.21-1.21.11`. It only toggles FGA's own direct deepslate stonecutting recipes. There is no standalone command
 
 ## Other commands
 
