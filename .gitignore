@@ -56,3 +56,6 @@ testwrite.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# Minecraft
+.minecraft/
