@@ -9,7 +9,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.EndPortalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 //#if MC == 1.21.5
-import net.minecraft.world.level.portal.TeleportTransition;
+//$$ import net.minecraft.world.level.portal.TeleportTransition;
 //#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -41,6 +41,5 @@ public abstract class EndPortalPlayerTpControlMixin {
                 ? PlayerTpEndControlManager.PortalType.EXIT : PlayerTpEndControlManager.PortalType.ENTER;
         if (!PlayerTpEndControlManager.canTeleport(player, type)) ci.cancel();
     }
-    //#endif
 }
 //#endif

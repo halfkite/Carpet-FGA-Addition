@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.EndGatewayBlock;
 //#endif
 import net.minecraft.world.level.block.state.BlockState;
 //#if MC == 1.21.5
-import net.minecraft.world.level.portal.TeleportTransition;
+//$$ import net.minecraft.world.level.portal.TeleportTransition;
 //#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -48,7 +48,6 @@ public abstract class EndGatewayPlayerTpControlMixin {
         if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
         if (!PlayerTpEndControlManager.canTeleport(player, PlayerTpEndControlManager.PortalType.GATEWAY)) ci.cancel();
     }
-    //#endif
     //#else
     //$$ @Inject(method = "teleportEntity", at = @At("HEAD"), cancellable = true)
     //$$ private static void carpetFga$controlPlayerGateway(Level level, BlockPos pos, BlockState state,
