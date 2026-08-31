@@ -3,7 +3,7 @@ package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
 import net.minecraft.world.inventory.AnvilMenu;
-//#if MC <= 1.21.1
+//#if MC <= 1.21.4
 import net.minecraft.world.entity.player.Abilities;
 //#else
 //$$ import net.minecraft.world.entity.player.Player;
@@ -23,7 +23,7 @@ public abstract class AnvilMenuNoPriorWorkPenaltyMixin {
         }
     }
 
-    //#if MC <= 1.21.1
+    //#if MC <= 1.21.4
     @Redirect(method = "createResult", at = @At(value = "FIELD",
             target = "Lnet/minecraft/world/entity/player/Abilities;instabuild:Z", ordinal = 1))
     private boolean carpetFga$bypassTooExpensiveLimit(Abilities abilities) {

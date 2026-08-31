@@ -12,6 +12,9 @@ import net.minecraft.world.level.block.EndGatewayBlock;
 //$$ import net.minecraft.world.level.block.entity.TheEndGatewayBlockEntity;
 //#endif
 import net.minecraft.world.level.block.state.BlockState;
+//#if MC == 1.21.5
+//$$ import net.minecraft.world.level.portal.TeleportTransition;
+//#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -26,12 +29,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 )
 public abstract class EndGatewayPlayerTpControlMixin {
     //#if MC >= 1.21
+    //#if MC == 1.21.5
+    //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
+    //$$ private void carpetFga$controlPlayerGateway(BlockState state, Level level, BlockPos pos, Entity entity,
+    //$$                                             TeleportTransition teleportTransition, CallbackInfo ci) {
+    //$$     if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
+    //$$     if (!PlayerTpEndControlManager.canTeleport(player, PlayerTpEndControlManager.PortalType.GATEWAY)) ci.cancel();
+    //$$ }
+    //#else
     @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
     private void carpetFga$controlPlayerGateway(BlockState state, Level level, BlockPos pos, Entity entity,
                                                 CallbackInfo ci) {
         if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
         if (!PlayerTpEndControlManager.canTeleport(player, PlayerTpEndControlManager.PortalType.GATEWAY)) ci.cancel();
     }
+    //#endif
     //#else
     //$$ @Inject(method = "teleportEntity", at = @At("HEAD"), cancellable = true)
     //$$ private static void carpetFga$controlPlayerGateway(Level level, BlockPos pos, BlockState state,
