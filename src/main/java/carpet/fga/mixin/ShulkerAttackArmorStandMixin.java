@@ -2,7 +2,6 @@
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
-import net.minecraft.core.Direction;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -79,14 +78,11 @@ public abstract class ShulkerAttackArmorStandMixin extends Mob {
 
         @Override
         protected AABB getTargetSearchArea(double distance) {
-            // Mirror the vanilla shulker search box: 4 blocks along the attach axis, follow distance elsewhere.
-            Direction direction = ((Shulker) this.mob).getAttachFace();
-            if (direction.getAxis() == Direction.Axis.X) {
-                return this.mob.getBoundingBox().inflate(4.0, distance, distance);
-            }
-            return direction.getAxis() == Direction.Axis.Z
-                    ? this.mob.getBoundingBox().inflate(distance, distance, 4.0)
-                    : this.mob.getBoundingBox().inflate(distance, 4.0, distance);
+            // Vanilla NearestAttackableTargetGoal.findTarget bypasses getTargetSearchArea for Player targets
+            // (range-only getNearestPlayer), so the vanilla attach-axis box only applies to non-player classes.
+            // Use an omnidirectional follow-range box instead so wall-attached shulkers see armor stands as
+            // far as they see players; TargetingConditions still enforces range and line of sight.
+            return this.mob.getBoundingBox().inflate(distance, distance, distance);
         }
     }
 }

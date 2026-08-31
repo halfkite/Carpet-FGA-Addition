@@ -26,9 +26,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 )
 public abstract class EndGatewayPlayerTpControlMixin {
     //#if MC >= 1.21
+    //#if MC >= 1.21.5
+    //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
+    //$$ private void carpetFga$controlPlayerGateway(BlockState state, Level level, BlockPos pos, Entity entity,
+    //$$                                               net.minecraft.world.entity.InsideBlockEffectApplier effectApplier,
+    //$$                                               CallbackInfo ci) {
+    //$$     carpetFga$controlPlayerGateway(level, entity, ci);
+    //$$ }
+    //#else
     @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
     private void carpetFga$controlPlayerGateway(BlockState state, Level level, BlockPos pos, Entity entity,
                                                 CallbackInfo ci) {
+        carpetFga$controlPlayerGateway(level, entity, ci);
+    }
+    //#endif
+
+    private static void carpetFga$controlPlayerGateway(Level level, Entity entity, CallbackInfo ci) {
         if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
         if (!PlayerTpEndControlManager.canTeleport(player, PlayerTpEndControlManager.PortalType.GATEWAY)) ci.cancel();
     }

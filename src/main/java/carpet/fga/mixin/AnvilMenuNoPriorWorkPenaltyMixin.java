@@ -30,8 +30,8 @@ public abstract class AnvilMenuNoPriorWorkPenaltyMixin {
         return FGASettings.anvilNoPriorWorkPenalty || abilities.instabuild;
     }
     //#else
-//$$     @Redirect(method = "createResult", at = @At(value = "INVOKE",
-//$$             target = "Lnet/minecraft/world/entity/player/Player;hasInfiniteMaterials()Z", ordinal = 1))
+//$$     @Redirect(method = "mayPickup", at = @At(value = "INVOKE",
+//$$             target = "Lnet/minecraft/world/entity/player/Player;hasInfiniteMaterials()Z"))
 //$$     private boolean carpetFga$bypassTooExpensiveLimit(Player player) {
 //$$         return FGASettings.anvilNoPriorWorkPenalty || player.hasInfiniteMaterials();
 //$$     }

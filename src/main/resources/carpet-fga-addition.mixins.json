@@ -86,12 +86,20 @@
         ,"ClientboundUpdateRecipesDeepslateMixin",
         "StonecutterMenuDeepslateMixin"
         //#endif
+        //#if MC >= 1.21
+        ,"StonecutterMenuAccessor",
+        "StonecutterMenuFullShulkerMixin",
+        "StonecutterResultSlotFullShulkerMixin"
+        //#endif
         //#if MC == 1.21.1
         ,"ChunkMapPlayerLoadDistanceAccessor",
         "ChunkMapPlayerLoadDistanceMixin",
         "DistanceManagerPlayerLoadDistanceAccessor",
         "ServerGamePacketListenerPlayerLoadDistanceMixin",
         "EntityPlayerMPFakeMixin"
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.2
+        ,"ResilientBlockStateMixin"
         //#endif
         //#if MC == 1.20.1
         //$$ ,"EntityPlayerMPFakeMixin",

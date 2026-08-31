@@ -589,6 +589,38 @@ public class FGASettings {
         }
     }
 
+    //#if MC >= 1.21
+    @Rule(
+        desc = "Configured blocks skip placement support checks and ignore block updates instead of checking themselves",
+        category = {FGA, FEATURE},
+        options = {"false", "[]", "[sand,gravel]"},
+        strict = false,
+        validate = FGASettings.ResilientBlocksValidator.class,
+        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    )
+    public static String resilientBlocks = "false";
+
+    public static class ResilientBlocksValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                               //#if MC >= 1.19
+                               CarpetRule<String> currentRule,
+                               //#else
+                               //$$ ParsedRule<String> currentRule,
+                               //#endif
+                               String newValue, String userInput) {
+            try {
+                String normalized = ResilientBlocks.validate(newValue);
+                ResilientBlocks.setConfiguredBlocks(normalized);
+                return normalized;
+            } catch (IllegalArgumentException exception) {
+                Messenger.m(source, "r " + exception.getMessage());
+                return null;
+            }
+        }
+    }
+    //#endif
+
     @Rule(
         desc = "Allows comparators to read container signals through configured blocks",
         category = {FGA, FEATURE},
@@ -757,11 +789,46 @@ public class FGASettings {
     public static String terrainRegenerationCommandPermission = "ops";
     //#endif
 
+    //#if MC >= 1.21
     @Rule(
-        desc = "Crafts full single-item shulker boxes through matching ordinary crafting recipes",
-        category = {FGA, FEATURE}
+        desc = "Crafts full single-item shulker boxes through matching ordinary crafting and stonecutter recipes",
+        category = {FGA, FEATURE},
+        options = {"false", "only64", "any"},
+        strict = false,
+        validate = FGASettings.FullShulkerBoxCraftingValidator.class
     )
-    public static boolean fullShulkerBoxCrafting = false;
+    public static String fullShulkerBoxCrafting = "false";
+
+    public static class FullShulkerBoxCraftingValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                               //#if MC >= 1.19
+                               CarpetRule<String> currentRule,
+                               //#else
+                               //$$ ParsedRule<String> currentRule,
+                               //#endif
+                               String newValue, String userInput) {
+            if ("only64".equals(newValue) || "any".equals(newValue)) {
+                return newValue;
+            }
+            // Legacy boolean saves normalize true to the adaptive superset mode.
+            if ("true".equals(newValue)) {
+                return "any";
+            }
+            if ("false".equals(newValue)) {
+                return newValue;
+            }
+            Messenger.m(source, "r fullShulkerBoxCrafting must be false, only64, or any");
+            return null;
+        }
+    }
+    //#else
+    //$$ @Rule(
+    //$$     desc = "Crafts full single-item shulker boxes through matching ordinary crafting recipes",
+    //$$     category = {FGA, FEATURE}
+    //$$ )
+    //$$ public static boolean fullShulkerBoxCrafting = false;
+    //#endif
 
     //#if MC >= 1.20.1 && MC <= 26.2
     @Rule(desc = "Enables fake-player inventory sorting; mode and sorter options are managed by /fakePlayerItemSort", category = {FGA, FAKE_PLAYER_ITEM_SORT},

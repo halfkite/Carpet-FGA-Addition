@@ -15,9 +15,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(EndPortalBlock.class)
 public abstract class EndPortalPlayerTpControlMixin {
+    //#if MC >= 1.21.5
+    //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
+    //$$ private void carpetFga$controlPlayerEndPortal(BlockState state, Level level, BlockPos pos, Entity entity,
+    //$$                                               net.minecraft.world.entity.InsideBlockEffectApplier effectApplier,
+    //$$                                               CallbackInfo ci) {
+    //$$     carpetFga$controlPlayerEndPortal(level, entity, ci);
+    //$$ }
+    //#else
     @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
     private void carpetFga$controlPlayerEndPortal(BlockState state, Level level, BlockPos pos, Entity entity,
                                                   CallbackInfo ci) {
+        carpetFga$controlPlayerEndPortal(level, entity, ci);
+    }
+    //#endif
+
+    private static void carpetFga$controlPlayerEndPortal(Level level, Entity entity, CallbackInfo ci) {
         if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
         PlayerTpEndControlManager.PortalType type = level.dimension() == Level.END
                 ? PlayerTpEndControlManager.PortalType.EXIT : PlayerTpEndControlManager.PortalType.ENTER;

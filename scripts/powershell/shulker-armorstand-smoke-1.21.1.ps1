@@ -112,6 +112,22 @@ try {
     Send-Command 'data get entity @e[tag=fga_as_sh,limit=1] Peek' 400
     Send-Command 'say FGA_E_RESULTS' 400
 
+    # Scenario W: wall-attached shulker + armor stand 8 blocks out from the wall plane -> attack
+    # (attach-face search box only reaches 4 blocks along the wall axis, so the old geometry failed here)
+    Send-Command 'kill @e[type=minecraft:armor_stand]' 400
+    Send-Command 'kill @e[type=minecraft:shulker_bullet]' 400
+    Send-Command 'carpet shulkerAttackArmorStand true' 400
+    Send-Command 'fill -5 100 -6 -4 101 -6 minecraft:stone' 700
+    Send-Command 'summon minecraft:shulker -5 100 -5 {Tags:["fga_as_wall"],AttachFace:2b,PersistenceRequired:1b}' 800
+    Send-Command 'execute if entity @e[tag=fga_as_wall] run say FGA_WALL_SHULKER_OK' 300
+    Send-Command 'summon minecraft:armor_stand -5 100 3 {Tags:["fga_as_wall_target"]}' 600
+    Send-Command 'say FGA_W_START' 5000
+    1..5 | ForEach-Object {
+        Send-Command 'execute if entity @e[type=minecraft:shulker_bullet,x=-10,y=90,z=-10,dx=25,dy=25,dz=25] run say FGA_W_BULLET' 1500
+    }
+    Send-Command 'data get entity @e[tag=fga_as_wall,limit=1] Peek' 400
+    Send-Command 'say FGA_W_RESULTS' 400
+
     # Invalid value rejected
     Send-Command 'carpet shulkerAttackArmorStand banana' 600
 
@@ -134,6 +150,7 @@ $b1 = Get-Window $raw 'FGA_B1_START' 'FGA_B1_RESULTS'
 $b2 = Get-Window $raw 'FGA_B2_START' 'FGA_B2_RESULTS'
 $c  = Get-Window $raw 'FGA_C_START'  'FGA_C_RESULTS'
 $e  = Get-Window $raw 'FGA_E_START'  'FGA_E_RESULTS'
+$w  = Get-Window $raw 'FGA_W_START'  'FGA_W_RESULTS'
 
 $checks = [ordered]@{
     ServerReady        = $raw -match 'Done \([0-9.]+s\)!'
@@ -150,6 +167,9 @@ $checks = [ordered]@{
     C_PeekAttacking    = $c -match 'has the following entity data: 100b'
     E_NoNewBullet      = $e -notmatch 'FGA_E_BULLET'
     E_PeekReleased     = $e -match 'has the following entity data: (0|30)b'
+    WallShulkerPresent = $raw -match 'FGA_WALL_SHULKER_OK'
+    W_BulletFired      = $w -match 'FGA_W_BULLET'
+    W_PeekAttacking    = $w -match 'has the following entity data: 100b'
     InvalidRejected    = $raw -match 'shulkerAttackArmorStand must be false, true, or pumpkin'
     AliasNormalized    = $raw -match 'shulkerAttackArmorStand: pumpkin'
     CleanStop          = $raw -match 'Stopping server'

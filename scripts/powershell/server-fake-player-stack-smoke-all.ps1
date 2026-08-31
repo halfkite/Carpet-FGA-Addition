@@ -135,7 +135,20 @@ foreach ($version in $versions) {
         foreach ($command in @(
             'carpet droppedItemStackLimit true',
             'droppedItemStackLimit mode inventory 1000',
-            "player $botName spawn",
+            "player $botName spawn"
+        )) {
+            Send-ServerCommand $server $command
+        }
+
+        $joinDeadline = (Get-Date).AddSeconds(30)
+        while ((Get-Date) -lt $joinDeadline -and -not ((Read-Log $serverLog) -match "$( [regex]::Escape($botName) ) joined the game")) {
+            Start-Sleep -Milliseconds 250
+        }
+        if (-not ((Read-Log $serverLog) -match "$( [regex]::Escape($botName) ) joined the game")) {
+            throw 'fake player did not finish joining before inventory commands'
+        }
+
+        foreach ($command in @(
             "op $botName",
             "clear $botName",
             "give $botName minecraft:stone 200",

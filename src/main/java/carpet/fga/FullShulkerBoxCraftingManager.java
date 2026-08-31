@@ -1,6 +1,9 @@
 //#if MC >= 1.16.5 && MC <= 26.2
 package carpet.fga;
 
+//#if MC >= 1.21
+import carpet.fga.mixin.StonecutterMenuAccessor;
+//#endif
 import net.minecraft.core.NonNullList;
 //#if MC < 1.20.5
 import net.minecraft.nbt.CompoundTag;
@@ -11,6 +14,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 //#if MC >= 1.21.3
 //$$ import net.minecraft.server.level.ServerLevel;
+//$$ import net.minecraft.world.item.crafting.SelectableRecipe;
 //#endif
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +26,10 @@ import net.minecraft.world.inventory.MenuType;
 //$$ import net.minecraft.world.inventory.TransientCraftingContainer;
 //#endif
 import net.minecraft.world.inventory.ResultContainer;
+//#if MC >= 1.21
+import net.minecraft.world.inventory.Slot;
+//#endif
+import net.minecraft.world.inventory.StonecutterMenu;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 //#if MC >= 1.20.5
@@ -29,12 +37,17 @@ import net.minecraft.world.item.component.ItemContainerContents;
 //#endif
 //#if MC >= 1.21
 import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
 //#endif
 import net.minecraft.world.item.crafting.CraftingRecipe;
 //#if MC >= 1.20.4
 import net.minecraft.world.item.crafting.RecipeHolder;
 //#endif
 import net.minecraft.world.item.crafting.RecipeType;
+//#if MC >= 1.21.3
+//$$ import net.minecraft.world.item.crafting.SelectableRecipe;
+//#endif
+import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 //#if MC >= 1.20.5
@@ -69,7 +82,21 @@ public final class FullShulkerBoxCraftingManager {
     private static final ThreadLocal<Deque<QuickResultContext>> QUICK_RESULT_CONTEXT =
             ThreadLocal.withInitial(ArrayDeque::new);
 //#endif
-    private static boolean lastRuleValue;
+//#if MC >= 1.21
+    private static String lastRuleValue = "false";
+    //#else
+    //$$ private static boolean lastRuleValue;
+    //#endif
+
+    //#if MC >= 1.21
+    private static boolean ruleEnabled() {
+        return !"false".equals(FGASettings.fullShulkerBoxCrafting);
+    }
+
+    private static boolean only64Mode() {
+        return "only64".equals(FGASettings.fullShulkerBoxCrafting);
+    }
+    //#endif
 
     private FullShulkerBoxCraftingManager() {
     }
@@ -77,7 +104,11 @@ public final class FullShulkerBoxCraftingManager {
     public static void updateResult(AbstractContainerMenu menu, Level level, Player player,
                                     CraftingContainer crafting, ResultContainer result) {
         if (PROCESSING.contains(crafting)) return;
-        if (FGACompat.isClientSide(level) || !FGASettings.fullShulkerBoxCrafting || !result.getItem(0).isEmpty()) {
+        //#if MC >= 1.21
+        if (FGACompat.isClientSide(level) || !ruleEnabled() || !result.getItem(0).isEmpty()) {
+            //#else
+            //$$ if (FGACompat.isClientSide(level) || !FGASettings.fullShulkerBoxCrafting || !result.getItem(0).isEmpty()) {
+            //#endif
             clear(crafting);
             return;
         }
@@ -102,7 +133,11 @@ public final class FullShulkerBoxCraftingManager {
     }
 
     public static boolean mayTake(CraftingContainer crafting, Player player) {
-        if (!FGASettings.fullShulkerBoxCrafting || !PLANS.containsKey(crafting)) return false;
+        //#if MC >= 1.21
+        if (!ruleEnabled() || !PLANS.containsKey(crafting)) return false;
+        //#else
+        //$$ if (!FGASettings.fullShulkerBoxCrafting || !PLANS.containsKey(crafting)) return false;
+        //#endif
         Analysis analysis = analyze(crafting, player);
         if (analysis.plan() == null) {
             notifyFailure(crafting, player, analysis);
@@ -182,8 +217,13 @@ public final class FullShulkerBoxCraftingManager {
     }
 
     public static void tick(MinecraftServer server) {
-        if (lastRuleValue == FGASettings.fullShulkerBoxCrafting) return;
+        //#if MC >= 1.21
+        if (lastRuleValue.equals(FGASettings.fullShulkerBoxCrafting)) return;
         lastRuleValue = FGASettings.fullShulkerBoxCrafting;
+        //#else
+        //$$ if (lastRuleValue == FGASettings.fullShulkerBoxCrafting) return;
+        //$$ lastRuleValue = FGASettings.fullShulkerBoxCrafting;
+        //#endif
         refresh(server);
     }
 
@@ -194,7 +234,11 @@ public final class FullShulkerBoxCraftingManager {
         //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
         QUICK_RESULT_CONTEXT.remove();
         //#endif
-        lastRuleValue = false;
+        //#if MC >= 1.21
+        lastRuleValue = "false";
+        //#else
+        //$$ lastRuleValue = false;
+        //#endif
     }
 
     private static Analysis analyze(CraftingContainer crafting, Player player) {
@@ -202,21 +246,39 @@ public final class FullShulkerBoxCraftingManager {
         List<Integer> sourceSlots = new ArrayList<>();
         List<ItemStack> sourceBoxes = new ArrayList<>();
         List<ItemStack> ingredients = new ArrayList<>();
-        long craftsPerBox = -1L;
+        //#if MC >= 1.21
+        long expectedCrafts = -1L;
+        //#else
+        //$$ long craftsPerBox = -1L;
+        //#endif
         NonNullList<ItemStack> recipeItems = NonNullList.withSize(
                 crafting.getWidth() * crafting.getHeight(), ItemStack.EMPTY);
 
         for (int slot = 0; slot < crafting.getContainerSize(); slot++) {
             ItemStack box = crafting.getItem(slot);
             if (box.isEmpty()) continue;
-            ItemStack content = fullSingleContent(box, shulkerSize);
+            //#if MC >= 1.21
+            long[] contentTotal = new long[1];
+            ItemStack content = singleContent(box, shulkerSize, contentTotal);
             if (content.isEmpty()) {
                 return isShulkerBox(box) ? Analysis.failure(Failure.INVALID_INPUT_BOX) : Analysis.NONE;
             }
             if (content.getMaxStackSize() <= 1) return Analysis.failure(Failure.UNSTACKABLE_INPUT);
-            long contentPerBox = (long) FGASettings.effectiveContainerStackLimit(content) * shulkerSize;
-            if (craftsPerBox < 0L) craftsPerBox = contentPerBox;
-            else if (craftsPerBox != contentPerBox) return Analysis.failure(Failure.INPUT_CAPACITY_MISMATCH);
+            long craftsPerBox = contentTotal[0];
+            if (expectedCrafts < 0L) expectedCrafts = craftsPerBox;
+            else if (expectedCrafts != craftsPerBox) {
+                return Analysis.failure(Failure.CONTENT_COUNT_MISMATCH);
+            }
+            //#else
+            //$$ ItemStack content = fullSingleContent(box, shulkerSize);
+            //$$ if (content.isEmpty()) {
+            //$$     return isShulkerBox(box) ? Analysis.failure(Failure.INVALID_INPUT_BOX) : Analysis.NONE;
+            //$$ }
+            //$$ if (content.getMaxStackSize() <= 1) return Analysis.failure(Failure.UNSTACKABLE_INPUT);
+            //$$ long contentPerBox = (long) FGASettings.effectiveContainerStackLimit(content) * shulkerSize;
+            //$$ if (craftsPerBox < 0L) craftsPerBox = contentPerBox;
+            //$$ else if (craftsPerBox != contentPerBox) return Analysis.failure(Failure.INPUT_CAPACITY_MISMATCH);
+            //#endif
             sourceSlots.add(slot);
             sourceBoxes.add(FGACompat.copyWithCount(box, 1));
             ingredients.add(FGACompat.copyWithCount(content, 1));
@@ -264,17 +326,32 @@ public final class FullShulkerBoxCraftingManager {
                 || !canFitInsideContainer(recipeOutput)) return Analysis.NONE;
         if (recipeOutput.getMaxStackSize() <= 1) return Analysis.failure(Failure.UNSTACKABLE_OUTPUT);
 
-        int outputStackLimit = FGASettings.effectiveContainerStackLimit(recipeOutput);
+        //#if MC >= 1.21
+        boolean allowPartial = !only64Mode();
+        int outputStackLimit = only64Mode()
+                ? recipeOutput.getMaxStackSize()
+                : FGASettings.effectiveContainerStackLimit(recipeOutput);
+        //#else
+        //$$ boolean allowPartial = false;
+        //$$ int outputStackLimit = FGASettings.effectiveContainerStackLimit(recipeOutput);
+        //#endif
         long outputCapacity = (long) outputStackLimit * shulkerSize;
-        long totalOutputItems = craftsPerBox * recipeOutput.getCount();
-        if (outputCapacity <= 0 || totalOutputItems % outputCapacity != 0) {
+        //#if MC >= 1.21
+        long totalOutputItems = expectedCrafts * recipeOutput.getCount();
+        //#else
+        //$$ long totalOutputItems = craftsPerBox * recipeOutput.getCount();
+        //#endif
+        if (outputCapacity <= 0 || (!allowPartial && totalOutputItems % outputCapacity != 0)) {
             return Analysis.failure(Failure.NON_WHOLE_OUTPUT);
         }
-        long mainOutputBoxCount = totalOutputItems / outputCapacity;
+        long mainOutputBoxCount = allowPartial
+                ? (totalOutputItems + outputCapacity - 1) / outputCapacity
+                : totalOutputItems / outputCapacity;
         if (mainOutputBoxCount <= 0) return Analysis.failure(Failure.NON_WHOLE_OUTPUT);
 
         List<OutputGroup> groups = new ArrayList<>();
-        groups.add(new OutputGroup(FGACompat.copyWithCount(recipeOutput, 1), outputStackLimit, mainOutputBoxCount));
+        groups.add(new OutputGroup(FGACompat.copyWithCount(recipeOutput, 1), outputStackLimit,
+                mainOutputBoxCount, totalOutputItems));
         NonNullList<ItemStack> remainingItems = recipe.getRemainingItems(input);
         List<RemainderTotal> remainderTotals = new ArrayList<>();
         for (ItemStack remainder : remainingItems) {
@@ -285,17 +362,30 @@ public final class FullShulkerBoxCraftingManager {
             RemainderTotal total = remainderTotals.stream()
                     .filter(candidate -> FGACompat.isSameItemSameTags(candidate.item(), remainder))
                     .findFirst().orElse(null);
-            long amount = craftsPerBox * remainder.getCount();
+            //#if MC >= 1.21
+            long amount = expectedCrafts * remainder.getCount();
+            //#else
+            //$$ long amount = craftsPerBox * remainder.getCount();
+            //#endif
             if (total == null) remainderTotals.add(new RemainderTotal(FGACompat.copyWithCount(remainder, 1), amount));
             else total.add(amount);
         }
         for (RemainderTotal remainder : remainderTotals) {
-            int stackLimit = FGASettings.effectiveContainerStackLimit(remainder.item());
+            //#if MC >= 1.21
+            int stackLimit = only64Mode()
+                    ? remainder.item().getMaxStackSize()
+                    : FGASettings.effectiveContainerStackLimit(remainder.item());
+            //#else
+            //$$ int stackLimit = FGASettings.effectiveContainerStackLimit(remainder.item());
+            //#endif
             long capacity = (long) stackLimit * shulkerSize;
-            if (capacity <= 0 || remainder.count() % capacity != 0) {
+            if (capacity <= 0 || (!allowPartial && remainder.count() % capacity != 0)) {
                 return Analysis.failure(Failure.NON_WHOLE_REMAINDER);
             }
-            groups.add(new OutputGroup(remainder.item(), stackLimit, remainder.count() / capacity));
+            long boxCount = allowPartial
+                    ? (remainder.count() + capacity - 1) / capacity
+                    : remainder.count() / capacity;
+            groups.add(new OutputGroup(remainder.item(), stackLimit, boxCount, remainder.count()));
         }
 
         long totalBoxCountLong = groups.stream().mapToLong(OutputGroup::boxCount).sum();
@@ -319,7 +409,17 @@ public final class FullShulkerBoxCraftingManager {
         int templateIndex = 0;
         for (OutputGroup group : groups) {
             for (long i = 0; i < group.boxCount(); i++) {
-                outputBoxes.add(fillBox(boxTemplates.get(templateIndex++), group.item(), group.stackLimit(), shulkerSize));
+                if (allowPartial && i == group.boxCount() - 1) {
+                    long fullItems = (group.boxCount() - 1) * ((long) group.stackLimit() * shulkerSize);
+                    long partialItems = group.totalCount() - fullItems;
+                    if (partialItems > 0 && partialItems < (long) group.stackLimit() * shulkerSize) {
+                        outputBoxes.add(fillPartialBox(boxTemplates.get(templateIndex++), group.item(),
+                                group.stackLimit(), shulkerSize, partialItems));
+                        continue;
+                    }
+                }
+                outputBoxes.add(fillBox(boxTemplates.get(templateIndex++), group.item(),
+                        group.stackLimit(), shulkerSize));
             }
         }
 
@@ -356,6 +456,197 @@ public final class FullShulkerBoxCraftingManager {
         }
         return first.isEmpty() ? ItemStack.EMPTY : FGACompat.copyWithCount(first, 1);
     }
+
+    //#if MC >= 1.21
+    /**
+     * Mode-aware single-item content check. Returns the content representative (count 1) and writes
+     * the total item count into totalOut[0]; EMPTY when the box does not qualify for the current mode.
+     */
+    private static ItemStack singleContent(ItemStack box, int shulkerSize, long[] totalOut) {
+        totalOut[0] = 0L;
+        if (!isShulkerBox(box)) return ItemStack.EMPTY;
+        boolean only64 = only64Mode();
+        NonNullList<ItemStack> contents = contents(box, shulkerSize);
+        ItemStack first = ItemStack.EMPTY;
+        long total = 0L;
+        for (ItemStack stack : contents) {
+            if (stack.isEmpty()) continue;
+            if (first.isEmpty()) first = stack;
+            else if (!FGACompat.isSameItemSameTags(first, stack)) return ItemStack.EMPTY;
+            if (only64) {
+                if (stack.getCount() != stack.getMaxStackSize()) return ItemStack.EMPTY;
+            } else if (stack.getCount() > FGASettings.effectiveContainerStackLimit(stack)) {
+                return ItemStack.EMPTY;
+            }
+            total += stack.getCount();
+        }
+        totalOut[0] = total;
+        return first.isEmpty() ? ItemStack.EMPTY : FGACompat.copyWithCount(first, 1);
+    }
+    //#endif
+
+    //#if MC >= 1.20.5
+    private static ItemStack fillPartialBox(ItemStack template, ItemStack output, int stackLimit,
+                                            int shulkerSize, long itemCount) {
+        ItemStack box = FGACompat.copyWithCount(template, 1);
+        NonNullList<ItemStack> contents = NonNullList.withSize(shulkerSize, ItemStack.EMPTY);
+        long remaining = itemCount;
+        for (int i = 0; i < shulkerSize && remaining > 0; i++) {
+            int count = (int) Math.min(stackLimit, remaining);
+            contents.set(i, FGACompat.copyWithCount(output, count));
+            remaining -= count;
+        }
+        box.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(contents));
+        return box;
+    }
+    //#endif
+
+    //#if MC >= 1.21
+    /** Plan for one full-box stonecutter craft; previewBox is the first output box, extraBoxes follow. */
+    public record StonecutterPlan(RecipeHolder<StonecutterRecipe> recipe, int requiredInput,
+                                  long crafts, ItemStack previewBox, List<ItemStack> extraBoxes) {
+    }
+
+    public enum StonecutterTakeResult { NONE, HANDLED, BLOCKED }
+
+    /**
+     * Recipe list lookup for a full-box input: recipes resolved against the box content item with
+     * rule-disabled FGA recipes filtered. The result type follows the vanilla menu field of each
+     * version clump ({@code recipes} list on 1.21.1, {@code recipesForInput} set on 1.21.3+).
+     */
+    //#if MC == 1.21.1
+    public static List<RecipeHolder<StonecutterRecipe>> stonecutterRecipesForContent(Level level,
+                                                                                     ItemStack content) {
+        return level.getRecipeManager()
+                .getRecipesFor(RecipeType.STONECUTTING,
+                        new SingleRecipeInput(FGACompat.copyWithCount(content, 1)), level)
+                .stream()
+                .filter(recipe -> !DeepslateStonecuttingRecipes.isDisabledFgaRecipe(recipe))
+                .toList();
+    }
+    //#else
+    //$$ public static SelectableRecipe.SingleInputSet<StonecutterRecipe> stonecutterRecipesForContent(
+    //$$         Level level, ItemStack content) {
+    //$$     return DeepslateStonecuttingRecipes.filter(
+    //$$             level.recipeAccess().stonecutterRecipes().selectByInput(FGACompat.copyWithCount(content, 1)));
+    //$$ }
+    //#endif
+
+    /** Content representative (count 1) when the input qualifies for the current mode, else EMPTY. */
+    public static ItemStack stonecutterBoxContent(ItemStack input) {
+        if (!ruleEnabled()) return ItemStack.EMPTY;
+        return singleContent(input, shulkerSize(), new long[1]);
+    }
+
+    public static StonecutterPlan analyzeStonecutter(Level level, ItemStack input,
+                                                     RecipeHolder<StonecutterRecipe> recipe) {
+        if (!ruleEnabled() || recipe == null) return null;
+        int shulkerSize = shulkerSize();
+        long[] totalOut = new long[1];
+        ItemStack content = singleContent(input, shulkerSize, totalOut);
+        if (content.isEmpty() || content.getMaxStackSize() <= 1) return null;
+        int required = WoodStonecuttingRecipes.requiredInputCount(recipe);
+        if (required <= 0) return null;
+        long crafts = totalOut[0] / required;
+        if (crafts <= 0) return null;
+
+        ItemStack recipeOutput = recipe.value().assemble(new SingleRecipeInput(content)
+                //#if MC < 26.0
+                , level.registryAccess()
+                //#endif
+        );
+        if (recipeOutput.isEmpty()
+                || !recipeOutput.isItemEnabled(level.enabledFeatures())
+                || !canFitInsideContainer(recipeOutput)) return null;
+        if (recipeOutput.getMaxStackSize() <= 1) return null;
+
+        int outputStackLimit = only64Mode()
+                ? recipeOutput.getMaxStackSize()
+                : FGASettings.effectiveContainerStackLimit(recipeOutput);
+        long outputCapacity = (long) outputStackLimit * shulkerSize;
+        long totalOutputItems = crafts * recipeOutput.getCount();
+        if (outputCapacity <= 0 || totalOutputItems <= 0) return null;
+        long boxCount;
+        if (only64Mode()) {
+            if (totalOutputItems % outputCapacity != 0) return null;
+            boxCount = totalOutputItems / outputCapacity;
+        } else {
+            boxCount = (totalOutputItems + outputCapacity - 1) / outputCapacity;
+        }
+        if (boxCount <= 0 || boxCount > MAX_OUTPUT_BOXES) return null;
+
+        ItemStack template = FGACompat.copyWithCount(input, 1);
+        long firstBoxItems = Math.min(totalOutputItems, outputCapacity);
+        ItemStack previewBox = fillPartialBox(template, recipeOutput, outputStackLimit, shulkerSize, firstBoxItems);
+        List<ItemStack> extraBoxes = new ArrayList<>();
+        long remaining = totalOutputItems - firstBoxItems;
+        while (remaining > 0) {
+            long items = Math.min(outputCapacity, remaining);
+            extraBoxes.add(fillPartialBox(template, recipeOutput, outputStackLimit, shulkerSize, items));
+            remaining -= items;
+        }
+        return new StonecutterPlan(recipe, required, crafts, previewBox, List.copyOf(extraBoxes));
+    }
+
+    /** Menus by their result slot, so the anonymous result-slot mixin never shadows synthetic fields. */
+    private static final Map<Slot, StonecutterMenu> STONECUTTER_MENUS = new WeakHashMap<>();
+
+    public static void registerStonecutterMenu(StonecutterMenu menu) {
+        STONECUTTER_MENUS.put(menu.getSlot(1), menu);
+    }
+
+    public static StonecutterMenu stonecutterMenuForResult(Slot resultSlot) {
+        return STONECUTTER_MENUS.get(resultSlot);
+    }
+
+    /** Handles the stonecutter result-slot take for full-box inputs. */
+    public static StonecutterTakeResult takeStonecutterResult(Slot resultSlot, Player player,
+                                                              RecipeHolder<StonecutterRecipe> recipe) {
+        StonecutterMenu menu = STONECUTTER_MENUS.get(resultSlot);
+        if (menu == null) return StonecutterTakeResult.NONE;
+        return takeStonecutter(menu, player, recipe);
+    }
+
+    private static StonecutterTakeResult takeStonecutter(StonecutterMenu menu, Player player,
+                                                         RecipeHolder<StonecutterRecipe> recipe) {
+        ItemStack input = menu.container.getItem(0);
+        boolean boxInput = isShulkerBox(input);
+        if (!ruleEnabled() || !boxInput) return StonecutterTakeResult.NONE;
+        StonecutterPlan plan = analyzeStonecutter(player.level(), input, recipe);
+        if (plan == null) return StonecutterTakeResult.BLOCKED;
+
+        int shulkerSize = shulkerSize();
+        NonNullList<ItemStack> contents = contents(input, shulkerSize);
+        long remaining = (long) plan.requiredInput() * plan.crafts();
+        for (int i = 0; i < contents.size() && remaining > 0; i++) {
+            ItemStack stack = contents.get(i);
+            if (stack.isEmpty()) continue;
+            int taken = (int) Math.min(stack.getCount(), remaining);
+            remaining -= taken;
+            if (taken >= stack.getCount()) contents.set(i, ItemStack.EMPTY);
+            else contents.set(i, FGACompat.copyWithCount(stack, stack.getCount() - taken));
+        }
+        if (remaining > 0) return StonecutterTakeResult.BLOCKED;
+        if (contents.stream().allMatch(ItemStack::isEmpty)) {
+            input.set(DataComponents.CONTAINER, ItemContainerContents.EMPTY);
+        } else {
+            input.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(contents));
+        }
+        menu.container.setItem(0, input);
+        menu.container.setChanged();
+
+        for (ItemStack extra : plan.extraBoxes()) {
+            giveOrDrop(player, extra.copy());
+        }
+        //#if MC == 1.21.1
+        ((StonecutterMenuAccessor) menu).carpetFga$invokeSetupResultSlot();
+        //#else
+        //$$ ((StonecutterMenuAccessor) menu).carpetFga$invokeSetupResultSlot(menu.getSelectedRecipeIndex());
+        //#endif
+        player.containerMenu.broadcastChanges();
+        return StonecutterTakeResult.HANDLED;
+    }
+    //#endif
 
     //#if MC < 1.21
     //$$ private static CraftingContainer legacyInput(Player player, int width, int height,
@@ -662,7 +953,7 @@ public final class FullShulkerBoxCraftingManager {
     }
     //#endif
 
-    private record OutputGroup(ItemStack item, int stackLimit, long boxCount) {
+    private record OutputGroup(ItemStack item, int stackLimit, long boxCount, long totalCount) {
     }
 
     private static final class RemainderTotal {
@@ -684,6 +975,9 @@ public final class FullShulkerBoxCraftingManager {
         INVALID_INPUT_BOX("invalidInputBox"),
         UNSTACKABLE_INPUT("unstackableInput"),
         INPUT_CAPACITY_MISMATCH("inputCapacityMismatch"),
+        //#if MC >= 1.21
+        CONTENT_COUNT_MISMATCH("contentCountMismatch"),
+        //#endif
         UNSTACKABLE_OUTPUT("unstackableOutput"),
         NON_WHOLE_OUTPUT("nonWholeOutput"),
         UNSTACKABLE_REMAINDER("unstackableRemainder"),
