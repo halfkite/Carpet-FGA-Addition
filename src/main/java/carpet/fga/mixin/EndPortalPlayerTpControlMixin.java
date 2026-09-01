@@ -9,7 +9,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.EndPortalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 //#if MC == 1.21.5
-//$$ import net.minecraft.world.level.portal.TeleportTransition;
+//$$ import net.minecraft.world.entity.InsideBlockEffectApplier;
 //#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,7 +21,7 @@ public abstract class EndPortalPlayerTpControlMixin {
     //#if MC == 1.21.5
     //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
     //$$ private void carpetFga$controlPlayerEndPortal(BlockState state, Level level, BlockPos pos, Entity entity,
-    //$$                                                 TeleportTransition teleportTransition, CallbackInfo ci) {
+    //$$                                                 InsideBlockEffectApplier effectApplier, CallbackInfo ci) {
     //$$     if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
     //$$     PlayerTpEndControlManager.PortalType type = level.dimension() == Level.END
     //$$             ? PlayerTpEndControlManager.PortalType.EXIT : PlayerTpEndControlManager.PortalType.ENTER;

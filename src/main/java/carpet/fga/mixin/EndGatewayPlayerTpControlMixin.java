@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.EndGatewayBlock;
 //#endif
 import net.minecraft.world.level.block.state.BlockState;
 //#if MC == 1.21.5
-//$$ import net.minecraft.world.level.portal.TeleportTransition;
+//$$ import net.minecraft.world.entity.InsideBlockEffectApplier;
 //#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,7 +32,7 @@ public abstract class EndGatewayPlayerTpControlMixin {
     //#if MC == 1.21.5
     //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
     //$$ private void carpetFga$controlPlayerGateway(BlockState state, Level level, BlockPos pos, Entity entity,
-    //$$                                             TeleportTransition teleportTransition, CallbackInfo ci) {
+    //$$                                             InsideBlockEffectApplier effectApplier, CallbackInfo ci) {
     //$$     if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
     //$$     if (!PlayerTpEndControlManager.canTeleport(player, PlayerTpEndControlManager.PortalType.GATEWAY)) ci.cancel();
     //$$ }

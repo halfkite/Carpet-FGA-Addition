@@ -7,6 +7,11 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+//#if MC >= 1.21 && MC <= 26.2
+import net.minecraft.world.entity.vehicle.MinecartHopper;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
+//#endif
 import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,10 +27,34 @@ public abstract class HopperBlockEntityMixin {
     )
     private static void carpetFga$insertOversizedItemEntity(Container destination, ItemEntity itemEntity,
                                                              CallbackInfoReturnable<Boolean> cir) {
+        ItemStack original = itemEntity.getItem();
+        //#if MC >= 1.21 && MC <= 26.2
+        // Carpet Org can temporarily make shulker boxes stackable. A hopper minecart
+        // must still consume at most one box per item-entity transfer attempt.
+        if (destination instanceof MinecartHopper
+                && original.getCount() > 1
+                && original.getItem() instanceof BlockItem blockItem
+                && blockItem.getBlock() instanceof ShulkerBoxBlock) {
+            ItemStack one = FGACompat.copyWithCount(original, 1);
+            ItemStack rejected = HopperBlockEntity.addItem(null, destination, one, (Direction) null);
+            if (rejected.isEmpty()) {
+                original.shrink(1);
+                if (original.isEmpty()) {
+                    itemEntity.setItem(ItemStack.EMPTY);
+                    FGACompat.discard(itemEntity);
+                } else {
+                    itemEntity.setItem(original);
+                }
+                cir.setReturnValue(true);
+            }
+            return;
+        }
+        //#endif
+
         if (!FGASettings.isDroppedItemStackLimitEnabled()) {
             return;
         }
-        ItemStack original = itemEntity.getItem();
+
         int batchLimit = Math.min(original.getMaxStackSize(),
                 //#if MC >= 1.20.5
                 destination.getMaxStackSize(original)
