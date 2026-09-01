@@ -1,5 +1,11 @@
 # Carpet FGA Addition
 
+[![License](https://img.shields.io/github/license/halfkite/Carpet-FGA-Addition)](https://choosealicense.com/licenses/mit/)
+[![Modrinth](https://img.shields.io/modrinth/dt/carpet-fga-addition?color=00AF5C&label=Modrinth%20downloads&logo=modrinth)](https://modrinth.com/project/carpet-fga-addition)
+[![CurseForge](https://img.shields.io/curseforge/dt/1660840?logo=curseforge&label=CurseForge%20downloads&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/carpet-fga-addition)
+[![MC Versions](https://cf.way2muchnoise.eu/versions/For%20MC_1660840_all.svg)](https://www.curseforge.com/minecraft/mc-mods/carpet-fga-addition)
+[![GitHub](https://img.shields.io/github/downloads/halfkite/Carpet-FGA-Addition/total?color=161616&label=GitHub%20downloads&logo=github)](https://github.com/halfkite/Carpet-FGA-Addition/releases)
+
 [中文](README.md) | **English**
 
 ## Dependencies

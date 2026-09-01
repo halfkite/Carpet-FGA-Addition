@@ -46,12 +46,19 @@ public class FGASettings {
     public static final String FGA = "FGA";
 
     //#if MC >= 1.21 && MC <= 26.2
-    @Rule(
-        desc = "允许 QuickCraft 客户端通过服务端校验放置投影实体并扣除材料",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
         strict = false
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "允许 QuickCraft 客户端通过服务端校验放置投影实体并扣除材料",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"},
+        //$$ strict = false
+    //$$ )
+    //#endif
     public static boolean quickCraftEasyPlaceEntities = false;
     //#endif
 
@@ -61,14 +68,23 @@ public class FGASettings {
      * 设为 1-128 之间的值则覆盖原版限制。
      * 客户端通过兼容网络别名显示超过 16 字符的名字，无需安装本模组。
      */
-    @Rule(
-        desc = "假人名字最大长度，-1=不修改并沿用原版限制，设为 1-128 则覆盖，长名字会以兼容别名发送给客户端",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"-1", "16", "32", "64", "128"},
         strict = false,
-        validate = FGASettings.NameLengthValidator.class,
-        condition = FGASettings.Minecraft1_18OrNewerCondition.class
+        validators = FGASettings.NameLengthValidator.class,
+        conditions = FGASettings.Minecraft1_18OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "假人名字最大长度，-1=不修改并沿用原版限制，设为 1-128 则覆盖，长名字会以兼容别名发送给客户端",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"-1", "16", "32", "64", "128"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.NameLengthValidator.class,
+        //$$ condition = FGASettings.Minecraft1_18OrNewerCondition.class
+    //$$ )
+    //#endif
     public static int fakePlayerNameLength = -1;
 
     public static class Minecraft1_18OrNewerCondition implements
@@ -92,35 +108,62 @@ public class FGASettings {
         }
     }
 
-    @Rule(
-        desc = "启用假人范围控制命令，可进行区域放置、右键和破坏",
-        category = {FGA, FEATURE}
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "启用假人范围控制命令，可进行区域放置、右键和破坏",
+        //$$ category = {FGA, FEATURE}
+    //$$ )
+    //#endif
     public static boolean fakePlayerRangeControl = false;
 
-    @Rule(
-        desc = "Regenerates destroyed vanilla End gateways without changing surrounding blocks",
-        category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_16OrNewerCondition.class
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        conditions = FGASettings.Minecraft1_16OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Regenerates destroyed vanilla End gateways without changing surrounding blocks",
+        //$$ category = {FGA, FEATURE},
+        //$$ condition = FGASettings.Minecraft1_16OrNewerCondition.class
+    //$$ )
+    //#endif
     public static boolean endGatewayRegeneration = false;
 
-    @Rule(
-        desc = "Controls wandering trader despawning: false, true, or controlled",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "controlled"},
         strict = false,
-        condition = Minecraft1_16OrNewerCondition.class
+        conditions = Minecraft1_16OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Controls wandering trader despawning: false, true, or controlled",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "controlled"},
+        //$$ strict = false,
+        //$$ condition = Minecraft1_16OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String wanderingTraderNoDespawn = "false";
 
-    @Rule(
-        desc = "Asynchronously preloads fake-player profiles before spawning",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "always", "adaptive"},
-        validate = FGASettings.FakePlayerProfilePreloadValidator.class,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        validators = FGASettings.FakePlayerProfilePreloadValidator.class,
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Asynchronously preloads fake-player profiles before spawning",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "always", "adaptive"},
+        //$$ validate = FGASettings.FakePlayerProfilePreloadValidator.class,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String fakePlayerProfilePreload = "false";
 
     public static class FakePlayerProfilePreloadValidator extends
@@ -270,21 +313,35 @@ public class FGASettings {
         }
     }
 
-    @Rule(
-        desc = "Makes deepslate behave in the stonecutter like it does in 26.1+",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.DeepslateStonecuttingRecipesCondition.class
+        conditions = FGASettings.DeepslateStonecuttingRecipesCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Makes deepslate behave in the stonecutter like it does in 26.1+",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"},
+        //$$ condition = FGASettings.DeepslateStonecuttingRecipesCondition.class
+    //$$ )
+    //#endif
     public static boolean deepslateStonecuttingRecipes = false;
 
     //#if MC >= 1.20.1 && MC <= 26.2
-    @Rule(
-        desc = "Removes the anvil prior-work penalty and the 40-level too-expensive limit",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Removes the anvil prior-work penalty and the 40-level too-expensive limit",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"},
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static boolean anvilNoPriorWorkPenalty = false;
     //#endif
 
@@ -294,14 +351,23 @@ public class FGASettings {
     private static final String LEGACY_EXPERIENCE_LEVEL_COST_29_30 = "30级后每级升级消耗经验与29到30一样";
     private static final String LEGACY_EXPERIENCE_LEVEL_COST_0_1 = "每级升级消耗经验与0到1一样";
 
-    @Rule(
-        desc = "Flattens experience required for level upgrades",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "29-30", "0-1"},
         strict = false,
-        validate = FGASettings.ExperienceLevelCostValidator.class,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        validators = FGASettings.ExperienceLevelCostValidator.class,
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Flattens experience required for level upgrades",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "29-30", "0-1"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.ExperienceLevelCostValidator.class,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String experienceLevelCost = "false";
 
     public static boolean usesExperienceLevelCost29To30() {
@@ -369,40 +435,68 @@ public class FGASettings {
     //#endif
 
     //#if MC >= 1.20.1 && MC <= 26.2
-    @Rule(
-        desc = "Allows wood products to be crafted in the stonecutter",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.WoodStonecuttingRecipesCondition.class
+        conditions = FGASettings.WoodStonecuttingRecipesCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Allows wood products to be crafted in the stonecutter",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"},
+        //$$ condition = FGASettings.WoodStonecuttingRecipesCondition.class
+    //$$ )
+    //#endif
     public static boolean woodStonecuttingRecipes = false;
     //#endif
 
     //#if MC >= 1.20.1 && MC <= 26.2
-    @Rule(
-        desc = "Prevents villagers from crafting wheat into bread",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"}
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Prevents villagers from crafting wheat into bread",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"}
+    //$$ )
+    //#endif
     public static boolean villagerDoNotCraftBread = false;
 
-    @Rule(
-        desc = "Lets villagers finish profession upgrades while trading",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"}
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Lets villagers finish profession upgrades while trading",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"}
+    //$$ )
+    //#endif
     public static boolean villagerUpgradeWhileTrading = false;
     //#endif
 
     //#if MC >= 1.20.1 && MC <= 26.2
-    @Rule(
-        desc = "Controls per-player chunk loading distance commands",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
-        validate = FGASettings.PlayerLoadDistanceValidator.class,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        validators = FGASettings.PlayerLoadDistanceValidator.class,
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Controls per-player chunk loading distance commands",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.PlayerLoadDistanceValidator.class,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String playerLoadDistance = "false";
 
     public static class PlayerLoadDistanceValidator extends Validator<String> {
@@ -423,34 +517,61 @@ public class FGASettings {
     //#endif
 
     //#if MC >= 1.21 && MC <= 26.2
-    @Rule(
-        desc = "Makes each matching trial-spawner participant count as multiple players",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"1", "10", "50", "100", "1000", "10000"},
         strict = false,
-        validate = FGASettings.TrialSpawnerPlayerMultiplierValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        validators = FGASettings.TrialSpawnerPlayerMultiplierValidator.class,
+        conditions = FGASettings.Minecraft1_21OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Makes each matching trial-spawner participant count as multiple players",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"1", "10", "50", "100", "1000", "10000"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.TrialSpawnerPlayerMultiplierValidator.class,
+        //$$ condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    //$$ )
+    //#endif
     public static int trialSpawnerPlayerMultiplier = 100;
 
-    @Rule(
-        desc = "Selects players affected by the trial-spawner multiplier: false, true, or a name prefix",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "bot_"},
         strict = false,
-        validate = FGASettings.TrialSpawnerPlayerFilterValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        validators = FGASettings.TrialSpawnerPlayerFilterValidator.class,
+        conditions = FGASettings.Minecraft1_21OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Selects players affected by the trial-spawner multiplier: false, true, or a name prefix",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "bot_"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.TrialSpawnerPlayerFilterValidator.class,
+        //$$ condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String trialSpawnerPlayerFilter = "false";
 
-    @Rule(
-        desc = "Enables and controls the one-shot /trialStop stop-and-refresh command",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
-        validate = FGASettings.TrialStopCommandPermissionValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        validators = FGASettings.TrialStopCommandPermissionValidator.class,
+        conditions = FGASettings.Minecraft1_21OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Enables and controls the one-shot /trialStop stop-and-refresh command",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.TrialStopCommandPermissionValidator.class,
+        //$$ condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String trialStopCommandPermission = "false";
 
     public static class TrialSpawnerPlayerMultiplierValidator extends Validator<Integer> {
@@ -497,14 +618,23 @@ public class FGASettings {
     }
     //#endif
 
-    @Rule(
-        desc = "Prevents baby mobs from growing: false, true, or an exact custom name",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "mini"},
         strict = false,
-        validate = FGASettings.BabyMobNoGrowthValidator.class,
-        condition = FGASettings.BabyMobNoGrowthBaselineCondition.class
+        validators = FGASettings.BabyMobNoGrowthValidator.class,
+        conditions = FGASettings.BabyMobNoGrowthBaselineCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Prevents baby mobs from growing: false, true, or an exact custom name",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "mini"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.BabyMobNoGrowthValidator.class,
+        //$$ condition = FGASettings.BabyMobNoGrowthBaselineCondition.class
+    //$$ )
+    //#endif
     public static String babyMobNoGrowth = "false";
 
     public static class BabyMobNoGrowthBaselineCondition implements
@@ -559,14 +689,23 @@ public class FGASettings {
     }
 
     //#if MC >= 1.20.1 && MC <= 26.2
-    @Rule(
-        desc = "Allows configured plants to survive without their normal support restrictions",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "[]"},
         strict = false,
-        validate = FGASettings.ResilientPlantsValidator.class,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        validators = FGASettings.ResilientPlantsValidator.class,
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Allows configured plants to survive without their normal support restrictions",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "[]"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.ResilientPlantsValidator.class,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String resilientPlants = "false";
 
     public static class ResilientPlantsValidator extends Validator<String> {
@@ -590,14 +729,23 @@ public class FGASettings {
     }
 
     //#if MC >= 1.21
-    @Rule(
-        desc = "Configured blocks skip placement support checks and ignore block updates instead of checking themselves",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "[]", "[sand,gravel]"},
         strict = false,
-        validate = FGASettings.ResilientBlocksValidator.class,
-        condition = FGASettings.Minecraft1_21OrNewerCondition.class
+        validators = FGASettings.ResilientBlocksValidator.class,
+        conditions = FGASettings.Minecraft1_21OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Configured blocks skip placement support checks and ignore block updates instead of checking themselves",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "[]", "[sand,gravel]"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.ResilientBlocksValidator.class,
+        //$$ condition = FGASettings.Minecraft1_21OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String resilientBlocks = "false";
 
     public static class ResilientBlocksValidator extends Validator<String> {
@@ -621,14 +769,23 @@ public class FGASettings {
     }
     //#endif
 
-    @Rule(
-        desc = "Allows comparators to read container signals through configured blocks",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "[chain]", "[piston]", "[chain,piston]"},
         strict = false,
-        validate = FGASettings.ComparatorThroughBlocksValidator.class,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        validators = FGASettings.ComparatorThroughBlocksValidator.class,
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Allows comparators to read container signals through configured blocks",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "[chain]", "[piston]", "[chain,piston]"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.ComparatorThroughBlocksValidator.class,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String comparatorThroughBlocks = "false";
 
     public static class ComparatorThroughBlocksValidator extends Validator<String> {
@@ -653,30 +810,53 @@ public class FGASettings {
     //#endif
 
     //#if MC >= 1.20.1 && MC <= 26.2
-    @Rule(
-        desc = "Shulkers killed by shulker bullets always respawn a new shulker at the death spot, like Bedrock Edition",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Shulkers killed by shulker bullets always respawn a new shulker at the death spot, like Bedrock Edition",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"},
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static boolean shulkerBedrockDuplication = false;
 
-    @Rule(
-        desc = "Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"},
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static boolean shulkerBedrockLooting = false;
 
-    @Rule(
-        desc = "Allows shulkers to attack armor stands within targeting range",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "pumpkin"},
         strict = false,
-        validate = FGASettings.ShulkerAttackArmorStandValidator.class,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        validators = FGASettings.ShulkerAttackArmorStandValidator.class,
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Allows shulkers to attack armor stands within targeting range",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "pumpkin"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.ShulkerAttackArmorStandValidator.class,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String shulkerAttackArmorStand = "false";
 
     public static class ShulkerAttackArmorStandValidator extends
@@ -706,97 +886,169 @@ public class FGASettings {
     }
     //#endif
 
-    @Rule(
-        desc = "Allows unquoted command arguments to contain Unicode characters",
-        category = {FGA, FEATURE}
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Allows unquoted command arguments to contain Unicode characters",
+        //$$ category = {FGA, FEATURE}
+    //$$ )
+    //#endif
     public static boolean fgaUnicodeArgumentsSupport = false;
 
     /** Category used by the inventory sorter rules so they can be filtered together in /carpet. */
     public static final String FAKE_PLAYER_ITEM_SORT = "假人分类";
 
     //#if MC >= 1.16.5
-    @Rule(
-        desc = "Gives every player all registered recipes on login, with a one-minute per-player cooldown, without discarding saved recipe unlock data",
-        category = {FGA, FEATURE}
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Gives every player all registered recipes on login, with a one-minute per-player cooldown, without discarding saved recipe unlock data",
+        //$$ category = {FGA, FEATURE}
+    //$$ )
+    //#endif
     public static boolean recipeBookAlwaysUnlocked = false;
 
     // Kept for binary/source compatibility with the disabled progress optimizer; it is not a Carpet rule.
     public static String inventoryAdvancementOptimization = "false";
 
-    @Rule(
-        desc = "Shows player health at the right side of the player list: true, false, or nofake",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"true", "false", "nofake"},
         strict = false
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Shows player health at the right side of the player list: true, false, or nofake",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"true", "false", "nofake"},
+        //$$ strict = false
+    //$$ )
+    //#endif
     public static String playerHealthDisplay = "false";
 
-    @Rule(
-        desc = "Removes item frames from server tick scheduling and validates them when support blocks change",
-        category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        conditions = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Removes item frames from server tick scheduling and validates them when support blocks change",
+        //$$ category = {FGA, FEATURE},
+        //$$ condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+    //$$ )
+    //#endif
     public static boolean itemFrameBlockification = false;
 
-    @Rule(
-        desc = "Lets players riding normal minecarts use firework rockets for configurable speed boosts",
-        category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        conditions = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Lets players riding normal minecarts use firework rockets for configurable speed boosts",
+        //$$ category = {FGA, FEATURE},
+        //$$ condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+    //$$ )
+    //#endif
     public static boolean fireworkMinecartBoost = false;
 
-    @Rule(
-        desc = "Lets normal minecarts form persistent chain-linked trains",
-        category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        conditions = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Lets normal minecarts form persistent chain-linked trains",
+        //$$ category = {FGA, FEATURE},
+        //$$ condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+    //$$ )
+    //#endif
     public static boolean chainMinecartBinding = false;
 
-    @Rule(
-        desc = "Controls access to minecart feature configuration commands",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
-        condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+        conditions = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Controls access to minecart feature configuration commands",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        //$$ strict = false,
+        //$$ condition = FGASettings.Minecraft1_20_1Or1_21_1Condition.class
+    //$$ )
+    //#endif
     public static String minecartFeatureCommandPermission = "false";
 
-    @Rule(
-        desc = "Stops horizontal vehicle movement when the controlling player dismounts",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "minecart", "boat", "all", "custom"},
         strict = false,
-        condition = FGASettings.Minecraft1_16OrNewerCondition.class
+        conditions = FGASettings.Minecraft1_16OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Stops horizontal vehicle movement when the controlling player dismounts",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "minecart", "boat", "all", "custom"},
+        //$$ strict = false,
+        //$$ condition = FGASettings.Minecraft1_16OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String vehicleStopOnDismount = "false";
 
-    @Rule(
-        desc = "Makes newly generated chunks void while retaining biome and structure-location data",
-        category = {FGA, FEATURE}
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Makes newly generated chunks void while retaining biome and structure-location data",
+        //$$ category = {FGA, FEATURE}
+    //$$ )
+    //#endif
     public static boolean voidWorldGeneration = false;
 
     //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
-    @Rule(
-        desc = "Controls access to terrain regeneration and clearing commands",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Controls access to terrain regeneration and clearing commands",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        //$$ strict = false,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String terrainRegenerationCommandPermission = "ops";
     //#endif
 
     //#if MC >= 1.21
-    @Rule(
-        desc = "Crafts full single-item shulker boxes through matching ordinary crafting and stonecutter recipes",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "only64", "any"},
         strict = false,
-        validate = FGASettings.FullShulkerBoxCraftingValidator.class
+        validators = FGASettings.FullShulkerBoxCraftingValidator.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Crafts full single-item shulker boxes through matching ordinary crafting and stonecutter recipes",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "only64", "any"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.FullShulkerBoxCraftingValidator.class
+    //$$ )
+    //#endif
     public static String fullShulkerBoxCrafting = "false";
 
     public static class FullShulkerBoxCraftingValidator extends Validator<String> {
@@ -831,8 +1083,13 @@ public class FGASettings {
     //#endif
 
     //#if MC >= 1.20.1 && MC <= 26.2
-    @Rule(desc = "Enables fake-player inventory sorting; mode and sorter options are managed by /fakePlayerItemSort", category = {FGA, FAKE_PLAYER_ITEM_SORT},
-            options = {"false", "true"}, strict = false, condition = Minecraft1_20_1OrNewerCondition.class)
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FAKE_PLAYER_ITEM_SORT},
+            options = {"false", "true"}, strict = false, conditions = Minecraft1_20_1OrNewerCondition.class)
+    //#else
+    //$$ @Rule(desc = "Enables fake-player inventory sorting; mode and sorter options are managed by /fakePlayerItemSort", category = {FGA, FAKE_PLAYER_ITEM_SORT},
+            //$$ options = {"false", "true"}, strict = false, condition = Minecraft1_20_1OrNewerCondition.class)
+    //#endif
     public static boolean fakePlayerItemSort = false;
 
     public static boolean isFakePlayerItemSortEnabled() {
@@ -842,21 +1099,36 @@ public class FGASettings {
     //#endif
 
     //#if MC >= 1.20.1 && MC <= 1.21.5
-    @Rule(
-        desc = "Allows non-OP spectators to use /tp and /teleport on themselves only",
-        category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Allows non-OP spectators to use /tp and /teleport on themselves only",
+        //$$ category = {FGA, FEATURE},
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static boolean spectatorFreeTeleport = false;
 
-    @Rule(
-        desc = "Controls whether players may use End portals and End gateways: false, true, or control",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "control"},
         strict = false,
-        validate = FGASettings.PlayerTpEndControlValidator.class,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        validators = FGASettings.PlayerTpEndControlValidator.class,
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Controls whether players may use End portals and End gateways: false, true, or control",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "control"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.PlayerTpEndControlValidator.class,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String PlayerTpEndControl = "false";
 
     public static class PlayerTpEndControlValidator extends Validator<String> {
@@ -873,21 +1145,35 @@ public class FGASettings {
 
 
 
-    @Rule(
-        desc = "Restores the bee collision box used before Minecraft 26.2",
-        category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft26_2OrNewerCondition.class
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        conditions = FGASettings.Minecraft26_2OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Restores the bee collision box used before Minecraft 26.2",
+        //$$ category = {FGA, FEATURE},
+        //$$ condition = FGASettings.Minecraft26_2OrNewerCondition.class
+    //$$ )
+    //#endif
     public static boolean restorePre26BeeCollisionBox = false;
 
     //#if MC == 1.20.1 || MC >= 1.21.1
-    @Rule(
-        desc = "Maps the client-visible ids for the Overworld, Nether, and End without changing server dimensions",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"[overworld,the_nether,the_end]"},
         strict = false,
-        validate = FGASettings.ClientDimensionIdsValidator.class
+        validators = FGASettings.ClientDimensionIdsValidator.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Maps the client-visible ids for the Overworld, Nether, and End without changing server dimensions",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"[overworld,the_nether,the_end]"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.ClientDimensionIdsValidator.class
+    //$$ )
+    //#endif
     public static String clientDimensionIds = ClientDimensionIdMapping.DEFAULT_VALUE;
 
     public static class ClientDimensionIdsValidator extends Validator<String> {
@@ -910,11 +1196,17 @@ public class FGASettings {
     }
     //#endif
 
-    @Rule(
-        desc = "Removes the confirmation warning for server-sent run-command actions",
-        category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_21_8OrNewerCondition.class
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        conditions = FGASettings.Minecraft1_21_8OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Removes the confirmation warning for server-sent run-command actions",
+        //$$ category = {FGA, FEATURE},
+        //$$ condition = FGASettings.Minecraft1_21_8OrNewerCondition.class
+    //$$ )
+    //#endif
     public static boolean removeDialogWarning = false;
 
     public static class Minecraft1_21_8OrNewerCondition implements
@@ -959,21 +1251,35 @@ public class FGASettings {
         }
     }
 
-    @Rule(
-        desc = "Allows shift-right-click feeding to give adult villagers breeding willingness and speed up baby growth",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "only"}
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Allows shift-right-click feeding to give adult villagers breeding willingness and speed up baby growth",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "only"}
+    //$$ )
+    //#endif
     public static String villagerBreedingAnimalization = "false";
 
     //#if MC >= 1.20.1
-    @Rule(
-        desc = "Enables villager performance optimization and controls access to /villagerPerformance",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "1", "2", "3", "4"},
-        validate = FGASettings.VillagerPerformanceOptimizationValidator.class,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        validators = FGASettings.VillagerPerformanceOptimizationValidator.class,
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Enables villager performance optimization and controls access to /villagerPerformance",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "ops", "1", "2", "3", "4"},
+        //$$ validate = FGASettings.VillagerPerformanceOptimizationValidator.class,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String villagerPerformanceOptimization = "false";
 
     public static class VillagerPerformanceOptimizationValidator extends Validator<String> {
@@ -994,20 +1300,33 @@ public class FGASettings {
     }
     //#endif
 
-    @Rule(
-        desc = "Allows opening hostile mob equipment with an empty-handed shift-right-click",
-        category = {FGA, FEATURE}
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Allows opening hostile mob equipment with an empty-handed shift-right-click",
+        //$$ category = {FGA, FEATURE}
+    //$$ )
+    //#endif
     public static boolean hostileMobInventoryAccess = false;
 
     //#if MC >= 1.20.1
-    @Rule(
-        desc = "Enables configurable ground item entity stack limits and controls access to /droppedItemStackLimit",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
-        validate = FGASettings.DroppedItemStackLimitValidator.class,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        validators = FGASettings.DroppedItemStackLimitValidator.class,
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Enables configurable ground item entity stack limits and controls access to /droppedItemStackLimit",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        //$$ validate = FGASettings.DroppedItemStackLimitValidator.class,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static String droppedItemStackLimit = "false";
 
     public static boolean isDroppedItemStackLimitEnabled() {
@@ -1038,54 +1357,95 @@ public class FGASettings {
     //$$ }
     //#endif
 
-    @Rule(
-        desc = "Removes the volume limit from /fill and /fillbiome while retaining vanilla safety checks",
-        category = {FGA, FEATURE},
-        condition = FGASettings.Minecraft1_21_8Condition.class
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        conditions = FGASettings.Minecraft1_21_8Condition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Removes the volume limit from /fill and /fillbiome while retaining vanilla safety checks",
+        //$$ category = {FGA, FEATURE},
+        //$$ condition = FGASettings.Minecraft1_21_8Condition.class
+    //$$ )
+    //#endif
     public static boolean unlimitedFillCommands = false;
 
-    @Rule(
-        desc = "Changes the horizontal search distance for merging ground item entities; -1 keeps vanilla 0.5 blocks",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"-1", "0", "0.5", "1", "2", "4", "8", "16"},
         strict = false,
-        validate = FGASettings.DroppedItemMergeDistanceValidator.class,
-        condition = FGASettings.Minecraft1_21_1Condition.class
+        validators = FGASettings.DroppedItemMergeDistanceValidator.class,
+        conditions = FGASettings.Minecraft1_21_1Condition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Changes the horizontal search distance for merging ground item entities; -1 keeps vanilla 0.5 blocks",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"-1", "0", "0.5", "1", "2", "4", "8", "16"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.DroppedItemMergeDistanceValidator.class,
+        //$$ condition = FGASettings.Minecraft1_21_1Condition.class
+    //$$ )
+    //#endif
     public static double droppedItemMergeDistance = -1.0D;
 
     private static volatile Set<ResourceLocation> preStackMobTypes = Set.of();
 
     //#if MC >= 1.20.1 && MC <= 26.2
-    @Rule(
-        desc = "Enables unified entity-death and block-drop pre-stacking configured by /dropPreStack",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
         strict = false,
-        condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Enables unified entity-death and block-drop pre-stacking configured by /dropPreStack",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"},
+        //$$ strict = false,
+        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
+    //$$ )
+    //#endif
     public static boolean preStackDroppedItems = false;
     //#endif
 
-    @Rule(
-        desc = "Pre-stacks compatible death drops from selected mob entity types",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "[zombified_piglin]"},
         strict = false,
-        validate = FGASettings.PreStackMobDeathDropsValidator.class,
-        condition = FGASettings.HiddenLegacyPreStackCondition.class
+        validators = FGASettings.PreStackMobDeathDropsValidator.class,
+        conditions = FGASettings.HiddenLegacyPreStackCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Pre-stacks compatible death drops from selected mob entity types",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "[zombified_piglin]"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.PreStackMobDeathDropsValidator.class,
+        //$$ condition = FGASettings.HiddenLegacyPreStackCondition.class
+    //$$ )
+    //#endif
     public static String preStackMobDeathDrops = "false";
 
-    @Rule(
-        desc = "Sets the legacy three-dimensional range for same-tick selected mob death drop pre-stacking",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"0", "1", "3", "8", "16"},
         strict = false,
-        validate = FGASettings.PreStackMobDeathDropsRangeValidator.class,
-        condition = FGASettings.HiddenLegacyPreStackCondition.class
+        validators = FGASettings.PreStackMobDeathDropsRangeValidator.class,
+        conditions = FGASettings.HiddenLegacyPreStackCondition.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Sets the legacy three-dimensional range for same-tick selected mob death drop pre-stacking",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"0", "1", "3", "8", "16"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.PreStackMobDeathDropsRangeValidator.class,
+        //$$ condition = FGASettings.HiddenLegacyPreStackCondition.class
+    //$$ )
+    //#endif
     public static double preStackMobDeathDropsRange = 1.5D;
 
     /** Retains the old fields for source/config compatibility without registering old Carpet rules. */
@@ -1366,11 +1726,17 @@ public class FGASettings {
         }
     }
 
-    @Rule(
-        desc = "自定义去除僵尸猪灵的指定掉落物",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "goldEquipment", "rottenFlesh", "all"}
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "自定义去除僵尸猪灵的指定掉落物",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "goldEquipment", "rottenFlesh", "all"}
+    //$$ )
+    //#endif
     public static String zombifiedPiglinDropReduction = "false";
 
     private static final Set<ResourceLocation> VANILLA_PIGLIN_BARTER_ITEMS = Set.of(
@@ -1403,13 +1769,21 @@ public class FGASettings {
                 || zombifiedPiglinDropReduction.equals("all");
     }
 
-    @Rule(
-        desc = "自定义去除猪灵交易返回的指定物品",
-        category = {FGA, FEATURE},
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "[ironBoots]", "[potions]", "[ironBoots,potions]"},
         strict = false,
-        validate = FGASettings.PiglinBarterExclusionsValidator.class
+        validators = FGASettings.PiglinBarterExclusionsValidator.class
     )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "自定义去除猪灵交易返回的指定物品",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "[ironBoots]", "[potions]", "[ironBoots,potions]"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.PiglinBarterExclusionsValidator.class
+    //$$ )
+    //#endif
     public static String piglinBarterItemExclusions = "false";
 
     public static Set<ResourceLocation> getPiglinBarterItemExclusions() {

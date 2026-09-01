@@ -40,7 +40,11 @@ public class FGAExtension implements CarpetExtension {
         registerItemFrameBlockificationObserver();
         registerPlayerLoadDistanceObserver();
         // Register FGA rules into carpet's main SettingsManager so they appear under /carpet.
-        carpet.settings.SettingsManager carpetManager = CarpetServer.settingsManager;
+        //#if MC >= 1.19
+        carpet.api.settings.SettingsManager carpetManager = CarpetServer.settingsManager;
+        //#else
+        //$$ carpet.settings.SettingsManager carpetManager = CarpetServer.settingsManager;
+        //#endif
         if (carpetManager != null) {
             carpetManager.parseSettingsClass(FGASettings.class);
         }
