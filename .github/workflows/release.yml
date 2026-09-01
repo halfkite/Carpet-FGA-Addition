@@ -107,10 +107,20 @@ jobs:
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
           set -euo pipefail
-          gh release view "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --json tagName,name,body,isDraft,isPrerelease,targetCommitish \
-            > release.json
+          for attempt in 1 2 3 4 5 6; do
+            if gh release view "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --json tagName,name,body,isDraft,isPrerelease,targetCommitish \
+              > release.json \
+              && python -c 'import json, os; data = json.load(open("release.json")); raise SystemExit(0 if data.get("tagName") == os.environ["RELEASE_TAG"] and str(data.get("body") or "").strip() else 1)'; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 6 ]]; then
+              sleep 5
+            fi
+          done
+          echo "GitHub Release metadata was not ready for tag $RELEASE_TAG" >&2
+          exit 1
 
       - name: Validate Release and publication metadata
         id: context
