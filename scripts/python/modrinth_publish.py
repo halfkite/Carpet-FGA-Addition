@@ -145,6 +145,35 @@ def find_existing_version(
     return expected_matches[0] if expected_matches else None
 
 
+def remove_empty_orphan_versions(
+    client: ModrinthClient, tag_matches: list[dict[str, Any]], tag: str
+) -> list[dict[str, Any]]:
+    """Remove only fully empty versions left by an interrupted create request.
+
+    A failed multipart create can leave a listed Modrinth Version with the
+    correct tag but no files, game versions, or loaders. Such an entry cannot
+    be repaired by the metadata PATCH endpoint and also prevents the publisher
+    from identifying the valid same-tag Version for every matrix item.
+    """
+    remaining: list[dict[str, Any]] = []
+    for version in tag_matches:
+        is_empty_orphan = (
+            version.get("version_number") == tag
+            and not version.get("files")
+            and not version.get("game_versions")
+            and not version.get("loaders")
+        )
+        if not is_empty_orphan:
+            remaining.append(version)
+            continue
+        version_id = str(version.get("id") or "")
+        if not version_id:
+            raise ModrinthError("An empty same-tag Modrinth Version has no id")
+        client.request("DELETE", f"/version/{urllib.parse.quote(version_id, safe='')}")
+        print(f"Removed empty orphan Modrinth Version: {version_id}")
+    return remaining
+
+
 def validate_existing_files(
     remote_files: list[dict[str, Any]], expected_files: dict[str, dict[str, Any]]
 ) -> None:
@@ -253,6 +282,7 @@ def publish(
     allowed_filenames = {entry["jar_name"] for entry in manifest["all_entries"]}
     versions = client.request("GET", f"/project/{canonical_project_id}/version")
     tag_matches = [item for item in versions if item.get("version_number") == manifest["tag"]]
+    tag_matches = remove_empty_orphan_versions(client, tag_matches, manifest["tag"])
     existing_summary = find_existing_version(tag_matches, expected_filename, allowed_filenames)
     if existing_summary:
         existing = client.request("GET", f"/version/{existing_summary['id']}")

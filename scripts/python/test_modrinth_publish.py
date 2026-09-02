@@ -145,6 +145,28 @@ class ModrinthPublishTest(unittest.TestCase):
         )
         self.assertEqual("b", found["id"])
 
+    def test_empty_orphan_version_is_removed_before_matching(self):
+        client = mock.Mock()
+        versions = [
+            {
+                "id": "orphan",
+                "version_number": "1.5.4",
+                "files": [],
+                "game_versions": [],
+                "loaders": [],
+            },
+            {
+                "id": "valid",
+                "version_number": "1.5.4",
+                "files": [{"filename": "carpet-fga-addition-1.5.4-mc1.21-1.21.1.jar"}],
+                "game_versions": ["1.21", "1.21.1"],
+                "loaders": ["fabric"],
+            },
+        ]
+        remaining = modrinth_publish.remove_empty_orphan_versions(client, versions, "1.5.4")
+        self.assertEqual(["valid"], [version["id"] for version in remaining])
+        client.request.assert_called_once_with("DELETE", "/version/orphan")
+
 
 if __name__ == "__main__":
     unittest.main()
