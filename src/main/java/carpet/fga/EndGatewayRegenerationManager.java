@@ -1,4 +1,4 @@
-//#if MC >= 1.16.5 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga;
 
 import net.minecraft.core.BlockPos;
@@ -63,7 +63,7 @@ public final class EndGatewayRegenerationManager {
             BlockPos position = entry.getKey();
             if (!level.getBlockState(position).isAir()) continue;
             level.setBlock(position, Blocks.END_GATEWAY.defaultBlockState(), 3);
-            //#if MC >= 1.21.1
+            //#if MC >= 1.21
             TheEndGatewayBlockEntity gateway = new TheEndGatewayBlockEntity(
                     position, Blocks.END_GATEWAY.defaultBlockState());
             //#if MC == 1.21.1

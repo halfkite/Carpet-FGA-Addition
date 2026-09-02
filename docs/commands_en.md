@@ -1,6 +1,6 @@
 # Carpet FGA Addition Commands
 
-> Documentation version: `1.5.0`
+> Documentation version: `1.5.6`
 
 ## Command index
 
@@ -9,6 +9,7 @@
 | `/player` range actions | `fakePlayerRangeControl` | Carpet player permission/all versions | Runs fake-player range placement, interaction, attack, or continuous tasks. |
 | `/droppedItemStackLimit` | `droppedItemStackLimit` | Rule permission/all supported versions | Configures independent ground, inventory, and container stack limits. Inventory or container limits require the FGA client. |
 | `/dropPreStack` | `preStackDroppedItems` | Drop configuration permission/1.21-26.2 | Configures entity, block, and container pre-stacking. |
+| `/entityDropRemoval` | `entityDropRemoval` | Rule permission/1.21.1 | Configures death-drop removal by entity and item ID. |
 | `/villagerPerformance` | `villagerPerformanceOptimization` | Rule permission/1.21+ | Configures villager trades, gifts, and wandering-trader protection. |
 | `/fakePlayerItemSort` | 1.21-26.2 (excluding 1.21.3) sorter rules | `commandPlayer`/1.21-26.2 (excluding 1.21.3) | Configures the sorter core; dashboard, rebuild, restock, and worker settings are only available on 1.21.1. |
 | `/player <name> bot_sort` | 1.21-26.2 (excluding 1.21.3) sorter rules | `commandPlayer`/1.21-26.2 (excluding 1.21.3) | Starts or stops a target fake player's sorter job; rebuild syntax is only available on 1.21.1. |
@@ -16,7 +17,7 @@
 | `/vehicleStop` | `vehicleStopOnDismount` | Self; OP manages online players/all supported versions | Configures per-player minecart and boat stopping on dismount. |
 | `/regenerateTerrain` | `voidWorldGeneration`, `terrainRegenerationCommandPermission` | Configured permission/1.21-26.2 | Queues normal-terrain regeneration or full-air clearing for the next restart. |
 | `/trialStop` | `trialStopCommandPermission` | Rule permission/1.21-26.2 | Stops and refreshes loaded trial spawners with no, normal, or immediate rewards. |
-| `/playertpend` | `PlayerTpEndControl` | `control` mode/1.21.1 | Manages each player's three End portal preferences. |
+| `/playertpend` | `PlayerTpEndControl` | `control` mode/1.21+ | Manages each player's three End portal preferences. |
 
 ## `/playertpend`
 
@@ -90,6 +91,21 @@ Options can be combined: `pathfinding`, `reach <0.1-64>`, `airPlace`, `ignoreObs
 ```
 
 `list` is paged and shows the display name, full item ID, and count. List entries provide clickable removal commands. Invalid configuration keeps vanilla-safe limits and rejects writes.
+
+## `/entityDropRemoval` and `/fga entityDropRemoval`
+
+Related rule: `entityDropRemoval`
+
+```text
+/entityDropRemoval help
+/entityDropRemoval status
+/entityDropRemoval set <entity id> <item id|allEquipment>
+/entityDropRemoval remove <entity id> <item id|allEquipment>
+/entityDropRemoval list
+/entityDropRemoval list <entity id>
+```
+
+The command is unavailable when the rule is `false`; `true`, `ops`, and `0-4` control access according to the rule value. Entity and item IDs support full namespaces, omitted `minecraft:`, and Tab completion. `set` adds to existing entries, while `remove` deletes only one entry. `allEquipment` covers the helmet, chestplate, leggings, boots, main-hand, and off-hand slots. `list` shows configured entities and removal entries with clickable red minus buttons; `list <entity id>` shows the default loot-table ID and currently identifiable drop configuration. The file is `world/config/carpetfgaaddition/entity-drop-removal.json`, written with atomic replacement; corrupt files are preserved and writes are rejected for the current run.
 
 ## `/dropPreStack` and `/fga dropPreStack`
 
@@ -283,7 +299,7 @@ The reward mode defaults to `none`. `none` skips rewards and refreshes immediate
 
 ## `/deepslateStonecuttingRecipes`
 
-This feature is controlled by `/carpet deepslateStonecuttingRecipes false|true` on versions `1.21-1.21.11`. It only toggles FGA's own direct deepslate stonecutting recipes. There is no standalone command
+This feature is controlled by `/carpet deepslateStonecuttingRecipes false|true` on versions `1.21+`. It only toggles FGA's own direct deepslate stonecutting recipes. There is no standalone command
 
 ## Other commands
 

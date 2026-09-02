@@ -28,7 +28,7 @@ public class FGAExtension implements CarpetExtension {
 
     private static final String MOD_ID = "carpet-fga-addition";
     private boolean previousBeeCollisionBoxRule;
-    //#if MC >= 1.20.1 && MC <= 1.21.5
+    //#if MC >= 1.21 && MC <= 26.2
     private boolean previousSpectatorFreeTeleportRule;
     //#endif
 
@@ -78,7 +78,7 @@ public class FGAExtension implements CarpetExtension {
         VehicleStopConfig.load(server);
         VehicleStopManager.clear();
         RecipeBookAlwaysUnlockedManager.clear();
-        //#if MC >= 1.20.1 && MC <= 1.21.5
+        //#if MC >= 1.21 && MC <= 26.2
         PlayerTpEndControlManager.load(server);
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
@@ -87,6 +87,9 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
         DropPreStackConfig.load(server);
+        //#endif
+        //#if MC == 1.21.1
+        EntityDropRemovalConfig.load(server);
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         PlayerLoadDistanceCompat.load(server);
@@ -117,7 +120,7 @@ public class FGAExtension implements CarpetExtension {
         VillagerPerformanceCommand.register(dispatcher);
         //#endif
         VehicleStopCommand.register(dispatcher);
-        //#if MC >= 1.20.1 && MC <= 1.21.5
+        //#if MC >= 1.21 && MC <= 26.2
         PlayerTpEndControlCommand.register(dispatcher);
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
@@ -125,6 +128,9 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
         DropPreStackCommand.register(dispatcher);
+        //#if MC == 1.21.1
+        EntityDropRemovalCommand.register(dispatcher);
+        //#endif
         //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
         TerrainRegenerationCommand.register(dispatcher);
         //#endif
@@ -162,7 +168,7 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.16.5 && MC <= 26.2
         FullShulkerBoxCraftingManager.tick(server);
         //#endif
-        //#if MC >= 1.16.5 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.2
         EndGatewayRegenerationManager.tick(server);
         //#endif
         //#if MC >= 1.19.4
@@ -172,7 +178,7 @@ public class FGAExtension implements CarpetExtension {
             previousBeeCollisionBoxRule = FGASettings.restorePre26BeeCollisionBox;
             BeeDimensions.refreshLoadedBees(server);
         }
-        //#if MC >= 1.20.1 && MC <= 1.21.5
+        //#if MC >= 1.21 && MC <= 26.2
         if (previousSpectatorFreeTeleportRule != FGASettings.spectatorFreeTeleport) {
             previousSpectatorFreeTeleportRule = FGASettings.spectatorFreeTeleport;
             server.getPlayerList().getPlayers().forEach(player -> server.getCommands().sendCommands(player));
@@ -185,7 +191,7 @@ public class FGAExtension implements CarpetExtension {
         VehicleStopConfig.clear();
         VehicleStopManager.clear();
         RecipeBookAlwaysUnlockedManager.clear();
-        //#if MC >= 1.20.1 && MC <= 1.21.5
+        //#if MC >= 1.21 && MC <= 26.2
         PlayerTpEndControlManager.clear();
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
@@ -203,6 +209,9 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.20.1 && MC <= 26.2
         DropPreStackConfig.clear();
         //#endif
+        //#if MC == 1.21.1
+        EntityDropRemovalConfig.clear();
+        //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         PlayerLoadDistanceCompat.clear();
         //#endif
@@ -217,7 +226,7 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.20.1
         VillagerTradeOnlyManager.clear();
         //#endif
-        //#if MC >= 1.16.5 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.2
         EndGatewayRegenerationManager.clear();
         //#endif
         //#if MC >= 1.19.4
@@ -231,7 +240,7 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         RangeActionManager.clear();
         previousBeeCollisionBoxRule = false;
-        //#if MC >= 1.20.1 && MC <= 1.21.5
+        //#if MC >= 1.21 && MC <= 26.2
         previousSpectatorFreeTeleportRule = false;
         //#endif
     }
@@ -301,7 +310,8 @@ public class FGAExtension implements CarpetExtension {
                     && !"minecartFeatureCommandPermission".equals(rule.name())
                     && !"terrainRegenerationCommandPermission".equals(rule.name())
                     && !"trialStopCommandPermission".equals(rule.name())
-                    //#if MC >= 1.20.1 && MC <= 1.21.5
+                    && !"entityDropRemoval".equals(rule.name())
+                    //#if MC >= 1.21 && MC <= 26.2
                     && !"PlayerTpEndControl".equals(rule.name())
                     //#endif
                     ) {

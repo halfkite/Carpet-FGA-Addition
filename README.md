@@ -37,6 +37,10 @@
 - [Modrinth](https://modrinth.com/mod/carpet-fga-addition)
 - [CurseForge](https://www.curseforge.com/minecraft/mc-mods/carpet-fga-addition)
 
+## 功能简介
+
+提供 Carpet 规则扩展与服务端命令，包括满潜影盒合成、掉落物预堆叠，以及 1.21.1 的按生物和物品自定义去除死亡掉落物功能。
+
 ## 文档
 
 - [规则](docs/rules.md)

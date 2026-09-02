@@ -1,6 +1,6 @@
 # Carpet FGA Addition 规则
 
-> 文档版本：`1.5.0`
+> 文档版本：`1.5.6`
 
 所有规则通过 `/carpet <规则名> <值>` 管理。未特别说明时，规则默认关闭。
 
@@ -10,8 +10,8 @@
 |---|---|---|---|---|---|
 | `fakePlayerNameLength` | 整数 | `-1` | `-1`、`1-128` | 1.21+ | 控制假人名称长度；`-1` 使用原版限制。 |
 | `fakePlayerRangeControl` | 布尔 | `false` | `false`、`true` | 全版本 | 启用假人区域放置、交互、破坏和连续任务。 |
-| `endGatewayRegeneration` | 布尔 | `false` | `false`、`true` | 1.21-1.21.11 | 记录并再生被破坏的原版末地折跃门，只恢复折跃门方块。 |
-| `wanderingTraderNoDespawn` | 枚举 | `false` | `false`、`true`、`controlled` | 1.21-1.21.11 | 控制流浪商人自然消失；`controlled` 只保护命中名单的名称或脚下方块。 |
+| `endGatewayRegeneration` | 布尔 | `false` | `false`、`true` | 1.21+ | 记录并再生被破坏的原版末地折跃门，只恢复折跃门方块。 |
+| `wanderingTraderNoDespawn` | 枚举 | `false` | `false`、`true`、`controlled` | 1.21+ | 控制流浪商人自然消失；`controlled` 只保护命中名单的名称或脚下方块。 |
 | `fakePlayerProfilePreload` | 枚举 | `false` | `false`、`always`、`adaptive` | 1.21.1 | 异步预加载假人档案，减少召唤时的阻塞。 |
 | `fgaUnicodeArgumentsSupport` | 布尔 | `false` | `false`、`true` | 全版本 | 允许未加引号的命令参数包含中文和其他 Unicode 字符。 |
 | `recipeBookAlwaysUnlocked` | 布尔 | `false` | `false`、`true` | 1.21+ | 玩家进入服务器时自动获得全部已注册配方，每名玩家自动发放冷却一分钟；同时保留已保存的配方解锁进度，不会清空配方数据。 |
@@ -24,8 +24,8 @@
 | `voidWorldGeneration` | 布尔 | `false` | `false`、`true` | 全部支持版本 | 让新生成区块为空白，同时保留群系和结构定位数据；已有区块不变。 |
 | `terrainRegenerationCommandPermission` | 权限 | `ops` | `false`、`true`、`ops`、`0-4` | 1.21-26.2 | 控制 `/regenerateTerrain` 与 `/fga regenerateTerrain`，包括有破坏性的清除和重生成任务。 |
 | `fullShulkerBoxCrafting` | 字符串 | `false` | `false`、`only64`、`any` | 1.21+ | 使用服务器当前普通配方处理满潜影盒；`only64` 要求恰好满盒且产出为整数个满盒，`any` 接受任意数量、一次点满并允许最后一个非满盒；1.21+ 同时适配切石机与本模组切石配方，支持多材料、标签、数据包配方、Shift/Q 补货和 AMS 54 格大潜影盒软兼容。 |
-| `spectatorFreeTeleport` | 布尔 | `false` | `false`、`true` | 1.21.1-1.21.5 | 允许非 OP 旁观者只传送自己。 |
-| `PlayerTpEndControl` | 枚举 | `false` | `false`、`true`、`control` | 1.21.1 | 控制玩家通过进入末地门、末地主岛出口和末地折跃门传送；`true` 全部阻止，`control` 使用 `/playertpend` 的个人设置，未设置默认允许，非玩家实体不受影响。 |
+| `spectatorFreeTeleport` | 布尔 | `false` | `false`、`true` | 1.21+ | 允许非 OP 旁观者只传送自己。 |
+| `PlayerTpEndControl` | 枚举 | `false` | `false`、`true`、`control` | 1.21+ | 控制玩家通过进入末地门、末地主岛出口和末地折跃门传送；`true` 全部阻止，`control` 使用 `/playertpend` 的个人设置，未设置默认允许，非玩家实体不受影响。 |
 | `clientDimensionIds` | 列表 | `[overworld,the_nether,the_end]` | 三个客户端维度 ID | 1.21.1+ | 修改客户端看到的维度 ID，不改变服务端维度。 |
 | `removeDialogWarning` | 布尔 | `false` | `false`、`true` | 1.21.8+ | 移除服务端发送的命令/对话框确认警告。 |
 | `restorePre26BeeCollisionBox` | 布尔 | `false` | `false`、`true` | 26.2 | 恢复 26.2 之前的蜜蜂碰撞箱。 |
@@ -38,12 +38,12 @@
 | `babyMobNoGrowth` | 字符串 | `false` | `false`、`true`、`mini`、自定义名称 | 1.21-26.2 | `true` 阻止所有可成长幼体长大；`mini` 是同名名称模式预设；自定义值仅锁定完整自定义名称严格匹配且区分大小写的幼体，包括蝌蚪。 |
 | `resilientPlants` | 字符串 | `false` | `false`、`true`、`[]`、方块 ID 列表 | 1.21.1+ | `true` 让 `BushBlock` 植物忽略原版存活限制；列表可选择仙人掌、甘蔗、竹子、藤蔓和水生植物等受支持植物。 |
 | `resilientBlocks` | 字符串 | `false` | `false`、`[]`、方块 ID 列表 | 1.21-26.2 | 列表中的自定义方块被放置时不检查下方方块类型，收到更新时不检查自身状态，可悬空放置并保持不掉落。 |
-| `comparatorThroughBlocks` | 方块列表 | `false` | `false`、`[chain]`、`[piston]`、`[chain,piston]`、自定义方块 ID 列表 | 1.21.1 | 允许比较器隔着配置的前方方块读取后一格容器的模拟信号，不改变方块本身红石行为。 |
-| `shulkerBedrockDuplication` | 布尔 | `false` | `false`、`true` | 1.21.1 | 潜影贝被潜影贝子弹（自己的或其它潜影贝的）击杀时，必定在原地重新生成一只潜影贝，移植基岩版行为。 |
-| `shulkerBedrockLooting` | 布尔 | `false` | `false`、`true` | 1.21.1 | 潜影壳掉落同步基岩版：固定 50% 概率掉落，掉落时均匀掉落 1 至 1+抢夺等级 个潜影壳。 |
-| `shulkerAttackArmorStand` | 枚举 | `false` | `false`、`true`、`pumpkin` | 1.21.1 | 允许潜影贝瞄准并射击盔甲架；`true` 攻击所有盔甲架，`pumpkin` 仅攻击头戴雕刻南瓜的盔甲架。 |
-| `anvilNoPriorWorkPenalty` | 布尔 | `false` | `false`、`true` | 1.21.1 | 取消铁砧重复工作惩罚和 40 级“过于昂贵”限制；保留附魔冲突检查、材料消耗和正常附魔合并费用。 |
-| `experienceLevelCost` | 字符串 | `false` | `false`、`29-30`、`0-1` | 1.21.1 | 扁平化升级经验消耗。`29-30` 模式在 30 级及以后固定使用 29 到 30 的 107 点经验；`0-1` 模式所有等级固定使用 0 到 1 的 7 点经验。 |
+| `comparatorThroughBlocks` | 方块列表 | `false` | `false`、`[chain]`、`[piston]`、`[chain,piston]`、自定义方块 ID 列表 | 1.21+ | 允许比较器隔着配置的前方方块读取后一格容器的模拟信号，不改变方块本身红石行为。 |
+| `shulkerBedrockDuplication` | 布尔 | `false` | `false`、`true` | 1.21+ | 潜影贝被潜影贝子弹（自己的或其它潜影贝的）击杀时，必定在原地重新生成一只潜影贝，移植基岩版行为。 |
+| `shulkerBedrockLooting` | 布尔 | `false` | `false`、`true` | 1.21+ | 潜影壳掉落同步基岩版：固定 50% 概率掉落，掉落时均匀掉落 1 至 1+抢夺等级 个潜影壳。 |
+| `shulkerAttackArmorStand` | 枚举 | `false` | `false`、`true`、`pumpkin` | 1.21+ | 允许潜影贝瞄准并射击盔甲架；`true` 攻击所有盔甲架，`pumpkin` 仅攻击头戴雕刻南瓜的盔甲架。 |
+| `anvilNoPriorWorkPenalty` | 布尔 | `false` | `false`、`true` | 1.21+ | 取消铁砧重复工作惩罚和 40 级“过于昂贵”限制；保留附魔冲突检查、材料消耗和正常附魔合并费用。 |
+| `experienceLevelCost` | 字符串 | `false` | `false`、`29-30`、`0-1` | 1.21+ | 扁平化升级经验消耗。`29-30` 模式在 30 级及以后固定使用 29 到 30 的 107 点经验；`0-1` 模式所有等级固定使用 0 到 1 的 7 点经验。 |
 | `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2（不含 1.21.3） | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
 | `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.21+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |
@@ -53,6 +53,7 @@
 | `unlimitedFillCommands` | 布尔 | `false` | `false`、`true` | 1.21.8+ | 移除 `/fill` 和 `/fillbiome` 体积限制，保留原版安全检查。 |
 | `preStackDroppedItems` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 启用 `/dropPreStack` 的生物、方块和容器掉落预堆叠。 |
 | `zombifiedPiglinDropReduction` | 枚举 | `false` | `false`、`goldEquipment`、`rottenFlesh`、`all` | 全版本 | 减少僵尸猪灵指定掉落。 |
+| `entityDropRemoval` | 权限 | `false` | `false`、`true`、`ops`、`0-4` | 1.21.1 | 按生物 ID 配置去除指定死亡掉落物或六个装备槽掉落，使用 `/entityDropRemoval` 管理。 |
 | `piglinBarterItemExclusions` | 列表 | `false` | `false`、`ironBoots`、`potions`、物品 ID 列表 | 全版本 | 排除指定猪灵 barter 结果。 |
 
 `babyMobNoGrowth` 是纯服务端规则。`mini` 预设仅匹配自定义名称完整等于小写 `mini` 的幼体，`Mini` 不匹配。其他名称模式只读取实体明确设置的自定义名称，并按 `Component#getString()` 的完整文本比较；带空格的名称需要用引号传入，例如 `/carpet babyMobNoGrowth "永远年幼"`。规则只阻止自然成长和喂食加速，不拦截管理员使用 `/data` 或 NBT 直接修改年龄。关闭规则后，被冻结的幼体会从当前年龄继续成长。
@@ -67,11 +68,13 @@
 
 旧版 `preStackMobDeathDrops` 与 `preStackMobDeathDropsRange` 已隐藏，仅保留旧存档兼容；新配置使用 `/dropPreStack entity ...`。
 
+`entityDropRemoval` 是纯服务端规则，在 Minecraft 1.21+ 注册。使用 `/entityDropRemoval set <生物ID> <物品ID|allEquipment>` 增加配置，`remove` 删除单项，`list` 查看全部配置，`list <生物ID>` 查看默认战利品表和当前可识别的掉落配置。指定物品会过滤该生物死亡流程中的战利品表、装备和 `spawnAtLocation` 匹配物品；`allEquipment` 只过滤头盔、胸甲、护腿、靴子、主手和副手，不会误删战利品表中的同名物品。规则为 `false` 时命令隐藏且掉落保持原版；`true`、`ops` 或 `0-4` 控制命令权限。配置保存于 `world/config/carpetfgaaddition/entity-drop-removal.json`，采用原子替换，损坏文件会保留并在本次运行禁用配置。列表中的红色减号可点击删除对应配置。
+
 ## 深板岩切石与玩家加载距离
 
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
 |---|---|---|---|---|---|
-| `deepslateStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-1.21.11` | 让深板岩在切石机中的表现与 26.1+ 一样；只控制 FGA 新增配方，不过滤原版、数据包和模组配方。`26.1.2`、`26.2` 不注册该规则 |
+| `deepslateStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21+` | 让深板岩在切石机中的表现与 26.1+ 一样；只控制 FGA 新增配方，不过滤原版、数据包和模组配方。 |
 | `woodStonecuttingRecipes` | 布尔 | `false` | `false`、`true` | `1.21-26.2`（不含 1.21.3） | 允许使用切石机合成木制品；原木或菌柄可切出 4 个楼梯或 8 个台阶，木板可切出 1 个楼梯或 2 个台阶，竹马赛克台阶为 4 个、竹马赛克楼梯为 2 个；竹块、去皮竹块和 9 根竹子都可作为竹块配方的等价输入，木桶和箱子等配方按实际输入数量由服务端校验 |
 | `playerLoadDistance` | 权限字符串 | `false` | `false`、`true`、`ops`、`0-4` | `1.21.1` | 启用每名玩家独立的区块发送与跟踪覆盖，不改变模拟距离。`false` 时命令不可用 |
 | `trialSpawnerPlayerMultiplier` | 整数 | `100` | `1-10000` | `1.21-26.2` | 每名命中筛选的玩家按该人数参与普通与不祥试炼的刷怪和奖励规模，`1` 为原版 |

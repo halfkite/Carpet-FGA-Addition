@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.0`
+> Documentation version: `1.5.6`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default.
 
@@ -10,8 +10,8 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 |---|---|---|---|---|---|
 | `fakePlayerNameLength` | Integer | `-1` | `-1`, `1-128` | 1.21+ | Controls fake-player name length; `-1` keeps vanilla limits. |
 | `fakePlayerRangeControl` | Boolean | `false` | `false`, `true` | All supported versions | Enables fake-player range placing, interaction, breaking, and continuous tasks. |
-| `endGatewayRegeneration` | Boolean | `false` | `false`, `true` | 1.21-1.21.11 | Regenerates destroyed vanilla End gateways without changing surrounding blocks. |
-| `wanderingTraderNoDespawn` | Enum | `false` | `false`, `true`, `controlled` | 1.21-1.21.11 | Controls natural wandering-trader despawning; `controlled` protects configured names or foot blocks. |
+| `endGatewayRegeneration` | Boolean | `false` | `false`, `true` | 1.21+ | Regenerates destroyed vanilla End gateways without changing surrounding blocks. |
+| `wanderingTraderNoDespawn` | Enum | `false` | `false`, `true`, `controlled` | 1.21+ | Controls natural wandering-trader despawning; `controlled` protects configured names or foot blocks. |
 | `fakePlayerProfilePreload` | Enum | `false` | `false`, `always`, `adaptive` | 1.21.1 | Asynchronously preloads fake-player profiles. |
 | `fgaUnicodeArgumentsSupport` | Boolean | `false` | `false`, `true` | All supported versions | Allows unquoted command arguments to contain Unicode characters. |
 | `recipeBookAlwaysUnlocked` | Boolean | `false` | `false`, `true` | 1.21+ | Gives every player all registered recipes on login with a one-minute per-player cooldown while preserving saved unlock progress; it never clears recipe data. |
@@ -24,8 +24,8 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `voidWorldGeneration` | Boolean | `false` | `false`, `true` | All supported versions | Makes newly generated chunks empty while retaining biome and structure-location data; existing chunks are unchanged. |
 | `terrainRegenerationCommandPermission` | Permission | `ops` | `false`, `true`, `ops`, `0-4` | 1.21-26.2 | Controls `/regenerateTerrain` and `/fga regenerateTerrain`, including destructive clear and regeneration tasks. |
 | `fullShulkerBoxCrafting` | String | `false` | `false`, `only64`, `any` | 1.21+ | Uses the server's current ordinary recipes for full shulker boxes; `only64` requires exact vanilla-full boxes and whole-box outputs, `any` accepts any amount, crafts one click's worth and allows a partial final box; 1.21+ also covers the stonecutter and this mod's stonecutter recipes, including multi-material, tag, data-pack, Shift/Q refill, and soft AMS 54-slot support. |
-| `spectatorFreeTeleport` | Boolean | `false` | `false`, `true` | 1.21.1-1.21.5 | Lets non-OP spectators teleport themselves only. |
-| `PlayerTpEndControl` | Enum | `false` | `false`, `true`, `control` | 1.21.1 | Controls player teleportation through End entrance portals, the End exit portal, and End gateways. `true` blocks all three; `control` uses `/playertpend` preferences and defaults to allow. Non-player entities are unchanged. |
+| `spectatorFreeTeleport` | Boolean | `false` | `false`, `true` | 1.21+ | Lets non-OP spectators teleport themselves only. |
+| `PlayerTpEndControl` | Enum | `false` | `false`, `true`, `control` | 1.21+ | Controls player teleportation through End entrance portals, the End exit portal, and End gateways. `true` blocks all three; `control` uses `/playertpend` preferences and defaults to allow. Non-player entities are unchanged. |
 | `clientDimensionIds` | List | `[overworld,the_nether,the_end]` | Three client dimension IDs | 1.21.1+ | Changes client-visible dimension IDs without changing server dimensions. |
 | `removeDialogWarning` | Boolean | `false` | `false`, `true` | 1.21.8+ | Removes server-sent command/dialog confirmation warnings. |
 | `restorePre26BeeCollisionBox` | Boolean | `false` | `false`, `true` | 26.2 | Restores the pre-26.2 bee collision box. |
@@ -38,12 +38,12 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `babyMobNoGrowth` | String | `false` | `false`, `true`, `mini`, custom name | 1.21-26.2 | `true` freezes every normally growing baby; `mini` is a name-mode preset; a custom value freezes only babies whose full custom-name text matches exactly and case-sensitively, including tadpoles. |
 | `resilientPlants` | String | `false` | `false`, `true`, `[]`, block ID list | 1.21.1+ | Lets `BushBlock` plants ignore vanilla survival restrictions with `true`; a list selects supported plant blocks such as cactus, sugar cane, bamboo, vines, and water plants. |
 | `resilientBlocks` | String | `false` | `false`, `[]`, block ID list | 1.21-26.2 | Blocks in the list skip the below-block support check when placed and ignore block updates instead of checking their own state, so they can float in mid-air and stay put. |
-| `comparatorThroughBlocks` | Block list | `false` | `false`, `[chain]`, `[piston]`, `[chain,piston]`, custom block ID list | 1.21.1 | Lets a comparator read the analog container signal one block beyond a configured front block without changing that block's other redstone behavior. |
-| `shulkerBedrockDuplication` | Boolean | `false` | `false`, `true` | 1.21.1 | A shulker killed by a shulker bullet, its own or another shulker's, always respawns a new shulker at the same spot, matching Bedrock Edition. |
-| `shulkerBedrockLooting` | Boolean | `false` | `false`, `true` | 1.21.1 | Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly. |
-| `shulkerAttackArmorStand` | Enum | `false` | `false`, `true`, `pumpkin` | 1.21.1 | Lets shulkers target and shoot armor stands; `true` targets all armor stands, `pumpkin` targets only those wearing a carved pumpkin on the head. |
-| `anvilNoPriorWorkPenalty` | Boolean | `false` | `false`, `true` | 1.21.1 | Removes the anvil prior-work penalty and the 40-level “too expensive” limit while keeping enchantment conflicts, material costs, and normal enchantment-combination costs. |
-| `experienceLevelCost` | String | `false` | `false`, `29-30`, `0-1` | 1.21.1 | Flattens level-up costs. `29-30` fixes level 30 and above at 107 XP, the vanilla cost from level 29 to 30; `0-1` fixes every level at 7 XP, the vanilla cost from level 0 to 1. |
+| `comparatorThroughBlocks` | Block list | `false` | `false`, `[chain]`, `[piston]`, `[chain,piston]`, custom block ID list | 1.21+ | Lets a comparator read the analog container signal one block beyond a configured front block without changing that block's other redstone behavior. |
+| `shulkerBedrockDuplication` | Boolean | `false` | `false`, `true` | 1.21+ | A shulker killed by a shulker bullet, its own or another shulker's, always respawns a new shulker at the same spot, matching Bedrock Edition. |
+| `shulkerBedrockLooting` | Boolean | `false` | `false`, `true` | 1.21+ | Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly. |
+| `shulkerAttackArmorStand` | Enum | `false` | `false`, `true`, `pumpkin` | 1.21+ | Lets shulkers target and shoot armor stands; `true` targets all armor stands, `pumpkin` targets only those wearing a carved pumpkin on the head. |
+| `anvilNoPriorWorkPenalty` | Boolean | `false` | `false`, `true` | 1.21+ | Removes the anvil prior-work penalty and the 40-level “too expensive” limit while keeping enchantment conflicts, material costs, and normal enchantment-combination costs. |
+| `experienceLevelCost` | String | `false` | `false`, `29-30`, `0-1` | 1.21+ | Flattens level-up costs. `29-30` fixes level 30 and above at 107 XP, the vanilla cost from level 29 to 30; `0-1` fixes every level at 7 XP, the vanilla cost from level 0 to 1. |
 | `villagerDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 (excluding 1.21.3) | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
 | `villagerUpgradeWhileTrading` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Lets villagers finish upgrading while the trading screen remains open and immediately refreshes their level, XP, and offers |
 | `villagerPerformanceOptimization` | Enum | `false` | `false`, `true`, `ops`, `1-4` | 1.21+ | Enables villager trade/gift optimization and controls `/villagerPerformance` access. |
@@ -53,6 +53,7 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `unlimitedFillCommands` | Boolean | `false` | `false`, `true` | 1.21.8+ | Removes `/fill` and `/fillbiome` volume limits while keeping vanilla safety checks. |
 | `preStackDroppedItems` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Enables entity, block, and container pre-stacking configured by `/dropPreStack`. |
 | `zombifiedPiglinDropReduction` | Enum | `false` | `false`, `goldEquipment`, `rottenFlesh`, `all` | All supported versions | Removes selected zombified-piglin drops. |
+| `entityDropRemoval` | Permission | `false` | `false`, `true`, `ops`, `0-4` | 1.21.1 | Configures per-entity removal of selected death drops or all six equipment-slot drops through `/entityDropRemoval`. |
 | `piglinBarterItemExclusions` | List | `false` | `false`, presets, or item IDs | All supported versions | Excludes selected piglin barter results. |
 
 `babyMobNoGrowth` is server-side only. The `mini` preset matches only babies whose full custom name is lowercase `mini`; `Mini` does not match. Other name values read only an explicitly assigned custom name and compare its complete `Component#getString()` text case-sensitively. Quote names containing spaces, for example `/carpet babyMobNoGrowth "Forever Young"`. The rule blocks natural growth and feeding acceleration, while direct administrator changes through `/data` or NBT remain available. Disabling the rule lets frozen babies continue from their current age.
@@ -67,11 +68,13 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 
 The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hidden and retained only for save compatibility. Use `/dropPreStack entity ...` for new configuration.
 
+`entityDropRemoval` is server-side only and is registered on Minecraft 1.21+. Use `/entityDropRemoval set <entity id> <item id|allEquipment>` to add an entry, `remove` to delete one, `list` to inspect all configured entities, and `list <entity id>` to inspect the default loot table and currently identifiable drop configuration. Item entries filter matching items in the entity's death flow, including loot-table, equipment, and `spawnAtLocation` output. `allEquipment` filters only the helmet, chestplate, leggings, boots, main-hand, and off-hand slots, so a same-named loot-table item is kept. `false` hides and blocks the command; `true`, `ops`, and `0-4` control command access. The file is `world/config/carpetfgaaddition/entity-drop-removal.json`, written with atomic replacement; corrupt files are preserved and disabled for the current run. Red minus buttons in list output remove entries.
+
 ## Deepslate stonecutting and player loading
 
 | Rule | Type | Default | Values | Effective versions | Description |
 |---|---|---|---|---|---|
-| `deepslateStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.21-1.21.11` | Makes deepslate behave in the stonecutter like it does in 26.1+. Only FGA recipes are controlled; vanilla, data-pack, and mod recipes are unchanged. The rule is not registered on `26.1.2` or `26.2`. |
+| `deepslateStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.21+` | Makes deepslate behave in the stonecutter like it does in 26.1+. Only FGA recipes are controlled; vanilla, data-pack, and mod recipes are unchanged. |
 | `woodStonecuttingRecipes` | Boolean | `false` | `false`, `true` | `1.21-26.2` (excluding 1.21.3) | Allows wood products to be crafted in the stonecutter. Logs or stems yield 4 stairs or 8 slabs, planks yield 1 stair or 2 slabs, and bamboo mosaic slabs/stairs yield 4/2. Bamboo blocks, stripped bamboo blocks, and 9 bamboo are equivalent inputs for the bamboo conversion table, with server-side validation for each multi-input recipe. |
 | `playerLoadDistance` | Permission string | `false` | `false`, `true`, `ops`, `0-4` | `1.21.1` | Enables per-player chunk sending and tracking overrides without changing simulation distance. `false` disables the command. |
 | `trialSpawnerPlayerMultiplier` | Integer | `100` | `1-10000` | `1.21-26.2` | Counts each matching player as this many participants for normal and ominous trial mob and reward scale; `1` is vanilla |

@@ -1,4 +1,4 @@
-//#if MC >= 1.20.1 && MC <= 1.21.5
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -8,6 +8,9 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+//#if MC >= 1.21.11
+//$$ import net.minecraft.server.permissions.Permissions;
+//#endif
 
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -26,13 +29,23 @@ public final class SpectatorFreeTeleport {
     }
 
     public static boolean isRealOperator(CommandSourceStack source) {
+        //#if MC >= 1.21.11
+        //$$ return source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
+        //#elseif MC >= 1.21.8
+        //$$ return source.hasPermission(GAMEMASTER_PERMISSION_LEVEL);
+        //#else
         if (source.hasPermission(GAMEMASTER_PERMISSION_LEVEL)) {
             return true;
         }
         if (source.getEntity() instanceof ServerPlayer player) {
+            //#if MC >= 26.2
+            //$$ return player.serverLevel().getServer().getProfilePermissions(player.getGameProfile()) >= GAMEMASTER_PERMISSION_LEVEL;
+            //#else
             return player.server.getProfilePermissions(player.getGameProfile()) >= GAMEMASTER_PERMISSION_LEVEL;
+            //#endif
         }
         return false;
+        //#endif
     }
 
     /**
@@ -80,7 +93,13 @@ public final class SpectatorFreeTeleport {
      * Allows entity-selector parsing/suggestions for free-teleport spectators so /tp @s ... works.
      */
     public static boolean allowEntitySelectors(Object source) {
+        //#if MC >= 1.21.11
+        //$$ if (source instanceof SharedSuggestionProvider provider && provider.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
+        //#elseif MC >= 1.21.8
+        //$$ if (source instanceof CommandSourceStack stack && stack.hasPermission(GAMEMASTER_PERMISSION_LEVEL)) {
+        //#else
         if (source instanceof SharedSuggestionProvider provider && provider.hasPermission(GAMEMASTER_PERMISSION_LEVEL)) {
+        //#endif
             return true;
         }
         return isPermissionBypassingSpectator(source);

@@ -1,6 +1,6 @@
 # Carpet FGA Addition 命令
 
-> 文档版本：`1.5.0`
+> 文档版本：`1.5.6`
 
 ## 命令总表
 
@@ -9,6 +9,7 @@
 | `/player` 区域操作 | `fakePlayerRangeControl` | Carpet 玩家权限/全版本 | 让假人执行区域放置、交互、攻击或连续任务。 |
 | `/droppedItemStackLimit` | `droppedItemStackLimit` | 规则权限/全部支持版本 | 配置地面、玩家背包和容器的独立堆叠上限，背包或容器上限启用时需要 FGA 客户端。 |
 | `/dropPreStack` | `preStackDroppedItems` | 与掉落物上限权限/1.21-26.2 | 配置生物、方块和容器掉落预堆叠。 |
+| `/entityDropRemoval` | `entityDropRemoval` | 规则权限/1.21.1 | 配置按生物和物品去除死亡掉落物。 |
 | `/villagerPerformance` | `villagerPerformanceOptimization` | 规则权限/1.21+ | 配置村民交易、赠礼和流浪商人保护。 |
 | `/fakePlayerItemSort` | 1.21-26.2（不含 1.21.3）分类规则 | `commandPlayer`/1.21-26.2（不含 1.21.3） | 配置分类器核心，网页、重构、补货和线程参数仅在 1.21.1 可用。 |
 | `/player <name> bot_sort` | 1.21-26.2（不含 1.21.3）分类规则 | `commandPlayer`/1.21-26.2（不含 1.21.3） | 启动或停止指定假人的分类任务，重构语法仅在 1.21.1 可用。 |
@@ -16,7 +17,7 @@
 | `/vehicleStop` | `vehicleStopOnDismount` | 自己；OP 可管理在线玩家/全部支持版本 | 配置玩家自己的矿车与船离开急停。 |
 | `/regenerateTerrain` | `voidWorldGeneration`、`terrainRegenerationCommandPermission` | 配置权限/1.21-26.2 | 将正常地形重生成或全空气清除任务加入下次重启队列。 |
 | `/trialStop` | `trialStopCommandPermission` | 规则权限/1.21-26.2 | 一次性截停并刷新已加载试炼刷怪笼，可选择无奖励、正常奖励或立即奖励。 |
-| `/playertpend` | `PlayerTpEndControl` | `control` 模式/1.21.1 | 管理每名玩家的三种末地门传送偏好。 |
+| `/playertpend` | `PlayerTpEndControl` | `control` 模式/1.21+ | 管理每名玩家的三种末地门传送偏好。 |
 
 ## `/playertpend`
 
@@ -90,6 +91,21 @@
 ```
 
 `list` 按页显示中文名称、完整物品 ID 和数量；列表中的删除按钮可点击执行对应命令。配置损坏时保持原版安全限制并拒绝写入。
+
+## `/entityDropRemoval` 与 `/fga entityDropRemoval`
+
+相关规则：`entityDropRemoval`
+
+```text
+/entityDropRemoval help
+/entityDropRemoval status
+/entityDropRemoval set <生物ID> <物品ID|allEquipment>
+/entityDropRemoval remove <生物ID> <物品ID|allEquipment>
+/entityDropRemoval list
+/entityDropRemoval list <生物ID>
+```
+
+规则值为 `false` 时命令不可用；`true`、`ops` 或 `0-4` 按规则值控制权限。生物 ID 和物品 ID 支持完整命名空间、省略 `minecraft:` 和 Tab 补全。`set` 会在原配置上增加项目，`remove` 只删除指定项目，`allEquipment` 表示头盔、胸甲、护腿、靴子、主手和副手六个装备槽。`list` 显示已配置生物与去除项，红色减号可点击删除；`list <生物ID>` 显示默认战利品表和当前可识别的掉落配置。配置保存于 `world/config/carpetfgaaddition/entity-drop-removal.json`，使用原子替换；损坏文件会保留并拒绝本次运行的写入。
 
 ## `/dropPreStack` 与 `/fga dropPreStack`
 
@@ -283,7 +299,7 @@
 
 ## 深板岩切石规则
 
-使用 `/carpet deepslateStonecuttingRecipes false|true` 控制，仅在 `1.21-1.21.11` 注册，只过滤 FGA 自己的深板岩直接切石配方，不提供独立命令
+使用 `/carpet deepslateStonecuttingRecipes false|true` 控制，在 `1.21+` 注册，只过滤 FGA 自己的深板岩直接切石配方，不提供独立命令
 
 ## 其他命令
 

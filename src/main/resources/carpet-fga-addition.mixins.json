@@ -62,19 +62,21 @@
         "TrialSpawnerStateRewardMultiplierMixin",
         "TrialSpawnerStateStopRefreshMixin"
         //#endif
-        //#if MC >= 1.20.1 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.2
         ,"AnvilMenuNoPriorWorkPenaltyMixin",
         "PlayerExperienceLevelCostMixin"
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
         ,"ResilientPlantBlockStateMixin",
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.2
         "ComparatorBlockThroughBlocksMixin",
         "LevelComparatorThroughBlocksMixin",
         "ShulkerBedrockRespawnMixin",
         "ShulkerAttackArmorStandMixin",
         "ShulkerBedrockLootingMixin"
         //#endif
-        //#if MC >= 1.20.1 && MC <= 1.21.5
+        //#if MC >= 1.21 && MC <= 26.2
         ,"EndPortalPlayerTpControlMixin",
         "EndGatewayPlayerTpControlMixin"
         //#endif
@@ -82,7 +84,7 @@
         ,"StonecutterMenuWoodInputMixin",
         "StonecutterResultSlotWoodMixin"
         //#endif
-        //#if MC >= 1.20.1 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.2
         ,"ClientboundUpdateRecipesDeepslateMixin",
         "StonecutterMenuDeepslateMixin"
         //#endif
@@ -97,6 +99,10 @@
         "DistanceManagerPlayerLoadDistanceAccessor",
         "ServerGamePacketListenerPlayerLoadDistanceMixin",
         "EntityPlayerMPFakeMixin"
+        //#endif
+        //#if MC == 1.21.1
+        ,"EntityDropRemovalLootMixin",
+        "EntityDropRemovalEquipmentMixin"
         //#endif
         //#if MC >= 1.21 && MC <= 26.2
         ,"ResilientBlockStateMixin"
@@ -155,7 +161,7 @@
         //$$ ,"LegacyMinecartPreStackMixin",
         //$$ "LegacyBoatPreStackMixin"
         //#endif
-        //#if MC >= 1.16.5 && MC < 26.0
+        //#if MC >= 1.21 && MC <= 26.2
         ,"EndDragonFightGatewayMixin",
         "WanderingTraderNoDespawnMixin"
         //#endif
@@ -188,7 +194,7 @@
         //#if MC == 1.20.1
         //$$ ,"ClientboundRespawnPacketAccessor"
         //#endif
-        //#if MC >= 1.20.1 && MC <= 1.21.5
+        //#if MC >= 1.21 && MC <= 26.2
         ,"TeleportCommandMixin",
         "ServerPlayerSpectatorTeleportMixin",
         "EntitySelectorParserSpectatorTeleportMixin",

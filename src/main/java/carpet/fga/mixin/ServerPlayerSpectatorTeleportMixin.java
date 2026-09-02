@@ -1,4 +1,4 @@
-//#if MC >= 1.20.1 && MC <= 1.21.5
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
@@ -18,7 +18,13 @@ public abstract class ServerPlayerSpectatorTeleportMixin {
             return;
         }
         ServerPlayer player = (ServerPlayer) (Object) this;
+        //#if MC >= 1.21.10
+        //$$ player.level().getServer().getCommands().sendCommands(player);
+        //#elseif MC >= 1.21.8
+        //$$ player.getServer().getCommands().sendCommands(player);
+        //#else
         player.server.getCommands().sendCommands(player);
+        //#endif
     }
 }
 //#endif

@@ -37,6 +37,10 @@
 - [Modrinth](https://modrinth.com/mod/carpet-fga-addition)
 - [CurseForge](https://www.curseforge.com/minecraft/mc-mods/carpet-fga-addition)
 
+## Features
+
+Provides Carpet rule extensions and server commands, including full shulker-box crafting, drop pre-stacking, and the 1.21.1 per-entity, per-item death-drop removal feature.
+
 ## Documentation
 
 - [Rules](docs/rules_en.md)

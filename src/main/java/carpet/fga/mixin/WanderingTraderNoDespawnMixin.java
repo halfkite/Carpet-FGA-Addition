@@ -1,4 +1,4 @@
-//#if MC >= 1.16.5 && MC < 26.0
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga.mixin;
 
 import carpet.fga.WanderingTraderNoDespawn;

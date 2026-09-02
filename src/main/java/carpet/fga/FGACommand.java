@@ -29,8 +29,11 @@ public final class FGACommand {
                 .then(Commands.literal("status").executes(FGACommand::status));
         redirect(root, "droppedItemStackLimit", dispatcher);
         redirect(root, "dropPreStack", dispatcher);
+        //#if MC == 1.21.1
+        redirect(root, "entityDropRemoval", dispatcher);
+        //#endif
         redirect(root, "villagerPerformance", dispatcher);
-        //#if MC >= 1.20.1 && MC <= 1.21.5
+        //#if MC >= 1.21 && MC <= 26.2
         redirect(root, "playertpend", dispatcher);
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
@@ -64,8 +67,13 @@ public final class FGACommand {
         MutableComponent out = FGACompat.literal("FGA Help / FGA 帮助\n").withStyle(ChatFormatting.GOLD);
         line(out, "/fga droppedItemStackLimit help", "地面物品堆叠上限 / ground item stack limit");
         line(out, "/fga dropPreStack help", "掉落物预堆叠 / drop pre-stacking");
+        //#if MC == 1.21.1
+        if (EntityDropRemovalConfig.canUseCommand(context.getSource())) {
+            line(out, "/fga entityDropRemoval help", "生物掉落物自定义去除 / entity drop removal");
+        }
+        //#endif
         line(out, "/fga villagerPerformance help", "村民性能配置 / villager performance");
-        //#if MC >= 1.20.1 && MC <= 1.21.5
+        //#if MC >= 1.21 && MC <= 26.2
         if ("control".equals(FGASettings.PlayerTpEndControl)) {
             line(out, "/fga playertpend help", "玩家末地门传送控制 / player End portal control");
         }

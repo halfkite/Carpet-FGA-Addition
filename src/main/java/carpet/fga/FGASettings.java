@@ -305,7 +305,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC >= 1.20.1 && MC <= 1.21.11
+            //#if MC >= 1.21 && MC <= 26.2
             return true;
             //#else
             //$$ return false;
@@ -328,7 +328,7 @@ public class FGASettings {
     //#endif
     public static boolean deepslateStonecuttingRecipes = false;
 
-    //#if MC >= 1.20.1 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.2
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
@@ -345,7 +345,7 @@ public class FGASettings {
     public static boolean anvilNoPriorWorkPenalty = false;
     //#endif
 
-    //#if MC >= 1.20.1 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.2
     public static final String EXPERIENCE_LEVEL_COST_29_30 = "29-30";
     public static final String EXPERIENCE_LEVEL_COST_0_1 = "0-1";
     private static final String LEGACY_EXPERIENCE_LEVEL_COST_29_30 = "30级后每级升级消耗经验与29到30一样";
@@ -809,7 +809,7 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.20.1 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.2
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
@@ -1098,7 +1098,7 @@ public class FGASettings {
     //#endif
     //#endif
 
-    //#if MC >= 1.20.1 && MC <= 1.21.5
+    //#if MC >= 1.21 && MC <= 26.2
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
@@ -1768,6 +1768,26 @@ public class FGASettings {
         return zombifiedPiglinDropReduction.equals("rottenFlesh")
                 || zombifiedPiglinDropReduction.equals("all");
     }
+
+    //#if MC == 1.21.1
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        strict = false,
+        validators = FGASettings.EntityDropRemovalValidator.class
+    )
+    public static String entityDropRemoval = "false";
+
+    public static class EntityDropRemovalValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (Set.of("false", "true", "ops", "0", "1", "2", "3", "4").contains(value)) return value;
+            Messenger.m(source, "r entityDropRemoval must be false, true, ops, or 0-4");
+            return null;
+        }
+    }
+    //#endif
 
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
