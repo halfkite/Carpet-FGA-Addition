@@ -345,6 +345,59 @@ public class FGASettings {
     public static boolean anvilNoPriorWorkPenalty = false;
     //#endif
 
+    //#if MC == 1.21.1 || MC == 26.2
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "0", "1"},
+        strict = false,
+        validators = FGASettings.EnchantmentLevelLimitIncreaseValidator.class,
+        conditions = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Increases every enchantment's vanilla maximum level by the configured amount",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "0", "1"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.EnchantmentLevelLimitIncreaseValidator.class,
+        //$$ condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    //$$ )
+    //#endif
+    public static String enchantmentLevelLimitIncrease = "false";
+
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"},
+        conditions = FGASettings.Minecraft1_21_1OnlyCondition.class
+    )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Adds enchantment levels together when combining items in an anvil",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true"},
+        //$$ condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+    //$$ )
+    //#endif
+    public static boolean enchantmentLevelAddition = false;
+
+    public static int enchantmentLevelLimitIncrease() {
+        return EnchantmentLevelRules.parseIncrease(enchantmentLevelLimitIncrease);
+    }
+
+    public static class EnchantmentLevelLimitIncreaseValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                               CarpetRule<String> currentRule,
+                               String newValue,
+                               String userInput) {
+            String normalized = EnchantmentLevelRules.normalizeIncrease(newValue);
+            if (normalized != null) return normalized;
+            Messenger.m(source, "r enchantmentLevelLimitIncrease must be false or an integer from 0 to 254");
+            return null;
+        }
+    }
+    //#endif
+
     //#if MC >= 1.21 && MC <= 26.2
     public static final String EXPERIENCE_LEVEL_COST_29_30 = "29-30";
     public static final String EXPERIENCE_LEVEL_COST_0_1 = "0-1";

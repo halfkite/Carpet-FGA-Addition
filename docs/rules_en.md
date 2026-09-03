@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.6`
+> Documentation version: `1.5.7`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default.
 
@@ -43,6 +43,8 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `shulkerBedrockLooting` | Boolean | `false` | `false`, `true` | 1.21+ | Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly. |
 | `shulkerAttackArmorStand` | Enum | `false` | `false`, `true`, `pumpkin` | 1.21+ | Lets shulkers target and shoot armor stands; `true` targets all armor stands, `pumpkin` targets only those wearing a carved pumpkin on the head. |
 | `anvilNoPriorWorkPenalty` | Boolean | `false` | `false`, `true` | 1.21+ | Removes the anvil prior-work penalty and the 40-level “too expensive” limit while keeping enchantment conflicts, material costs, and normal enchantment-combination costs. |
+| `enchantmentLevelLimitIncrease` | String | `false` | `false`, `0`, `1`, integer `0-254` | 1.21.1, 26.2 | Adds the entered amount to every enchantment's vanilla maximum level, capped at stored level 255; enter the value without brackets. |
+| `enchantmentLevelAddition` | Boolean | `false` | `false`, `true` | 1.21.1, 26.2 | Adds matching enchantment levels in an anvil, so 2+2 becomes 4; an input at the maximum gives no result, while sums above it are capped at the maximum. |
 | `experienceLevelCost` | String | `false` | `false`, `29-30`, `0-1` | 1.21+ | Flattens level-up costs. `29-30` fixes level 30 and above at 107 XP, the vanilla cost from level 29 to 30; `0-1` fixes every level at 7 XP, the vanilla cost from level 0 to 1. |
 | `villagerDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 (excluding 1.21.3) | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
 | `villagerUpgradeWhileTrading` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Lets villagers finish upgrading while the trading screen remains open and immediately refreshes their level, XP, and offers |

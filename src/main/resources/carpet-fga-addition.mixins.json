@@ -66,6 +66,11 @@
         ,"AnvilMenuNoPriorWorkPenaltyMixin",
         "PlayerExperienceLevelCostMixin"
         //#endif
+        //#if MC == 1.21.1 || MC == 26.2
+        ,"EnchantmentMaxLevelMixin",
+        "AnvilMenuEnchantmentAdditionMixin",
+        "ItemCombinerMenuAccessor"
+        //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
         ,"ResilientPlantBlockStateMixin",
         //#endif

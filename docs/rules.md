@@ -1,6 +1,6 @@
 # Carpet FGA Addition 规则
 
-> 文档版本：`1.5.6`
+> 文档版本：`1.5.7`
 
 所有规则通过 `/carpet <规则名> <值>` 管理。未特别说明时，规则默认关闭。
 
@@ -43,6 +43,8 @@
 | `shulkerBedrockLooting` | 布尔 | `false` | `false`、`true` | 1.21+ | 潜影壳掉落同步基岩版：固定 50% 概率掉落，掉落时均匀掉落 1 至 1+抢夺等级 个潜影壳。 |
 | `shulkerAttackArmorStand` | 枚举 | `false` | `false`、`true`、`pumpkin` | 1.21+ | 允许潜影贝瞄准并射击盔甲架；`true` 攻击所有盔甲架，`pumpkin` 仅攻击头戴雕刻南瓜的盔甲架。 |
 | `anvilNoPriorWorkPenalty` | 布尔 | `false` | `false`、`true` | 1.21+ | 取消铁砧重复工作惩罚和 40 级“过于昂贵”限制；保留附魔冲突检查、材料消耗和正常附魔合并费用。 |
+| `enchantmentLevelLimitIncrease` | 字符串 | `false` | `false`、`0`、`1`、整数 `0-254` | 1.21.1、26.2 | 让所有附魔的原版等级上限增加输入的数字，存储等级最高为 255；输入不带方括号。 |
+| `enchantmentLevelAddition` | 布尔 | `false` | `false`、`true` | 1.21.1、26.2 | 铁砧合并同种附魔时直接相加等级，例如 2+2 变为 4；输入一方达到上限时不生成结果，相加超过上限时结果封顶为上限。 |
 | `experienceLevelCost` | 字符串 | `false` | `false`、`29-30`、`0-1` | 1.21+ | 扁平化升级经验消耗。`29-30` 模式在 30 级及以后固定使用 29 到 30 的 107 点经验；`0-1` 模式所有等级固定使用 0 到 1 的 7 点经验。 |
 | `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2（不含 1.21.3） | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
