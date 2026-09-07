@@ -39,4 +39,4 @@ interaction compatibility merely from the absence of this disconnect.
 Build nodes to validate: 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10,
 1.21.11, 26.1.2, and 26.2. Also validate runtime compatibility for the additional
 Minecraft versions declared by each artifact's version properties. The test task
-above is currently registered only for the 1.21.1 baseline.
+above is registered for all nine build nodes.
