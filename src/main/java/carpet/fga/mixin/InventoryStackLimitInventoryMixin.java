@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 //$$ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 //#endif
 
-/** Extends pickup and automatic inventory merge capacity on the server. */
+/** Legacy override; 1.21.1 and 26.2 omit this mixin and inherit Container's return-value hook. */
 @Mixin(Inventory.class)
 public abstract class InventoryStackLimitInventoryMixin {
     public int

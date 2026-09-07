@@ -76,6 +76,8 @@ On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` disables the
 
 On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` preserves the original merge count arguments and eligibility; FGA does not replay eligibility to override another mod's veto. With `droppedItemMergeDistance=-1`, the supplied search box is preserved. The distance rule remains independent of the stack rule.
 
+On Minecraft `1.21.1` and `26.2`, player inventory capacity preserves the original container method when there is no effective FGA capacity override, including other mods' return values. An item maximum above 99 alone does not expand inventory capacity.
+
 ## Deepslate stonecutting and player loading
 
 | Rule | Type | Default | Values | Effective versions | Description |
