@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "priority": 1100,
+  "package": "fga.test.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["HopperCompatMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

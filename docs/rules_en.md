@@ -70,6 +70,8 @@ The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hi
 
 `entityDropRemoval` is server-side only and is registered on Minecraft 1.21+. Use `/entityDropRemoval set <entity id> <item id|allEquipment>` to add an entry, `remove` to delete one, `list` to inspect all configured entities, and `list <entity id>` to inspect the default loot table and currently identifiable drop configuration. Item entries filter matching items in the entity's death flow, including loot-table, equipment, and `spawnAtLocation` output. `allEquipment` filters only the helmet, chestplate, leggings, boots, main-hand, and off-hand slots, so a same-named loot-table item is kept. `false` hides and blocks the command; `true`, `ops`, and `0-4` control command access. The file is `world/config/carpetfgaaddition/entity-drop-removal.json`, written with atomic replacement; corrupt files are preserved and disabled for the current run. Red minus buttons in list output remove entries.
 
+On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` preserves the original hopper and hopper-minecart item-entity transfer chain. When enabled, oversized stacks make at most one batch attempt per transfer, preserving other mods' inner transfer limits and leaving the remainder for later attempts.
+
 ## Deepslate stonecutting and player loading
 
 | Rule | Type | Default | Values | Effective versions | Description |
