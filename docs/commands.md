@@ -82,6 +82,10 @@
 /droppedItemStackLimit mode all <数量>
 /droppedItemStackLimit mode black <数量>
 /droppedItemStackLimit mode whitelist
+/droppedItemStackLimit mode inventory <数量>
+/droppedItemStackLimit mode container <数量>
+/droppedItemStackLimit reset inventory
+/droppedItemStackLimit reset container
 /droppedItemStackLimit set black <物品ID>
 /droppedItemStackLimit remove black <物品ID>
 /droppedItemStackLimit set whitelist <物品ID> <数量>
@@ -91,6 +95,8 @@
 ```
 
 `list` 按页显示中文名称、完整物品 ID 和数量；列表中的删除按钮可点击执行对应命令。配置损坏时保持原版安全限制并拒绝写入。
+
+在 `1.21.1` 和 `26.2`，`inventoryLimit` / `containerLimit` 的保存值与是否生效分开：主规则关闭（含重启后）时不应用，重新开启后恢复；关闭操作不会清空配置。
 
 ## `/entityDropRemoval` 与 `/fga entityDropRemoval`
 

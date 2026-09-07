@@ -82,6 +82,10 @@ Options can be combined: `pathfinding`, `reach <0.1-64>`, `airPlace`, `ignoreObs
 /droppedItemStackLimit mode all <count>
 /droppedItemStackLimit mode black <count>
 /droppedItemStackLimit mode whitelist
+/droppedItemStackLimit mode inventory <count>
+/droppedItemStackLimit mode container <count>
+/droppedItemStackLimit reset inventory
+/droppedItemStackLimit reset container
 /droppedItemStackLimit set black <item id>
 /droppedItemStackLimit remove black <item id>
 /droppedItemStackLimit set whitelist <item id> <count>
@@ -91,6 +95,8 @@ Options can be combined: `pathfinding`, `reach <0.1-64>`, `airPlace`, `ignoreObs
 ```
 
 `list` is paged and shows the display name, full item ID, and count. List entries provide clickable removal commands. Invalid configuration keeps vanilla-safe limits and rejects writes.
+
+On `1.21.1` and `26.2`, saved `inventoryLimit` / `containerLimit` values are separate from activation: disabling the main rule, including across a restart, stops applying them without clearing them; re-enabling restores them.
 
 ## `/entityDropRemoval` and `/fga entityDropRemoval`
 

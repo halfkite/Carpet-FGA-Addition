@@ -72,6 +72,8 @@ The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hi
 
 On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` preserves the original hopper and hopper-minecart item-entity transfer chain. When enabled, oversized stacks make at most one batch attempt per transfer, preserving other mods' inner transfer limits and leaving the remainder for later attempts.
 
+On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` disables the effective `inventoryLimit` and `containerLimit`, including after configuration reload and server restart. Saved nonzero values are retained and take effect again when the rule is re-enabled.
+
 ## Deepslate stonecutting and player loading
 
 | Rule | Type | Default | Values | Effective versions | Description |
