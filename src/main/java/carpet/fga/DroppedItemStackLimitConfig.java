@@ -201,6 +201,9 @@ public final class DroppedItemStackLimitConfig {
     }
 
     public static boolean requiresModdedClient() {
+        if (!FGASettings.isDroppedItemStackLimitEnabled()) {
+            return false;
+        }
         State current = state;
         return !loadFailed && (current.inventoryLimit() > 0 || current.containerLimit() > 0);
     }

@@ -48,7 +48,7 @@
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
 | `villagerPerformanceOptimization` | 枚举 | `false` | `false`、`true`、`ops`、`1-4` | 1.21+ | 启用村民交易/赠礼优化并控制 `/villagerPerformance` 权限。 |
 | `hostileMobInventoryAccess` | 布尔 | `false` | `false`、`true` | 全版本 | 空手潜行右键敌对生物时打开其原版装备栏。 |
-| `droppedItemStackLimit` | 枚举 | `false` | `false`、`true`、`ops`、`0-4` | 全部支持版本 | 配置地面、玩家背包和容器三类独立堆叠上限，背包或容器上限启用时需要 FGA 客户端，只有地面上限时保持纯服务端。 |
+| `droppedItemStackLimit` | 枚举 | `false` | `false`、`true`、`ops`、`0-4` | 全部支持版本 | 配置地面、玩家背包和容器三类独立堆叠上限，主规则开启且背包或容器上限非零时需要 FGA 客户端；主规则关闭后保留配置，但不会因此要求安装 FGA 客户端，只有地面上限时保持纯服务端。 |
 | `droppedItemMergeDistance` | 小数 | `-1` | `-1`、`0-16` | 1.21.1+ | 设置地面物品水平合并距离；`-1` 保持原版。 |
 | `unlimitedFillCommands` | 布尔 | `false` | `false`、`true` | 1.21.8+ | 移除 `/fill` 和 `/fillbiome` 体积限制，保留原版安全检查。 |
 | `preStackDroppedItems` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 启用 `/dropPreStack` 的生物、方块和容器掉落预堆叠。 |
