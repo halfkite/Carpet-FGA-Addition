@@ -1,0 +1,18 @@
+// Run: gradlew :1.21.1:stackClientRequirementTest -I scripts/tests/stack-client-requirement.gradle
+gradle.afterProject { project ->
+    if (project.path == ':1.21.1') {
+        def compileTest = project.tasks.register('compileStackClientRequirementTest', JavaCompile) {
+            dependsOn project.tasks.named('classes')
+            source project.rootProject.file('scripts/tests/StackLimitClientRequirementTest.java')
+            classpath = project.sourceSets.main.runtimeClasspath
+            destinationDirectory = project.layout.buildDirectory.dir('stack-client-requirement-test')
+            javaCompiler = project.javaToolchains.compilerFor(project.java.toolchain)
+        }
+        project.tasks.register('stackClientRequirementTest', JavaExec) {
+            dependsOn compileTest
+            classpath = project.files(compileTest.flatMap { it.destinationDirectory }) + project.sourceSets.main.runtimeClasspath
+            mainClass = 'carpet.fga.StackLimitClientRequirementTest'
+            javaLauncher = project.javaToolchains.launcherFor(project.java.toolchain)
+        }
+    }
+}
