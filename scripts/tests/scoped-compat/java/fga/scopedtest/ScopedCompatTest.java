@@ -25,6 +25,7 @@ public class ScopedCompatTest implements ModInitializer {
                 check(FGASettings.droppedItemStackLimit.equals("false"), "default/persisted-off rule");
                 check(DroppedItemStackLimitConfig.effectiveInventoryLimit(stone) == 64, "off inventory");
                 check(DroppedItemStackLimitConfig.effectiveContainerLimit(stone) == 64, "off container");
+                check(!DroppedItemStackLimitConfig.requiresModdedClient(), "off client requirement");
                 if (restarted) {
                     check(DroppedItemStackLimitConfig.snapshot().inventoryLimit() == 1000
                             && DroppedItemStackLimitConfig.snapshot().containerLimit() == 1000, "restart retains scopes");
@@ -34,12 +35,14 @@ public class ScopedCompatTest implements ModInitializer {
                 DroppedItemStackLimitConfig.setContainerLimit(1000);
                 byte[] saved = Files.readAllBytes(config);
                 check(DroppedItemStackLimitConfig.effectiveInventoryLimit(stone) == 1000, "on inventory");
+                check(DroppedItemStackLimitConfig.requiresModdedClient(), "on client requirement");
                 check(new SimpleContainer(1).getMaxStackSize(stone) == 1000, "on container consumer");
                 FGASettings.droppedItemStackLimit = "false";
                 check(DroppedItemStackLimitConfig.effectiveInventoryLimit(stone) == 64, "toggle inventory");
                 SimpleContainer container = new SimpleContainer(1);
                 check(container.getMaxStackSize(stone) == 64, "toggle container");
                 check(new Slot(container, 0, 0, 0).getMaxStackSize(stone) == 64, "toggle slot");
+                check(!DroppedItemStackLimitConfig.requiresModdedClient(), "toggle client requirement");
                 DroppedItemStackLimitConfig.load(server);
                 check(DroppedItemStackLimitConfig.effectiveContainerLimit(stone) == 64, "reload while off");
                 check(Arrays.equals(saved, Files.readAllBytes(config)), "off/reload preserve file bytes");
@@ -47,6 +50,18 @@ public class ScopedCompatTest implements ModInitializer {
                 check(DroppedItemStackLimitConfig.effectiveInventoryLimit(stone) == 1000, "reenable retained scope");
                 check(DroppedItemStackLimitConfig.effectiveInventoryLimit(new ItemStack(Items.DIAMOND_SWORD)) == 1,
                         "unstackable stays unstackable");
+                Files.writeString(config, "{broken");
+                DroppedItemStackLimitConfig.load(server);
+                check(DroppedItemStackLimitConfig.isLoadFailed()
+                        && DroppedItemStackLimitConfig.effectiveContainerLimit(stone) == 64, "failed load is disabled");
+                try {
+                    DroppedItemStackLimitConfig.setContainerLimit(2000);
+                    throw new AssertionError("save after failed load must reject");
+                } catch (java.io.IOException expected) {
+                    check(Files.readString(config).equals("{broken"), "failed save preserves damaged file");
+                }
+                Files.write(config, saved);
+                DroppedItemStackLimitConfig.load(server);
                 FGASettings.droppedItemStackLimit = "false";
                 System.out.println("FGA_SCOPED_COMPAT_PASS checks=" + checks + " restarted=" + restarted);
             } catch (Throwable failure) {

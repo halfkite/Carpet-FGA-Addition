@@ -92,6 +92,8 @@
 
 `list` 按页显示中文名称、完整物品 ID 和数量；列表中的删除按钮可点击执行对应命令。配置损坏时保持原版安全限制并拒绝写入。
 
+在 `1.21.1` 和 `26.2`，`inventoryLimit` / `containerLimit` 的保存值与是否生效分开：主规则关闭（含重启后）时不应用，重新开启后恢复；关闭操作不会清空配置。
+
 ## `/entityDropRemoval` 与 `/fga entityDropRemoval`
 
 相关规则：`entityDropRemoval`
