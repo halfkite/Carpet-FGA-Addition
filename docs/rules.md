@@ -74,6 +74,8 @@
 
 在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 会停止应用 `inventoryLimit` 和 `containerLimit`，包括重新加载配置与服务器重启之后。保存的非零值不会被删除，重新开启规则后恢复生效。
 
+在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 时保留原合并数量参数和合并资格；FGA 不会重演合并资格来覆盖其他 Mod 的否决。`droppedItemMergeDistance=-1` 时保留传入的搜索范围，该距离规则独立于堆叠主规则。
+
 ## 深板岩切石与玩家加载距离
 
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
