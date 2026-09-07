@@ -1,12 +1,15 @@
 # Stack client requirement regression
 
-Run the baseline predicate test against the actual 1.21.1 classes:
+Run the predicate test against the actual compiled classes for each build node:
 
 ```powershell
 .\gradlew.bat :1.21.1:stackClientRequirementTest -I scripts/tests/stack-client-requirement.gradle
 ```
 
-The 80 checks cover all accepted rule values, zero/inventory/container/both scoped
+Replace `1.21.1` with each supported build node (or pass all nine task paths in
+one Gradle invocation after checking them individually in CI).
+
+Each run performs 80 checks covering all accepted rule values, zero/inventory/container/both scoped
 limits, failed configuration loading, disabling and re-enabling, and preservation
 of the configured state. This is not a network or world persistence test.
 

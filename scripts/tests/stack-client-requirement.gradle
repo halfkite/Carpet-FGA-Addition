@@ -1,6 +1,10 @@
 // Run: gradlew :1.21.1:stackClientRequirementTest -I scripts/tests/stack-client-requirement.gradle
 gradle.afterProject { project ->
-    if (project.path == ':1.21.1') {
+    def versions = [
+            '1.21.1', '1.21.3', '1.21.4', '1.21.5',
+            '1.21.8', '1.21.10', '1.21.11', '26.1.2', '26.2'
+    ]
+    if (versions.contains(project.name)) {
         def compileTest = project.tasks.register('compileStackClientRequirementTest', JavaCompile) {
             dependsOn project.tasks.named('classes')
             source project.rootProject.file('scripts/tests/StackLimitClientRequirementTest.java')
