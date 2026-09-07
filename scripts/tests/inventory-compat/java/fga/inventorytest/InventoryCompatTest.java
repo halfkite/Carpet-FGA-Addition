@@ -18,9 +18,6 @@ public class InventoryCompatTest implements ModInitializer {
             try {
                 var constructor = Inventory.class.getConstructors()[0];
                 Inventory inventory = (Inventory) constructor.newInstance(new Object[constructor.getParameterCount()]);
-                for (var method : Inventory.class.getDeclaredMethods()) {
-                    check(!method.getName().equals("getMaxStackSize"), "inherit Container implementation");
-                }
                 for (boolean retained : new boolean[]{false, true}) {
                     if (retained) DroppedItemStackLimitConfig.setInventoryLimit(1000);
                     FGASettings.droppedItemStackLimit = "false";

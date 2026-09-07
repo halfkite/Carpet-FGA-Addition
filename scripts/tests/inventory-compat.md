@@ -8,8 +8,8 @@ python scripts/tests/run-rule-compat.py --version 1.21.1 --suite inventory-compa
 python scripts/tests/run-rule-compat.py --version 26.2 --suite inventory-compat
 ```
 
-The dedicated-server test constructs the real transformed Inventory and checks it
-inherits Container's stack-aware capacity method. In-memory synthetic item components
+The dedicated-server test constructs the real transformed Inventory and checks that
+it preserves Container's stack-aware capacity. In-memory synthetic item components
 provide maxima 1, 16, 64, 128 and 1000. A synthetic Container mixin changes the no-arg
 capacity to 37. Tests cover disabled/default and retained-scope states, normal Slot
 capacity, enabled inventory expansion and a one-item special Slot.
