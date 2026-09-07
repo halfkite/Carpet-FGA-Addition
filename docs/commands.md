@@ -82,6 +82,10 @@
 /droppedItemStackLimit mode all <数量>
 /droppedItemStackLimit mode black <数量>
 /droppedItemStackLimit mode whitelist
+/droppedItemStackLimit mode inventory <数量>
+/droppedItemStackLimit mode container <数量>
+/droppedItemStackLimit reset inventory
+/droppedItemStackLimit reset container
 /droppedItemStackLimit set black <物品ID>
 /droppedItemStackLimit remove black <物品ID>
 /droppedItemStackLimit set whitelist <物品ID> <数量>

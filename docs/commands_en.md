@@ -82,6 +82,10 @@ Options can be combined: `pathfinding`, `reach <0.1-64>`, `airPlace`, `ignoreObs
 /droppedItemStackLimit mode all <count>
 /droppedItemStackLimit mode black <count>
 /droppedItemStackLimit mode whitelist
+/droppedItemStackLimit mode inventory <count>
+/droppedItemStackLimit mode container <count>
+/droppedItemStackLimit reset inventory
+/droppedItemStackLimit reset container
 /droppedItemStackLimit set black <item id>
 /droppedItemStackLimit remove black <item id>
 /droppedItemStackLimit set whitelist <item id> <count>
