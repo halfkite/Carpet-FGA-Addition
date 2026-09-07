@@ -74,6 +74,8 @@ On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` preserves th
 
 On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` disables the effective `inventoryLimit` and `containerLimit`, including after configuration reload and server restart. Saved nonzero values are retained and take effect again when the rule is re-enabled.
 
+On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` preserves the original merge count arguments and eligibility; FGA does not replay eligibility to override another mod's veto. With `droppedItemMergeDistance=-1`, the supplied search box is preserved. The distance rule remains independent of the stack rule.
+
 ## Deepslate stonecutting and player loading
 
 | Rule | Type | Default | Values | Effective versions | Description |

@@ -4,6 +4,10 @@ package carpet.fga.mixin;
 import carpet.fga.DroppedItemStackLimitConfig;
 
 import carpet.fga.FGASettings;
+//#if MC == 1.21.1 || MC == 26.2
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+//#endif
 //#if MC >= 1.20.5 && MC < 1.21.5
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -43,47 +47,75 @@ public abstract class ItemEntityMixin {
     private static final String EXTENDED_COUNT_KEY = "carpet-fga-addition:ExtendedCount";
     private static final int VANILLA_SAVED_COUNT_LIMIT = 99;
 
-        // Avoid @Redirect on isMergable: Carpet also redirects getMaxStackSize there and hard-fails on conflict.
-    @Shadow
-    private int age;
-    @Shadow
-    private int pickupDelay;
-
-    @Inject(method = "isMergable", at = @At("RETURN"), cancellable = true)
-    private void carpetFga$stackLimitForMergable(CallbackInfoReturnable<Boolean> cir) {
-        ItemEntity self = (ItemEntity) (Object) this;
-        ItemStack stack = self.getItem();
-        int limit = FGASettings.effectiveDroppedItemStackLimit(stack);
-        if (cir.getReturnValueZ()) {
-            if (stack.getCount() >= limit) {
-                cir.setReturnValue(false);
-            }
-            return;
-        }
-        if (self.isAlive()
-                && pickupDelay != 32767
-                && age != -32768
-                && age < 6000
-                && stack.getCount() < limit) {
-            cir.setReturnValue(true);
-        }
+    //#if MC == 1.21.1 || MC == 26.2
+    @ModifyExpressionValue(method = "isMergable",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I"))
+    private int carpetFga$mergableCapacity(int original) {
+        return carpetFga$activeCapacity(original, ((ItemEntity) (Object) this).getItem());
     }
 
-    @Redirect(
-            method = "areMergable",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I")
-    )
-    private static int carpetFga$stackLimitForTotal(ItemStack stack) {
-        return FGASettings.effectiveDroppedItemStackLimit(stack);
+    @ModifyExpressionValue(method = "areMergable",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I"))
+    private static int carpetFga$totalCapacity(int original, ItemStack first, ItemStack second) {
+        return carpetFga$activeCapacity(original, second);
     }
 
-    @Redirect(
+    @ModifyExpressionValue(
             method = "merge(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;I)Lnet/minecraft/world/item/ItemStack;",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I")
-    )
-    private static int carpetFga$stackLimitForMerge(ItemStack stack) {
-        return FGASettings.effectiveDroppedItemStackLimit(stack);
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I"))
+    private static int carpetFga$mergeCapacity(int original, ItemStack destination) {
+        return carpetFga$activeCapacity(original, destination);
     }
+
+    private static int carpetFga$activeCapacity(int original, ItemStack stack) {
+        if (!FGASettings.isDroppedItemStackLimitEnabled()) return original;
+        int configured = FGASettings.effectiveDroppedItemStackLimit(stack);
+        return configured != stack.getMaxStackSize() ? configured : original;
+    }
+    //#else
+//$$         // Avoid @Redirect on isMergable: Carpet also redirects getMaxStackSize there and hard-fails on conflict.
+//$$     @Shadow
+//$$     private int age;
+//$$     @Shadow
+//$$     private int pickupDelay;
+
+//$$     @Inject(method = "isMergable", at = @At("RETURN"), cancellable = true)
+//$$     private void carpetFga$stackLimitForMergable(CallbackInfoReturnable<Boolean> cir) {
+//$$         ItemEntity self = (ItemEntity) (Object) this;
+//$$         ItemStack stack = self.getItem();
+//$$         int limit = FGASettings.effectiveDroppedItemStackLimit(stack);
+//$$         if (cir.getReturnValueZ()) {
+//$$             if (stack.getCount() >= limit) {
+//$$                 cir.setReturnValue(false);
+//$$             }
+//$$             return;
+//$$         }
+//$$         if (self.isAlive()
+//$$                 && pickupDelay != 32767
+//$$                 && age != -32768
+//$$                 && age < 6000
+//$$                 && stack.getCount() < limit) {
+//$$             cir.setReturnValue(true);
+//$$         }
+//$$     }
+
+//$$     @Redirect(
+//$$             method = "areMergable",
+//$$             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I")
+//$$     )
+//$$     private static int carpetFga$stackLimitForTotal(ItemStack stack) {
+//$$         return FGASettings.effectiveDroppedItemStackLimit(stack);
+//$$     }
+
+//$$     @Redirect(
+//$$             method = "merge(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;I)Lnet/minecraft/world/item/ItemStack;",
+//$$             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I")
+//$$     )
+//$$     private static int carpetFga$stackLimitForMerge(ItemStack stack) {
+//$$         return FGASettings.effectiveDroppedItemStackLimit(stack);
+//$$     }
+
+    //#endif
 
     @ModifyArgs(
             method = "merge(Lnet/minecraft/world/entity/item/ItemEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)V",
@@ -94,7 +126,13 @@ public abstract class ItemEntityMixin {
     )
     private static void carpetFga$stackLimitForEntityMerge(Args args) {
         ItemStack destination = args.get(0);
-        args.set(2, FGASettings.effectiveDroppedItemStackLimit(destination));
+        //#if MC == 1.21.1 || MC == 26.2
+        if (!FGASettings.isDroppedItemStackLimitEnabled()) return;
+        int configured = FGASettings.effectiveDroppedItemStackLimit(destination);
+        if (configured != destination.getMaxStackSize()) args.set(2, configured);
+        //#else
+        //$$ args.set(2, FGASettings.effectiveDroppedItemStackLimit(destination));
+        //#endif
     }
 
     //#if MC >= 1.20.5 && MC < 1.21.6
@@ -215,21 +253,32 @@ public abstract class ItemEntityMixin {
     //$$ }
     //#endif
 
-    @Redirect(
-            method = "mergeWithNeighbours",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/level/Level;getEntitiesOfClass(Ljava/lang/Class;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;)Ljava/util/List;"
-            )
-    )
-    private List<ItemEntity> carpetFga$mergeDistance(
-            Level level, Class<ItemEntity> entityClass, AABB vanillaBox,
-            Predicate<? super ItemEntity> predicate
-    ) {
-        Entity self = (Entity) (Object) this;
-        double distance = FGASettings.effectiveDroppedItemMergeDistance();
-        AABB box = self.getBoundingBox().inflate(distance, 0.0D, distance);
-        return level.getEntitiesOfClass(entityClass, box, predicate);
+    //#if MC == 1.21.1 || MC == 26.2
+    @ModifyArg(method = "mergeWithNeighbours", index = 1,
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getEntitiesOfClass(Ljava/lang/Class;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;)Ljava/util/List;"))
+    private AABB carpetFga$mergeDistance(AABB original) {
+        if (FGASettings.droppedItemMergeDistance == -1.0D) return original;
+        // Adjust the supplied search box, preserving other mods' offsets and vertical bounds.
+        double delta = FGASettings.effectiveDroppedItemMergeDistance() - 0.5D;
+        return original.inflate(delta, 0.0D, delta);
     }
+    //#else
+//$$     @Redirect(
+//$$             method = "mergeWithNeighbours",
+//$$             at = @At(
+//$$                     value = "INVOKE",
+//$$                     target = "Lnet/minecraft/world/level/Level;getEntitiesOfClass(Ljava/lang/Class;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;)Ljava/util/List;"
+//$$             )
+//$$     )
+//$$     private List<ItemEntity> carpetFga$mergeDistance(
+//$$             Level level, Class<ItemEntity> entityClass, AABB vanillaBox,
+//$$             Predicate<? super ItemEntity> predicate
+//$$     ) {
+//$$         Entity self = (Entity) (Object) this;
+//$$         double distance = FGASettings.effectiveDroppedItemMergeDistance();
+//$$         AABB box = self.getBoundingBox().inflate(distance, 0.0D, distance);
+//$$         return level.getEntitiesOfClass(entityClass, box, predicate);
+//$$     }
+    //#endif
 }
 //#endif
