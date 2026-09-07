@@ -1,0 +1,17 @@
+gradle.afterProject { p ->
+    if (p != p.rootProject) {
+        def smoke = p.sourceSets.create('scopedCompat')
+        if (p.name == '1.21.1') {
+            smoke.java.srcDir p.rootProject.file('scripts/tests/scoped-compat/java')
+            smoke.resources.srcDir p.rootProject.file('scripts/tests/scoped-compat/resources')
+        }
+        smoke.compileClasspath += p.sourceSets.main.compileClasspath + p.sourceSets.main.output
+        smoke.runtimeClasspath += p.sourceSets.main.runtimeClasspath
+        p.tasks.named(smoke.compileJavaTaskName) {
+            setSource(p.rootProject.fileTree('scripts/tests/scoped-compat/java') { include '**/*.java' })
+        }
+        p.loom.mods.create('fga_scoped_compat_test') { sourceSet smoke }
+        p.loom.runs.named('server') { source smoke }
+        p.tasks.named('runServer') { dependsOn p.tasks.named(smoke.classesTaskName) }
+    }
+}

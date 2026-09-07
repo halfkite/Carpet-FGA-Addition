@@ -72,6 +72,8 @@
 
 在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 时漏斗与漏斗矿车保留原掉落物吸取调用链。开启时超量堆叠每次最多尝试一个 batch，并保留其他 Mod 的内部搬运限制；剩余物品等待后续吸取。
 
+在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 会停止应用 `inventoryLimit` 和 `containerLimit`，包括重新加载配置与服务器重启之后。保存的非零值不会被删除，重新开启规则后恢复生效。
+
 ## 深板岩切石与玩家加载距离
 
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
