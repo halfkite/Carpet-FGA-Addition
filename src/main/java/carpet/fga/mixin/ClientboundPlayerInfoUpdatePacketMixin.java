@@ -28,6 +28,16 @@ public abstract class ClientboundPlayerInfoUpdatePacketMixin {
     @Mutable
     private List<ClientboundPlayerInfoUpdatePacket.Entry> entries;
 
+    @Inject(method = "<init>(Lnet/minecraft/network/RegistryFriendlyByteBuf;)V", at = @At("HEAD"))
+    private void carpetFga$beginLongNameRead(net.minecraft.network.RegistryFriendlyByteBuf buffer, CallbackInfo ci) {
+        FakePlayerNameAlias.beginFullNamesRead();
+    }
+
+    @Inject(method = "<init>(Lnet/minecraft/network/RegistryFriendlyByteBuf;)V", at = @At("RETURN"))
+    private void carpetFga$endLongNameRead(net.minecraft.network.RegistryFriendlyByteBuf buffer, CallbackInfo ci) {
+        FakePlayerNameAlias.endFullNamesRead();
+    }
+
     @Inject(method = "<init>", at = @At("RETURN"))
     private void replaceLongNames(CallbackInfo ci) {
         boolean changed = false;
