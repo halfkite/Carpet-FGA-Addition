@@ -134,7 +134,7 @@
         //#endif
         //#if MC <= 26.2
         ,"InventoryStackLimitSlotMixin",
-        //#if MC != 1.21.1 && MC != 26.2
+        //#if MC < 1.21.1 || MC > 26.2
         //$$ "InventoryStackLimitInventoryMixin",
         //#endif
         "ContainerStackLimitMixin"

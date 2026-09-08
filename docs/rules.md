@@ -70,13 +70,13 @@
 
 `entityDropRemoval` 是纯服务端规则，在 Minecraft 1.21+ 注册。使用 `/entityDropRemoval set <生物ID> <物品ID|allEquipment>` 增加配置，`remove` 删除单项，`list` 查看全部配置，`list <生物ID>` 查看默认战利品表和当前可识别的掉落配置。指定物品会过滤该生物死亡流程中的战利品表、装备和 `spawnAtLocation` 匹配物品；`allEquipment` 只过滤头盔、胸甲、护腿、靴子、主手和副手，不会误删战利品表中的同名物品。规则为 `false` 时命令隐藏且掉落保持原版；`true`、`ops` 或 `0-4` 控制命令权限。配置保存于 `world/config/carpetfgaaddition/entity-drop-removal.json`，采用原子替换，损坏文件会保留并在本次运行禁用配置。列表中的红色减号可点击删除对应配置。
 
-在 Minecraft `1.21.1` 和 `26.2`，玩家背包在没有有效 FGA 扩容覆盖时保留容器原方法的上限，包括其他 Mod 的返回值；不会仅因物品最大堆叠数大于 99 就自动扩大背包容量。
+在当前九个构建版本（`1.21.1` 至 `26.2`），玩家背包在没有有效 FGA 扩容覆盖时保留容器原方法的上限，包括其他 Mod 的返回值；不会仅因物品最大堆叠数大于 99 就自动扩大背包容量。
 
-在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 时漏斗与漏斗矿车保留原掉落物吸取调用链。开启时超量堆叠每次最多尝试一个 batch，并保留其他 Mod 的内部搬运限制；剩余物品等待后续吸取。
+在当前九个构建版本（`1.21.1` 至 `26.2`），关闭 `droppedItemStackLimit` 时漏斗与漏斗矿车保留原掉落物吸取调用链。开启时超量堆叠每次最多尝试一个 batch，并保留其他 Mod 的内部搬运限制；剩余物品等待后续吸取。
 
-在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 会停止应用 `inventoryLimit` 和 `containerLimit`，包括重新加载配置与服务器重启之后。保存的非零值不会被删除，重新开启规则后恢复生效。
+在当前九个构建版本（`1.21.1` 至 `26.2`），关闭 `droppedItemStackLimit` 会停止应用 `inventoryLimit` 和 `containerLimit`，包括重新加载配置与服务器重启之后。保存的非零值不会被删除，重新开启规则后恢复生效。
 
-在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 时保留原合并数量参数和合并资格；FGA 不会重演合并资格来覆盖其他 Mod 的否决。`droppedItemMergeDistance=-1` 时保留传入的搜索范围，该距离规则独立于堆叠主规则。
+在当前九个构建版本（`1.21.1` 至 `26.2`），关闭 `droppedItemStackLimit` 时保留原合并数量参数和合并资格；FGA 不会重演合并资格来覆盖其他 Mod 的否决。`droppedItemMergeDistance=-1` 时保留传入的搜索范围，该距离规则独立于堆叠主规则。
 
 ## 深板岩切石与玩家加载距离
 
