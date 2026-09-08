@@ -2,6 +2,7 @@
 package carpet.fga.mixin;
 
 import carpet.fga.ComparatorThroughBlocks;
+import carpet.fga.FGASettings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -21,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 public abstract class LevelComparatorThroughBlocksMixin {
     @Inject(method = "updateNeighbourForOutputSignal", at = @At("HEAD"), cancellable = true)
     private void carpetFga$notifyThroughConfiguredBlock(BlockPos sourcePos, Block sourceBlock, CallbackInfo ci) {
+        if ("false".equals(FGASettings.comparatorThroughBlocks)) return;
         Level level = (Level) (Object) this;
         for (Direction direction : Direction.Plane.HORIZONTAL) {
             BlockPos neighborPos = sourcePos.relative(direction);
