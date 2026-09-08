@@ -28,49 +28,54 @@ public abstract class ClientboundPlayerInfoUpdatePacketMixin {
     @Mutable
     private List<ClientboundPlayerInfoUpdatePacket.Entry> entries;
 
-    @Inject(method = "<init>(Lnet/minecraft/network/RegistryFriendlyByteBuf;)V", at = @At("HEAD"))
+    @Inject(
+            method = "<init>(Lnet/minecraft/network/RegistryFriendlyByteBuf;)V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/network/RegistryFriendlyByteBuf;readEnumSet(Ljava/lang/Class;)Ljava/util/EnumSet;"
+            )
+    )
     private void carpetFga$beginLongNameRead(net.minecraft.network.RegistryFriendlyByteBuf buffer, CallbackInfo ci) {
         FakePlayerNameAlias.beginFullNamesRead();
     }
 
-    @Inject(method = "<init>(Lnet/minecraft/network/RegistryFriendlyByteBuf;)V", at = @At("RETURN"))
-    private void carpetFga$endLongNameRead(net.minecraft.network.RegistryFriendlyByteBuf buffer, CallbackInfo ci) {
-        FakePlayerNameAlias.endFullNamesRead();
-    }
-
     @Inject(method = "<init>", at = @At("RETURN"))
     private void replaceLongNames(CallbackInfo ci) {
-        boolean changed = false;
-        List<ClientboundPlayerInfoUpdatePacket.Entry> aliases = new ArrayList<>(entries.size());
-        for (ClientboundPlayerInfoUpdatePacket.Entry entry : entries) {
-            GameProfile profile = entry.profile();
-            GameProfile networkProfile = profile == null ? null : FakePlayerNameAlias.networkProfile(profile);
-            //#if MC >= 1.19.4
-            ServerPlayer player = PlayerHealthDisplay.getOnlinePlayer(entry.profileId());
-            net.minecraft.network.chat.Component displayName = player == null
-                    ? entry.displayName()
-                    : PlayerHealthDisplay.tabDisplayName(player, entry.displayName());
-            //#else
-            //$$ net.minecraft.network.chat.Component displayName = entry.displayName();
-            //#endif
-            if (networkProfile != profile || displayName != entry.displayName()) {
-                changed = true;
-                aliases.add(new ClientboundPlayerInfoUpdatePacket.Entry(
-                        entry.profileId(), networkProfile, entry.listed(), entry.latency(), entry.gameMode(),
-                        displayName,
-                        //#if MC >= 1.21.4
-                        //$$ entry.showHat(),
-                        //#endif
-                        //#if MC >= 1.21.2
-                        //$$ entry.listOrder(),
-                        //#endif
-                        entry.chatSession()));
-            } else {
-                aliases.add(entry);
+        try {
+            boolean changed = false;
+            List<ClientboundPlayerInfoUpdatePacket.Entry> aliases = new ArrayList<>(entries.size());
+            for (ClientboundPlayerInfoUpdatePacket.Entry entry : entries) {
+                GameProfile profile = entry.profile();
+                GameProfile networkProfile = profile == null ? null : FakePlayerNameAlias.networkProfile(profile);
+                //#if MC >= 1.19.4
+                ServerPlayer player = PlayerHealthDisplay.getOnlinePlayer(entry.profileId());
+                net.minecraft.network.chat.Component displayName = player == null
+                        ? entry.displayName()
+                        : PlayerHealthDisplay.tabDisplayName(player, entry.displayName());
+                //#else
+                //$$ net.minecraft.network.chat.Component displayName = entry.displayName();
+                //#endif
+                if (networkProfile != profile || displayName != entry.displayName()) {
+                    changed = true;
+                    aliases.add(new ClientboundPlayerInfoUpdatePacket.Entry(
+                            entry.profileId(), networkProfile, entry.listed(), entry.latency(), entry.gameMode(),
+                            displayName,
+                            //#if MC >= 1.21.4
+                            //$$ entry.showHat(),
+                            //#endif
+                            //#if MC >= 1.21.2
+                            //$$ entry.listOrder(),
+                            //#endif
+                            entry.chatSession()));
+                } else {
+                    aliases.add(entry);
+                }
             }
-        }
-        if (changed) {
-            entries = List.copyOf(aliases);
+            if (changed) {
+                entries = List.copyOf(aliases);
+            }
+        } finally {
+            FakePlayerNameAlias.endFullNamesRead();
         }
     }
 }
