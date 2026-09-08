@@ -8,6 +8,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.nbt.CompoundTag;
 import java.lang.reflect.Method;
 
 public class ItemCompatTest implements ModInitializer {
@@ -65,6 +66,18 @@ public class ItemCompatTest implements ModInitializer {
                 cap = 13;
                 entity.setItem(new ItemStack(Items.STONE, 14));
                 check(!(boolean) eligible.invoke(entity), "unconfigured item preserves other-mod cap");
+                FGASettings.droppedItemStackLimit = "false";
+                entity.setItem(new ItemStack(Items.STONE, 200));
+                Method save = ItemEntity.class.getDeclaredMethod("addAdditionalSaveData", CompoundTag.class);
+                Method load = ItemEntity.class.getDeclaredMethod("readAdditionalSaveData", CompoundTag.class);
+                save.setAccessible(true);
+                load.setAccessible(true);
+                CompoundTag persisted = new CompoundTag();
+                save.invoke(entity, persisted);
+                check(persisted.contains("carpet-fga-addition:ExtendedCount"), "off preserves extended count");
+                ItemEntity restored = new ItemEntity(server.overworld(), 0, 100, 0, ItemStack.EMPTY);
+                load.invoke(restored, persisted);
+                check(restored.getItem().getCount() == 200, "extended count round trip while off");
                 System.out.println("FGA_ITEM_COMPAT_PASS checks=" + checks);
             } catch (Throwable failure) {
                 System.out.println("FGA_ITEM_COMPAT_FAIL " + failure);
