@@ -29,6 +29,7 @@ public abstract class ShulkerAttackArmorStandMixin extends Mob {
 
     @Inject(method = "registerGoals", at = @At("RETURN"))
     private void carpetFga$addArmorStandTargetGoal(CallbackInfo ci) {
+        if (!CarpetFgaArmorStandTargetGoal.enabled()) return;
         // Extends Mob so the inherited protected targetSelector is reachable; @Shadow cannot see superclass fields.
         this.targetSelector.addGoal(4, new CarpetFgaArmorStandTargetGoal((Shulker) (Object) this));
     }
@@ -41,6 +42,10 @@ public abstract class ShulkerAttackArmorStandMixin extends Mob {
                     //#else
                     CarpetFgaArmorStandTargetGoal::carpetFga$isEligible);
                     //#endif
+        }
+
+        private static boolean enabled() {
+            return !"false".equals(FGASettings.shulkerAttackArmorStand);
         }
 
         private static boolean carpetFga$isEligible(LivingEntity target) {
@@ -59,6 +64,7 @@ public abstract class ShulkerAttackArmorStandMixin extends Mob {
 
         @Override
         public boolean canUse() {
+            if (!enabled()) return false;
             if (this.mob.level().getDifficulty() == Difficulty.PEACEFUL) {
                 return false;
             }
@@ -67,6 +73,7 @@ public abstract class ShulkerAttackArmorStandMixin extends Mob {
 
         @Override
         public boolean canContinueToUse() {
+            if (!enabled()) return false;
             // ArmorStand.canBeSeenByAnyone ignores isAlive, so vanilla's TargetGoal death check never
             // releases a dead armor stand target and this goal would lock the TARGET flag forever.
             LivingEntity target = this.mob.getTarget();
