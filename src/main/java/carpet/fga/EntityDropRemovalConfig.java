@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -28,7 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Persistent per-entity item and equipment drop filters for Minecraft 1.21.1. */
+/** Persistent per-entity item and equipment drop filters for Minecraft 1.21+. */
 public final class EntityDropRemovalConfig {
     public static final String ALL_EQUIPMENT = "allEquipment";
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/entity-drop-removal");

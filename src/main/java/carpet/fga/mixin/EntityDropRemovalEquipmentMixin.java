@@ -1,6 +1,6 @@
 package carpet.fga.mixin;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 import carpet.fga.EntityDropRemovalConfig;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
@@ -14,9 +14,19 @@ public abstract class EntityDropRemovalEquipmentMixin {
             method = "dropCustomDeathLoot",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/entity/Mob;spawnAtLocation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/item/ItemEntity;"
+                    target =
+                            //#if MC >= 1.21.2
+                            //$$ "Lnet/minecraft/world/entity/Mob;spawnAtLocation(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/item/ItemEntity;"
+                            //#else
+                            "Lnet/minecraft/world/entity/Mob;spawnAtLocation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/entity/item/ItemEntity;"
+                            //#endif
             ),
-            index = 0
+            index =
+                    //#if MC >= 1.21.2
+                    //$$ 1
+                    //#else
+                    0
+                    //#endif
     )
     private ItemStack carpetFga$filterEquipmentDrop(ItemStack stack) {
         Mob mob = (Mob) (Object) this;
