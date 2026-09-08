@@ -43,19 +43,20 @@ public final class PlayerHealthDisplay {
         server = currentServer;
         String mode = FGASettings.playerHealthDisplay;
         List<ServerPlayer> players = currentServer.getPlayerList().getPlayers();
-        boolean modeChanged = !mode.equals(lastMode);
+        String previousMode = lastMode;
+        boolean modeChanged = previousMode != null && !mode.equals(previousMode);
         lastMode = mode;
 
         for (ServerPlayer viewer : players) {
             boolean subscribed = isSubscribed(viewer);
             Boolean previous = LAST_SUBSCRIPTIONS.put(viewer.getUUID(), subscribed);
-            if (!modeChanged && (previous == null || previous != subscribed)) {
+            if (!modeChanged && (previous == null ? subscribed : previous != subscribed)) {
                 sendFullRefresh(viewer, players);
             }
         }
         LAST_SUBSCRIPTIONS.keySet().removeIf(uuid -> currentServer.getPlayerList().getPlayer(uuid) == null);
 
-        if (modeChanged) {
+        if (modeChanged && (healthModeActive(previousMode) || healthModeActive(mode))) {
             for (ServerPlayer viewer : players) sendFullRefresh(viewer, players);
         }
 
@@ -75,11 +76,17 @@ public final class PlayerHealthDisplay {
 
     public static Component tabDisplayName(ServerPlayer subject, Component vanilla) {
         ServerPlayer viewer = PACKET_RECEIVER.get();
-        Component base = vanilla != null ? vanilla : subject.getDisplayName();
+        boolean healthDisplay = viewer != null && shouldDecorate(viewer);
+        Component base;
         //#if MC == 1.20.1 || MC == 1.21.1
-        base = PlayerLoadDistanceCompat.decorate(subject, base);
+        Component candidate = vanilla != null ? vanilla : subject.getDisplayName();
+        base = PlayerLoadDistanceCompat.decorate(subject, candidate);
+        if (!healthDisplay && base == candidate) return vanilla;
+        //#else
+        if (!healthDisplay) return vanilla;
+        base = vanilla != null ? vanilla : subject.getDisplayName();
         //#endif
-        if (viewer == null || !shouldDecorate(viewer)) return base;
+        if (!healthDisplay) return base;
         if ("nofake".equals(FGASettings.playerHealthDisplay)
                 && subject instanceof carpet.patches.EntityPlayerMPFake) return base;
         return base.copy().append(Component.literal(" ")).append(healthLine(subject));
@@ -121,7 +128,11 @@ public final class PlayerHealthDisplay {
     private static void sendFullRefresh(ServerPlayer viewer, List<ServerPlayer> subjects) {
         if (subjects.isEmpty()) return;
         viewer.connection.send(new ClientboundPlayerInfoUpdatePacket(
-                EnumSet.allOf(ClientboundPlayerInfoUpdatePacket.Action.class), subjects));
+                EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME), subjects));
+    }
+
+    private static boolean healthModeActive(String mode) {
+        return mode != null && !"false".equals(mode);
     }
 
     private static void broadcastUpdate(MinecraftServer currentServer, ServerPlayer subject) {
