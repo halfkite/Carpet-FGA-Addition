@@ -1,6 +1,6 @@
 # Carpet FGA Addition 规则
 
-> 文档版本：`1.5.6`
+> 文档版本：`1.5.7`
 
 所有规则通过 `/carpet <规则名> <值>` 管理。未特别说明时，规则默认关闭。
 
@@ -43,6 +43,8 @@
 | `shulkerBedrockLooting` | 布尔 | `false` | `false`、`true` | 1.21+ | 潜影壳掉落同步基岩版：固定 50% 概率掉落，掉落时均匀掉落 1 至 1+抢夺等级 个潜影壳。 |
 | `shulkerAttackArmorStand` | 枚举 | `false` | `false`、`true`、`pumpkin` | 1.21+ | 允许潜影贝瞄准并射击盔甲架；`true` 攻击所有盔甲架，`pumpkin` 仅攻击头戴雕刻南瓜的盔甲架。 |
 | `anvilNoPriorWorkPenalty` | 布尔 | `false` | `false`、`true` | 1.21+ | 取消铁砧重复工作惩罚和 40 级“过于昂贵”限制；保留附魔冲突检查、材料消耗和正常附魔合并费用。 |
+| `enchantmentLevelLimitIncrease` | 字符串 | `false` | `false`、`0`、`1`、整数 `0-254` | 1.21.1、26.2 | 让所有附魔的原版等级上限增加输入的数字，存储等级最高为 255；输入不带方括号。 |
+| `enchantmentLevelAddition` | 布尔 | `false` | `false`、`true` | 1.21.1、26.2 | 铁砧合并同种附魔时直接相加等级，例如 2+2 变为 4；输入一方达到上限时不生成结果，相加超过上限时结果封顶为上限。 |
 | `experienceLevelCost` | 字符串 | `false` | `false`、`29-30`、`0-1` | 1.21+ | 扁平化升级经验消耗。`29-30` 模式在 30 级及以后固定使用 29 到 30 的 107 点经验；`0-1` 模式所有等级固定使用 0 到 1 的 7 点经验。 |
 | `villagerDoNotCraftBread` | 布尔 | `false` | `false`、`true` | 1.21-26.2（不含 1.21.3） | 让农民村民处理小麦的表现与 26.3+ 一样，不再把小麦合成面包，不影响其他农民行为 |
 | `villagerUpgradeWhileTrading` | 布尔 | `false` | `false`、`true` | 1.21-26.2 | 让村民在交易界面保持打开时继续等待并完成升级，升级后立即刷新等级、经验和交易列表 |
@@ -70,13 +72,13 @@
 
 `entityDropRemoval` 是纯服务端规则，在 Minecraft 1.21+ 注册。使用 `/entityDropRemoval set <生物ID> <物品ID|allEquipment>` 增加配置，`remove` 删除单项，`list` 查看全部配置，`list <生物ID>` 查看默认战利品表和当前可识别的掉落配置。指定物品会过滤该生物死亡流程中的战利品表、装备和 `spawnAtLocation` 匹配物品；`allEquipment` 只过滤头盔、胸甲、护腿、靴子、主手和副手，不会误删战利品表中的同名物品。规则为 `false` 时命令隐藏且掉落保持原版；`true`、`ops` 或 `0-4` 控制命令权限。配置保存于 `world/config/carpetfgaaddition/entity-drop-removal.json`，采用原子替换，损坏文件会保留并在本次运行禁用配置。列表中的红色减号可点击删除对应配置。
 
-在 Minecraft `1.21.1` 和 `26.2`，玩家背包在没有有效 FGA 扩容覆盖时保留容器原方法的上限，包括其他 Mod 的返回值；不会仅因物品最大堆叠数大于 99 就自动扩大背包容量。
+在当前九个构建版本（`1.21.1` 至 `26.2`），玩家背包在没有有效 FGA 扩容覆盖时保留容器原方法的上限，包括其他 Mod 的返回值；不会仅因物品最大堆叠数大于 99 就自动扩大背包容量。
 
-在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 时漏斗与漏斗矿车保留原掉落物吸取调用链。开启时超量堆叠每次最多尝试一个 batch，并保留其他 Mod 的内部搬运限制；剩余物品等待后续吸取。
+在当前九个构建版本（`1.21.1` 至 `26.2`），关闭 `droppedItemStackLimit` 时漏斗与漏斗矿车保留原掉落物吸取调用链。开启时超量堆叠每次最多尝试一个 batch，并保留其他 Mod 的内部搬运限制；剩余物品等待后续吸取。
 
-在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 会停止应用 `inventoryLimit` 和 `containerLimit`，包括重新加载配置与服务器重启之后。保存的非零值不会被删除，重新开启规则后恢复生效。
+在当前九个构建版本（`1.21.1` 至 `26.2`），关闭 `droppedItemStackLimit` 会停止应用 `inventoryLimit` 和 `containerLimit`，包括重新加载配置与服务器重启之后。保存的非零值不会被删除，重新开启规则后恢复生效。
 
-在 Minecraft `1.21.1` 和 `26.2`，关闭 `droppedItemStackLimit` 时保留原合并数量参数和合并资格；FGA 不会重演合并资格来覆盖其他 Mod 的否决。`droppedItemMergeDistance=-1` 时保留传入的搜索范围，该距离规则独立于堆叠主规则。
+在当前九个构建版本（`1.21.1` 至 `26.2`），关闭 `droppedItemStackLimit` 时保留原合并数量参数和合并资格；FGA 不会重演合并资格来覆盖其他 Mod 的否决。`droppedItemMergeDistance=-1` 时保留传入的搜索范围，该距离规则独立于堆叠主规则。
 
 ## 深板岩切石与玩家加载距离
 

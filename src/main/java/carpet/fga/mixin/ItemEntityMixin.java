@@ -4,7 +4,7 @@ package carpet.fga.mixin;
 import carpet.fga.DroppedItemStackLimitConfig;
 
 import carpet.fga.FGASettings;
-//#if MC == 1.21.1 || MC == 26.2
+//#if MC >= 1.21.1 && MC <= 26.2
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 //#endif
@@ -47,7 +47,7 @@ public abstract class ItemEntityMixin {
     private static final String EXTENDED_COUNT_KEY = "carpet-fga-addition:ExtendedCount";
     private static final int VANILLA_SAVED_COUNT_LIMIT = 99;
 
-    //#if MC == 1.21.1 || MC == 26.2
+    //#if MC >= 1.21.1 && MC <= 26.2
     @ModifyExpressionValue(method = "isMergable",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I"))
     private int carpetFga$mergableCapacity(int original) {
@@ -126,7 +126,7 @@ public abstract class ItemEntityMixin {
     )
     private static void carpetFga$stackLimitForEntityMerge(Args args) {
         ItemStack destination = args.get(0);
-        //#if MC == 1.21.1 || MC == 26.2
+        //#if MC >= 1.21.1 && MC <= 26.2
         if (!FGASettings.isDroppedItemStackLimitEnabled()) return;
         int configured = FGASettings.effectiveDroppedItemStackLimit(destination);
         if (configured != destination.getMaxStackSize()) args.set(2, configured);
@@ -253,7 +253,7 @@ public abstract class ItemEntityMixin {
     //$$ }
     //#endif
 
-    //#if MC == 1.21.1 || MC == 26.2
+    //#if MC >= 1.21.1 && MC <= 26.2
     @ModifyArg(method = "mergeWithNeighbours", index = 1,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getEntitiesOfClass(Ljava/lang/Class;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;)Ljava/util/List;"))
     private AABB carpetFga$mergeDistance(AABB original) {

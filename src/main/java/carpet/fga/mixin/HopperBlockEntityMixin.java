@@ -3,7 +3,7 @@ package carpet.fga.mixin;
 
 import carpet.fga.FGACompat;
 import carpet.fga.FGASettings;
-//#if MC == 1.21.1 || MC == 26.2
+//#if MC >= 1.21.1 && MC <= 26.2
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 //#endif
@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(HopperBlockEntity.class)
 public abstract class HopperBlockEntityMixin {
-    //#if MC == 1.21.1 || MC == 26.2
+    //#if MC >= 1.21.1 && MC <= 26.2
     @WrapOperation(
             method = "addItem(Lnet/minecraft/world/Container;Lnet/minecraft/world/entity/item/ItemEntity;)Z",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/entity/HopperBlockEntity;addItem(Lnet/minecraft/world/Container;Lnet/minecraft/world/Container;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Direction;)Lnet/minecraft/world/item/ItemStack;")

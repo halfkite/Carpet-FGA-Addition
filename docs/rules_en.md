@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.6`
+> Documentation version: `1.5.7`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default.
 
@@ -43,6 +43,8 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `shulkerBedrockLooting` | Boolean | `false` | `false`, `true` | 1.21+ | Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly. |
 | `shulkerAttackArmorStand` | Enum | `false` | `false`, `true`, `pumpkin` | 1.21+ | Lets shulkers target and shoot armor stands; `true` targets all armor stands, `pumpkin` targets only those wearing a carved pumpkin on the head. |
 | `anvilNoPriorWorkPenalty` | Boolean | `false` | `false`, `true` | 1.21+ | Removes the anvil prior-work penalty and the 40-level “too expensive” limit while keeping enchantment conflicts, material costs, and normal enchantment-combination costs. |
+| `enchantmentLevelLimitIncrease` | String | `false` | `false`, `0`, `1`, integer `0-254` | 1.21.1, 26.2 | Adds the entered amount to every enchantment's vanilla maximum level, capped at stored level 255; enter the value without brackets. |
+| `enchantmentLevelAddition` | Boolean | `false` | `false`, `true` | 1.21.1, 26.2 | Adds matching enchantment levels in an anvil, so 2+2 becomes 4; an input at the maximum gives no result, while sums above it are capped at the maximum. |
 | `experienceLevelCost` | String | `false` | `false`, `29-30`, `0-1` | 1.21+ | Flattens level-up costs. `29-30` fixes level 30 and above at 107 XP, the vanilla cost from level 29 to 30; `0-1` fixes every level at 7 XP, the vanilla cost from level 0 to 1. |
 | `villagerDoNotCraftBread` | Boolean | `false` | `false`, `true` | 1.21-26.2 (excluding 1.21.3) | Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread, without changing other farmer behavior |
 | `villagerUpgradeWhileTrading` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Lets villagers finish upgrading while the trading screen remains open and immediately refreshes their level, XP, and offers |
@@ -70,13 +72,13 @@ The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hi
 
 `entityDropRemoval` is server-side only and is registered on Minecraft 1.21+. Use `/entityDropRemoval set <entity id> <item id|allEquipment>` to add an entry, `remove` to delete one, `list` to inspect all configured entities, and `list <entity id>` to inspect the default loot table and currently identifiable drop configuration. Item entries filter matching items in the entity's death flow, including loot-table, equipment, and `spawnAtLocation` output. `allEquipment` filters only the helmet, chestplate, leggings, boots, main-hand, and off-hand slots, so a same-named loot-table item is kept. `false` hides and blocks the command; `true`, `ops`, and `0-4` control command access. The file is `world/config/carpetfgaaddition/entity-drop-removal.json`, written with atomic replacement; corrupt files are preserved and disabled for the current run. Red minus buttons in list output remove entries.
 
-On Minecraft `1.21.1` and `26.2`, player inventory capacity preserves the original container method when there is no effective FGA capacity override, including other mods' return values. An item maximum above 99 alone does not expand inventory capacity.
+On all nine current build versions (`1.21.1` through `26.2`), player inventory capacity preserves the original container method when there is no effective FGA capacity override, including other mods' return values. An item maximum above 99 alone does not expand inventory capacity.
 
-On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` preserves the original hopper and hopper-minecart item-entity transfer chain. When enabled, oversized stacks make at most one batch attempt per transfer, preserving other mods' inner transfer limits and leaving the remainder for later attempts.
+On all nine current build versions (`1.21.1` through `26.2`), disabling `droppedItemStackLimit` preserves the original hopper and hopper-minecart item-entity transfer chain. When enabled, oversized stacks make at most one batch attempt per transfer, preserving other mods' inner transfer limits and leaving the remainder for later attempts.
 
-On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` disables the effective `inventoryLimit` and `containerLimit`, including after configuration reload and server restart. Saved nonzero values are retained and take effect again when the rule is re-enabled.
+On all nine current build versions (`1.21.1` through `26.2`), disabling `droppedItemStackLimit` disables the effective `inventoryLimit` and `containerLimit`, including after configuration reload and server restart. Saved nonzero values are retained and take effect again when the rule is re-enabled.
 
-On Minecraft `1.21.1` and `26.2`, disabling `droppedItemStackLimit` preserves the original merge count arguments and eligibility; FGA does not replay eligibility to override another mod's veto. With `droppedItemMergeDistance=-1`, the supplied search box is preserved. The distance rule remains independent of the stack rule.
+On all nine current build versions (`1.21.1` through `26.2`), disabling `droppedItemStackLimit` preserves the original merge count arguments and eligibility; FGA does not replay eligibility to override another mod's veto. With `droppedItemMergeDistance=-1`, the supplied search box is preserved. The distance rule remains independent of the stack rule.
 
 ## Deepslate stonecutting and player loading
 
