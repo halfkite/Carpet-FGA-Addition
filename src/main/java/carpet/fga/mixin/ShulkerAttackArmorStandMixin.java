@@ -8,6 +8,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.item.Items;
@@ -32,6 +33,18 @@ public abstract class ShulkerAttackArmorStandMixin extends Mob {
         if (!CarpetFgaArmorStandTargetGoal.enabled()) return;
         // Extends Mob so the inherited protected targetSelector is reachable; @Shadow cannot see superclass fields.
         this.targetSelector.addGoal(4, new CarpetFgaArmorStandTargetGoal((Shulker) (Object) this));
+    }
+
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void carpetFga$syncArmorStandTargetGoal(CallbackInfo ci) {
+        if (!CarpetFgaArmorStandTargetGoal.enabled()) {
+            this.targetSelector.removeAllGoals(goal -> goal instanceof CarpetFgaArmorStandTargetGoal);
+            return;
+        }
+        boolean present = this.targetSelector.getAvailableGoals().stream()
+                .map(WrappedGoal::getGoal)
+                .anyMatch(goal -> goal instanceof CarpetFgaArmorStandTargetGoal);
+        if (!present) this.targetSelector.addGoal(4, new CarpetFgaArmorStandTargetGoal((Shulker) (Object) this));
     }
 
     static final class CarpetFgaArmorStandTargetGoal extends NearestAttackableTargetGoal<ArmorStand> {
