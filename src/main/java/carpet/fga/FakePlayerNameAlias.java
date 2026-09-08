@@ -41,6 +41,15 @@ public final class FakePlayerNameAlias {
         }
     }
 
+    /**
+     * Returns whether the current packet operation is explicitly carrying an
+     * FGA long-name PlayerInfo payload.  The value is deliberately scoped to
+     * the current thread so generic UTF fields are left untouched.
+     */
+    public static boolean fullNamesActive() {
+        return FULL_NAMES.get();
+    }
+
     public static String alias(String name) {
         if (name.length() <= NETWORK_NAME_LIMIT) {
             return name;

@@ -1,5 +1,6 @@
 package carpet.fga.mixin;
 
+import carpet.fga.FGASettings;
 import net.minecraft.commands.arguments.selector.EntitySelectorParser;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.Constant;
@@ -12,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 public abstract class EntitySelectorParserMixin {
     @ModifyConstant(method = "parseNameOrUUID", constant = @Constant(intValue = 16))
     private int increasePlayerNameLimit(int maxLength) {
-        return 128;
+        int configured = FGASettings.fakePlayerNameLength;
+        return configured > 16 ? Math.min(128, configured) : maxLength;
     }
 }
