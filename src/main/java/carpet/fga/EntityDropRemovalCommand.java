@@ -13,6 +13,7 @@ import com.google.gson.JsonParser;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -55,20 +56,23 @@ public final class EntityDropRemovalCommand {
                         .then(entityArgument().executes(EntityDropRemovalCommand::listEntity)));
     }
 
-    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> entityArgument() {
-        return Commands.argument("entity", StringArgumentType.word())
+    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, ResourceLocation> entityArgument() {
+        return Commands.argument("entity", ResourceLocationArgument.id())
                 .suggests(EntityDropRemovalCommand::entitySuggestions);
     }
 
     private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> dropArgument() {
-        return Commands.argument("drop", StringArgumentType.word())
+        // ResourceLocationArgument handles the namespace separator in IDs (for example
+        // minecraft:gold_ingot). The drop argument also accepts the allEquipment sentinel,
+        // so keep it as a greedy string and normalize it before dispatching.
+        return Commands.argument("drop", StringArgumentType.greedyString())
                 .suggests(EntityDropRemovalCommand::dropSuggestions);
     }
 
     private static int set(CommandContext<CommandSourceStack> context) {
         try {
             ResourceLocation entityId = entityId(context);
-            String drop = StringArgumentType.getString(context, "drop");
+            String drop = StringArgumentType.getString(context, "drop").trim();
             if (EntityDropRemovalConfig.ALL_EQUIPMENT.equals(drop)) {
                 EntityDropRemovalConfig.setAllEquipment(entityId);
             } else {
@@ -84,7 +88,7 @@ public final class EntityDropRemovalCommand {
     private static int remove(CommandContext<CommandSourceStack> context) {
         try {
             ResourceLocation entityId = entityId(context);
-            String drop = StringArgumentType.getString(context, "drop");
+            String drop = StringArgumentType.getString(context, "drop").trim();
             boolean removed = EntityDropRemovalConfig.ALL_EQUIPMENT.equals(drop)
                     ? EntityDropRemovalConfig.removeAllEquipment(entityId)
                     : EntityDropRemovalConfig.removeItem(entityId, EntityDropRemovalConfig.parseItemId(drop));
@@ -190,7 +194,8 @@ public final class EntityDropRemovalCommand {
     }
 
     private static ResourceLocation entityId(CommandContext<CommandSourceStack> context) {
-        return EntityDropRemovalConfig.parseEntityId(StringArgumentType.getString(context, "entity"));
+        return EntityDropRemovalConfig.parseEntityId(
+                ResourceLocationArgument.getId(context, "entity").toString());
     }
 
     private static CompletableFuture<Suggestions> entitySuggestions(CommandContext<CommandSourceStack> context,
