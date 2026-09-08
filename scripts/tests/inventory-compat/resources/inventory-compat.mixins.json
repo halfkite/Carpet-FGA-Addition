@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "fga.inventorytest.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["ContainerCapMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

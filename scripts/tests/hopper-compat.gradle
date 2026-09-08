@@ -1,0 +1,26 @@
+// Opt-in test mod: never included in the distributable main jar.
+gradle.afterProject { p ->
+    // The preprocessor links source sets through every intermediate graph node.
+    if (p != p.rootProject) {
+        def smoke = p.sourceSets.create('hopperCompat')
+        if (p.name == '1.21.1') {
+            smoke.java.srcDir p.rootProject.file('scripts/tests/hopper-compat/java')
+            smoke.resources.srcDir p.rootProject.file('scripts/tests/hopper-compat/resources')
+        }
+        smoke.compileClasspath += p.sourceSets.main.compileClasspath + p.sourceSets.main.output
+        smoke.runtimeClasspath += p.sourceSets.main.runtimeClasspath
+        p.tasks.named(smoke.compileJavaTaskName) {
+            setSource(p.rootProject.fileTree('scripts/tests/hopper-compat/java') { include '**/*.java' })
+        }
+        p.tasks.named(smoke.processResourcesTaskName) {
+            def priority = p.findProperty('compatPriority') ?: '1100'
+            inputs.property('compatPriority', priority)
+            filesMatching('*.mixins.json') {
+                filter { line -> line.replace('"priority": 1100', '"priority": ' + priority) }
+            }
+        }
+        p.loom.mods.create('fga_hopper_compat_test') { sourceSet smoke }
+        p.loom.runs.named('server') { source smoke }
+        p.tasks.named('runServer') { dependsOn p.tasks.named(smoke.classesTaskName) }
+    }
+}

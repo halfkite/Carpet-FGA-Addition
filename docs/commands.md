@@ -7,7 +7,7 @@
 | 命令 | 相关规则 | 权限/版本 | 说明 |
 |---|---|---|---|
 | `/player` 区域操作 | `fakePlayerRangeControl` | Carpet 玩家权限/全版本 | 让假人执行区域放置、交互、攻击或连续任务。 |
-| `/droppedItemStackLimit` | `droppedItemStackLimit` | 规则权限/全部支持版本 | 配置地面、玩家背包和容器的独立堆叠上限，背包或容器上限启用时需要 FGA 客户端。 |
+| `/droppedItemStackLimit` | `droppedItemStackLimit` | 规则权限/全部支持版本 | 配置地面、玩家背包和容器的独立堆叠上限，主规则开启且背包或容器上限非零时需要 FGA 客户端；主规则关闭后保留配置，但不会因此要求安装 FGA 客户端。 |
 | `/dropPreStack` | `preStackDroppedItems` | 与掉落物上限权限/1.21-26.2 | 配置生物、方块和容器掉落预堆叠。 |
 | `/entityDropRemoval` | `entityDropRemoval` | 规则权限/1.21.1 | 配置按生物和物品去除死亡掉落物。 |
 | `/villagerPerformance` | `villagerPerformanceOptimization` | 规则权限/1.21+ | 配置村民交易、赠礼和流浪商人保护。 |
@@ -82,6 +82,10 @@
 /droppedItemStackLimit mode all <数量>
 /droppedItemStackLimit mode black <数量>
 /droppedItemStackLimit mode whitelist
+/droppedItemStackLimit mode inventory <数量>
+/droppedItemStackLimit mode container <数量>
+/droppedItemStackLimit reset inventory
+/droppedItemStackLimit reset container
 /droppedItemStackLimit set black <物品ID>
 /droppedItemStackLimit remove black <物品ID>
 /droppedItemStackLimit set whitelist <物品ID> <数量>
@@ -91,6 +95,8 @@
 ```
 
 `list` 按页显示中文名称、完整物品 ID 和数量；列表中的删除按钮可点击执行对应命令。配置损坏时保持原版安全限制并拒绝写入。
+
+在当前九个构建版本（`1.21.1` 至 `26.2`），`inventoryLimit` / `containerLimit` 的保存值与是否生效分开：主规则关闭（含重启后）时不应用，重新开启后恢复；关闭操作不会清空配置。
 
 ## `/entityDropRemoval` 与 `/fga entityDropRemoval`
 

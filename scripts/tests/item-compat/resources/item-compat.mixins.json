@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "priority": 1100,
+  "package": "fga.itemtest.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["ItemCompatMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

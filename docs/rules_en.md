@@ -50,7 +50,7 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 | `villagerUpgradeWhileTrading` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Lets villagers finish upgrading while the trading screen remains open and immediately refreshes their level, XP, and offers |
 | `villagerPerformanceOptimization` | Enum | `false` | `false`, `true`, `ops`, `1-4` | 1.21+ | Enables villager trade/gift optimization and controls `/villagerPerformance` access. |
 | `hostileMobInventoryAccess` | Boolean | `false` | `false`, `true` | All supported versions | Opens hostile-mob equipment with an empty-handed sneak right-click. |
-| `droppedItemStackLimit` | Enum | `false` | `false`, `true`, `ops`, `0-4` | All supported versions | Configures independent ground, inventory, and container stack limits. Inventory or container limits require the FGA client; ground-only limits remain server-only. |
+| `droppedItemStackLimit` | Enum | `false` | `false`, `true`, `ops`, `0-4` | All supported versions | Configures independent ground, inventory, and container stack limits. Nonzero inventory or container limits require the FGA client only while the main rule is enabled. Disabling the main rule preserves the configuration without requiring the FGA client for these limits; ground-only limits remain server-only. |
 | `droppedItemMergeDistance` | Decimal | `-1` | `-1`, `0-16` | 1.21.1+ | Sets the horizontal ground-item merge distance; `-1` keeps vanilla behavior. |
 | `unlimitedFillCommands` | Boolean | `false` | `false`, `true` | 1.21.8+ | Removes `/fill` and `/fillbiome` volume limits while keeping vanilla safety checks. |
 | `preStackDroppedItems` | Boolean | `false` | `false`, `true` | 1.21-26.2 | Enables entity, block, and container pre-stacking configured by `/dropPreStack`. |
@@ -71,6 +71,14 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 The legacy `preStackMobDeathDrops` and `preStackMobDeathDropsRange` rules are hidden and retained only for save compatibility. Use `/dropPreStack entity ...` for new configuration.
 
 `entityDropRemoval` is server-side only and is registered on Minecraft 1.21+. Use `/entityDropRemoval set <entity id> <item id|allEquipment>` to add an entry, `remove` to delete one, `list` to inspect all configured entities, and `list <entity id>` to inspect the default loot table and currently identifiable drop configuration. Item entries filter matching items in the entity's death flow, including loot-table, equipment, and `spawnAtLocation` output. `allEquipment` filters only the helmet, chestplate, leggings, boots, main-hand, and off-hand slots, so a same-named loot-table item is kept. `false` hides and blocks the command; `true`, `ops`, and `0-4` control command access. The file is `world/config/carpetfgaaddition/entity-drop-removal.json`, written with atomic replacement; corrupt files are preserved and disabled for the current run. Red minus buttons in list output remove entries.
+
+On all nine current build versions (`1.21.1` through `26.2`), player inventory capacity preserves the original container method when there is no effective FGA capacity override, including other mods' return values. An item maximum above 99 alone does not expand inventory capacity.
+
+On all nine current build versions (`1.21.1` through `26.2`), disabling `droppedItemStackLimit` preserves the original hopper and hopper-minecart item-entity transfer chain. When enabled, oversized stacks make at most one batch attempt per transfer, preserving other mods' inner transfer limits and leaving the remainder for later attempts.
+
+On all nine current build versions (`1.21.1` through `26.2`), disabling `droppedItemStackLimit` disables the effective `inventoryLimit` and `containerLimit`, including after configuration reload and server restart. Saved nonzero values are retained and take effect again when the rule is re-enabled.
+
+On all nine current build versions (`1.21.1` through `26.2`), disabling `droppedItemStackLimit` preserves the original merge count arguments and eligibility; FGA does not replay eligibility to override another mod's veto. With `droppedItemMergeDistance=-1`, the supplied search box is preserved. The distance rule remains independent of the stack rule.
 
 ## Deepslate stonecutting and player loading
 

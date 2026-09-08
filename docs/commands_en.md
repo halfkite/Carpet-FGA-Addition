@@ -7,7 +7,7 @@
 | Command | Related rule | Permission/version | Description |
 |---|---|---|---|
 | `/player` range actions | `fakePlayerRangeControl` | Carpet player permission/all versions | Runs fake-player range placement, interaction, attack, or continuous tasks. |
-| `/droppedItemStackLimit` | `droppedItemStackLimit` | Rule permission/all supported versions | Configures independent ground, inventory, and container stack limits. Inventory or container limits require the FGA client. |
+| `/droppedItemStackLimit` | `droppedItemStackLimit` | Rule permission/all supported versions | Configures independent ground, inventory, and container stack limits. Nonzero inventory or container limits require the FGA client only while the main rule is enabled. Disabling the main rule preserves the configuration without requiring the FGA client for these limits. |
 | `/dropPreStack` | `preStackDroppedItems` | Drop configuration permission/1.21-26.2 | Configures entity, block, and container pre-stacking. |
 | `/entityDropRemoval` | `entityDropRemoval` | Rule permission/1.21.1 | Configures death-drop removal by entity and item ID. |
 | `/villagerPerformance` | `villagerPerformanceOptimization` | Rule permission/1.21+ | Configures villager trades, gifts, and wandering-trader protection. |
@@ -82,6 +82,10 @@ Options can be combined: `pathfinding`, `reach <0.1-64>`, `airPlace`, `ignoreObs
 /droppedItemStackLimit mode all <count>
 /droppedItemStackLimit mode black <count>
 /droppedItemStackLimit mode whitelist
+/droppedItemStackLimit mode inventory <count>
+/droppedItemStackLimit mode container <count>
+/droppedItemStackLimit reset inventory
+/droppedItemStackLimit reset container
 /droppedItemStackLimit set black <item id>
 /droppedItemStackLimit remove black <item id>
 /droppedItemStackLimit set whitelist <item id> <count>
@@ -91,6 +95,8 @@ Options can be combined: `pathfinding`, `reach <0.1-64>`, `airPlace`, `ignoreObs
 ```
 
 `list` is paged and shows the display name, full item ID, and count. List entries provide clickable removal commands. Invalid configuration keeps vanilla-safe limits and rejects writes.
+
+On all nine current build versions (`1.21.1` through `26.2`), saved `inventoryLimit` / `containerLimit` values are separate from activation: disabling the main rule, including across a restart, stops applying them without clearing them; re-enabling restores them.
 
 ## `/entityDropRemoval` and `/fga entityDropRemoval`
 

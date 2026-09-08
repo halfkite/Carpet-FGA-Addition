@@ -171,6 +171,11 @@ public final class DroppedItemStackLimitConfig {
 
     private static int scopedLimit(int configured, ItemStack stack) {
         int vanilla = stack.getMaxStackSize();
+        //#if MC >= 1.21.1 && MC <= 26.2
+        if (!FGASettings.isDroppedItemStackLimitEnabled() || loadFailed) {
+            return vanilla;
+        }
+        //#endif
         return configured > 0 && vanilla > 1 ? Math.max(vanilla, configured) : vanilla;
     }
 
@@ -201,6 +206,9 @@ public final class DroppedItemStackLimitConfig {
     }
 
     public static boolean requiresModdedClient() {
+        if (!FGASettings.isDroppedItemStackLimitEnabled()) {
+            return false;
+        }
         State current = state;
         return !loadFailed && (current.inventoryLimit() > 0 || current.containerLimit() > 0);
     }
