@@ -345,9 +345,11 @@ public final class MinecartFeatureManager {
 
     public static void minecartRemoved(Minecart minecart, Entity.RemovalReason reason) {
         BOOSTS.remove(minecart.getUUID());
+        // Disabled binding freezes persisted links.  Do not resolve, remove or
+        // refund them as a side effect of an entity lifecycle callback.
+        if (!FGASettings.chainMinecartBinding) return;
         if (minecart.level() instanceof ServerLevel level) ensureLinks(level.getServer());
-        boolean breakForDimensionChange = reason == Entity.RemovalReason.CHANGED_DIMENSION
-                && FGASettings.chainMinecartBinding;
+        boolean breakForDimensionChange = reason == Entity.RemovalReason.CHANGED_DIMENSION;
         if (links == null || (!reason.shouldDestroy() && !breakForDimensionChange)) return;
         List<LinkKey> connected = linksFor(minecart.getUUID());
         for (LinkKey key : connected) {
@@ -358,6 +360,7 @@ public final class MinecartFeatureManager {
     }
 
     private static void solveLinks(Minecart minecart) {
+        if (!FGASettings.chainMinecartBinding) return;
         if (minecart.level() instanceof ServerLevel level) ensureLinks(level.getServer());
         if (links == null) return;
         MinecraftServer server = ((ServerLevel) minecart.level()).getServer();
@@ -368,7 +371,6 @@ public final class MinecartFeatureManager {
             Minecart first = findMinecart(server, key.first());
             Minecart second = findMinecart(server, key.second());
             if (first == null || second == null) continue;
-            if (!FGASettings.chainMinecartBinding) continue;
             LinkRecord record = links.links.get(key);
             if (first.level() != second.level()) {
                 removeLink(key);
