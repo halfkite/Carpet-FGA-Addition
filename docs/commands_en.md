@@ -1,11 +1,12 @@
 # Carpet FGA Addition Commands
 
-> Documentation version: `1.5.7`
+> Documentation version: `1.5.8`
 
 ## Command index
 
 | Command | Related rule | Permission/version | Description |
 |---|---|---|---|
+| `/player <name> possess [stop]` | `playerPossession` | `commandPlayer` and possession policy/1.21.1 | Uses the reference implementation to swap the live entities' state, identity and position. Either participant may end the session. No FGA client required. |
 | `/player` range actions | `fakePlayerRangeControl` | Carpet player permission/all versions | Runs fake-player range placement, interaction, attack, or continuous tasks. |
 | `/droppedItemStackLimit` | `droppedItemStackLimit` | Rule permission/all supported versions | Configures independent ground, inventory, and container stack limits. Nonzero inventory or container limits require the FGA client only while the main rule is enabled. Disabling the main rule preserves the configuration without requiring the FGA client for these limits. |
 | `/dropPreStack` | `preStackDroppedItems` | Drop configuration permission/1.21-26.2 | Configures entity, block, and container pre-stacking. |
@@ -18,6 +19,18 @@
 | `/regenerateTerrain` | `voidWorldGeneration`, `terrainRegenerationCommandPermission` | Configured permission/1.21-26.2 | Queues normal-terrain regeneration or full-air clearing for the next restart. |
 | `/trialStop` | `trialStopCommandPermission` | Rule permission/1.21-26.2 | Stops and refreshes loaded trial spawners with no, normal, or immediate rewards. |
 | `/playertpend` | `PlayerTpEndControl` | `control` mode/1.21+ | Manages each player's three End portal preferences. |
+
+## `/player <name> possess`
+
+Minecraft 1.21.1 only. Install FGA on the server; both participants may use vanilla clients.
+
+- `/player <name> possess` follows the PlayerControl reference implementation: it swaps the live entities' game state, identity, position, view, inventory, containers and riding relationship while the controller keeps its own connection and command source.
+- `/player <target-name> possess stop` ends that session for either participant.
+- `playerPossession` defaults to `false`. `true` allows all targets; `onlyfake` restricts everyone, including OPs, to fake targets; `opreal` restricts real targets to OPs; `ops` restricts all possession to OPs. Carpet `commandPlayer` also applies.
+- Both entities and UUIDs remain in place. They continue normal world simulation, and damage, movement, experience and item changes during the session remain with the current entity state. Stopping swaps the states back without copying or writing offline player data. A real target stays connected; its input is blocked, while chat and the stop command remain available.
+- Self-possession, overlapping sessions and nested possession are rejected. Starting closes containers and stops automatic actions and range/sorting tasks; they do not resume on exit. Death, removal, disconnection or loss of permission ends the session.
+- While enabled, the shared `/player` name suggestions are filtered by possession permissions. Participants cannot start or continue Carpet automatic manipulation tasks, while the stop command remains available.
+- No custom payload or persistent possession configuration is added, and offline player data is not edited. See `scripts/tests/possession.md` for manual multiplayer acceptance checks.
 
 ## `/playertpend`
 

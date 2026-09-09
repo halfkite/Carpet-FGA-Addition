@@ -179,6 +179,12 @@ public final class FakePlayerItemSortManager {
     }
 
     public static boolean start(ServerPlayer player, boolean continuous, UUID initiator, StringBuilder error) {
+        //#if MC == 1.21.1
+        if (PlayerPossessionManager.isParticipant(player)) {
+            error.append(PlayerPossessionManager.text(player, "busy").getString());
+            return false;
+        }
+        //#endif
         if (!preconditions(error)) return false;
         JOBS.put(player.getUUID(), new Job(player.getUUID(), continuous, initiator));
         return true;

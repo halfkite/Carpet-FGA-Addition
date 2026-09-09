@@ -1,0 +1,28 @@
+gradle.afterProject { p ->
+    if (p.name == '1.21.1') {
+        def smoke = p.sourceSets.create('possessionTest')
+        smoke.java.srcDir p.rootProject.file('scripts/tests/possession/java')
+        smoke.resources.srcDir p.rootProject.file('scripts/tests/possession/resources')
+        smoke.compileClasspath += p.sourceSets.main.compileClasspath + p.sourceSets.main.output
+        smoke.runtimeClasspath += p.sourceSets.main.runtimeClasspath
+        p.tasks.named(smoke.compileJavaTaskName) {
+            setSource(p.rootProject.fileTree('scripts/tests/possession/java') { include '**/*.java' })
+        }
+        p.loom.mods.create('fga_possession_test') { sourceSet smoke }
+        def testDir = p.rootProject.file('build/possession-tests/' + new Date().format('yyyyMMdd-HHmmss-SSS'))
+        p.loom.runs.named('server') {
+            source smoke
+            runDir testDir.absolutePath
+            if (p.hasProperty('possessionDebug')) vmArg '-Dmixin.debug.export=true'
+        }
+        p.tasks.named('runServer') {
+            dependsOn p.tasks.named(smoke.classesTaskName)
+            doFirst {
+                testDir.mkdirs()
+                new File(testDir, 'eula.txt').text = 'eula=true\n'
+                new File(testDir, 'server.properties').text = 'online-mode=false\nserver-port=0\nview-distance=2\nsimulation-distance=2\nlevel-name=possession-test-world\nlevel-type=minecraft:flat\nspawn-protection=16\n'
+                new File(testDir, 'server.properties').append('generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}]}\n')
+            }
+        }
+    }
+}

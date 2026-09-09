@@ -30,14 +30,22 @@ public final class RangePlayerCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("player")
-                .requires(source ->
-                        //#if MC >= 1.19
-                        CommandHelper.canUseCommand(source, CarpetSettings.commandPlayer)
-                        //#else
-                        //$$ SettingsManager.canUseCommand(source, CarpetSettings.commandPlayer)
-                        //#endif
-                )
+                .requires(source -> {
+                    //#if MC == 1.21.1
+                    if (PlayerPossessionManager.isParticipant(source.getPlayer())) return true;
+                    //#endif
+                    return
+                            //#if MC >= 1.19
+                            CommandHelper.canUseCommand(source, CarpetSettings.commandPlayer)
+                            //#else
+                            //$$ SettingsManager.canUseCommand(source, CarpetSettings.commandPlayer)
+                            //#endif
+                            ;
+                })
                 .then(Commands.argument("player", StringArgumentType.word())
+                        //#if MC == 1.21.1
+                        .then(PlayerPossessionCommand.node())
+                        //#endif
                         .then(Commands.literal("stop").executes(RangePlayerCommand::stop))
                         //#if MC >= 1.20.1 && MC <= 26.2
                         .then(FakePlayerItemSortCommand.playerSort())
@@ -247,6 +255,12 @@ public final class RangePlayerCommand {
             context.getSource().sendFailure(FGACompat.literal("只能控制在线玩家"));
             return 0;
         }
+        //#if MC == 1.21.1
+        if (PlayerPossessionManager.isParticipant(player)) {
+            context.getSource().sendFailure(PlayerPossessionManager.text(context.getSource().getPlayer(), "busy"));
+            return 0;
+        }
+        //#endif
         boolean stopped = RangeActionManager.stop(player);
         FGACompat.actionPack(player).stopAll();
         if (stopped) {

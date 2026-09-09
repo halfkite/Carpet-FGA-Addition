@@ -1,0 +1,14 @@
+PlayerControl implementation reference
+
+The user-supplied playercontrol-master.zip (Java package
+ml.mypals.controlPlayer, mod ID fackplayercontrol) was reviewed for the
+possession implementation. Its LICENSE and fabric.mod.json declare CC0-1.0.
+
+FGA adapts the reference mod's in-memory snapshot, inventory, profile,
+dimension, passenger and client-view refresh approach for the existing
+`/player <name> possess` command. The adapted code is self-contained and does
+not depend on PlayerControl at runtime. Player entities, UUIDs and persistent
+playerdata are retained by FGA; no offline data is copied or rewritten.
+
+The supplied archive's project metadata contains template author/source
+placeholders, so no upstream author or repository URL is asserted here.

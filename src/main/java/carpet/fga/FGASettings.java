@@ -45,6 +45,12 @@ public class FGASettings {
     /** FGA 自定义分类，会出现在 /carpet 菜单中作为可点击选项 */
     public static final String FGA = "FGA";
 
+    //#if MC == 1.21.1
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+            options = {"false", "true", "onlyfake", "opreal", "ops"})
+    public static String playerPossession = "false";
+    //#endif
+
     //#if MC >= 1.21 && MC <= 26.2
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
