@@ -1,4 +1,5 @@
 This project includes code adapted from remove-dialog-warning.
+https://github.com/DrexHD/remove-dialog-warning
 
 Copyright (c) 2023 Drex
 

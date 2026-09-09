@@ -1,5 +1,6 @@
 Carpet FGA Addition uses implementation ideas from StackSizeTweaks for widening
 ItemStack count codecs and container stack-size handling
+https://github.com/Timbascool/StackSizeTweaks
 
 StackSizeTweaks
 Copyright (c) 2026 Timbascool

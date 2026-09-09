@@ -1,4 +1,5 @@
 InventoryAdvancementAccelerator functionality attribution
+https://github.com/vicuna-main/InventoryAdvancementAccelerator
 
 This mod includes a Fabric adaptation of inventory_changed advancement indexing
 from InventoryAdvancementAccelerator by vicuna.
