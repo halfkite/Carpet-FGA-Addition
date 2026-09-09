@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -13,6 +13,7 @@ import com.google.gson.JsonParser;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -29,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-/** Commands for configuring per-entity death-drop filters on Minecraft 1.21.1. */
+/** Commands for configuring per-entity death-drop filters on Minecraft 1.21+. */
 public final class EntityDropRemovalCommand {
     private EntityDropRemovalCommand() {
     }
@@ -55,20 +56,23 @@ public final class EntityDropRemovalCommand {
                         .then(entityArgument().executes(EntityDropRemovalCommand::listEntity)));
     }
 
-    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> entityArgument() {
-        return Commands.argument("entity", StringArgumentType.word())
+    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, ResourceLocation> entityArgument() {
+        return Commands.argument("entity", ResourceLocationArgument.id())
                 .suggests(EntityDropRemovalCommand::entitySuggestions);
     }
 
     private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> dropArgument() {
-        return Commands.argument("drop", StringArgumentType.word())
+        // ResourceLocationArgument handles the namespace separator in IDs (for example
+        // minecraft:gold_ingot). The drop argument also accepts the allEquipment sentinel,
+        // so keep it as a greedy string and normalize it before dispatching.
+        return Commands.argument("drop", StringArgumentType.greedyString())
                 .suggests(EntityDropRemovalCommand::dropSuggestions);
     }
 
     private static int set(CommandContext<CommandSourceStack> context) {
         try {
             ResourceLocation entityId = entityId(context);
-            String drop = StringArgumentType.getString(context, "drop");
+            String drop = StringArgumentType.getString(context, "drop").trim();
             if (EntityDropRemovalConfig.ALL_EQUIPMENT.equals(drop)) {
                 EntityDropRemovalConfig.setAllEquipment(entityId);
             } else {
@@ -84,7 +88,7 @@ public final class EntityDropRemovalCommand {
     private static int remove(CommandContext<CommandSourceStack> context) {
         try {
             ResourceLocation entityId = entityId(context);
-            String drop = StringArgumentType.getString(context, "drop");
+            String drop = StringArgumentType.getString(context, "drop").trim();
             boolean removed = EntityDropRemovalConfig.ALL_EQUIPMENT.equals(drop)
                     ? EntityDropRemovalConfig.removeAllEquipment(entityId)
                     : EntityDropRemovalConfig.removeItem(entityId, EntityDropRemovalConfig.parseItemId(drop));
@@ -126,16 +130,29 @@ public final class EntityDropRemovalCommand {
     private static int listEntity(CommandContext<CommandSourceStack> context) {
         try {
             ResourceLocation entityId = entityId(context);
-            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(entityId);
+            EntityType<?> type =
+                    //#if MC >= 1.21.3
+                    //$$ BuiltInRegistries.ENTITY_TYPE.get(entityId)
+                    //$$         .map(reference -> reference.value())
+                    //$$         .orElseThrow(() -> new IllegalArgumentException("未注册的生物 ID / Unknown entity: " + entityId));
+                    //#else
+                    BuiltInRegistries.ENTITY_TYPE.get(entityId);
+                    //#endif
             EntityDropRemovalConfig.Entry entry = EntityDropRemovalConfig.entry(entityId);
             MutableComponent message = FGACompat.literal("生物掉落物 / Entity drops: " + entityId + "\n")
                     .withStyle(ChatFormatting.GOLD);
             var lootTable = type.getDefaultLootTable();
+            ResourceLocation lootTableId =
+                    //#if MC >= 1.21.3
+                    //$$ lootTable.map(key -> key.location()).orElse(null);
+                    //#else
+                    lootTable == null ? null : lootTable.location();
+                    //#endif
             message.append(FGACompat.literal("战利品表 / loot table: "
-                    + (lootTable == null ? "none" : lootTable.location()) + "\n")
+                    + (lootTableId == null ? "none" : lootTableId) + "\n")
                     .withStyle(ChatFormatting.GRAY));
-            Set<ResourceLocation> lootItems = lootTable == null ? Set.of()
-                    : lootTableItems(context, lootTable.location());
+            Set<ResourceLocation> lootItems = lootTableId == null ? Set.of()
+                    : lootTableItems(context, lootTableId);
             message.append(FGACompat.literal("原版战利品表 / Vanilla loot table drops:\n")
                     .withStyle(ChatFormatting.YELLOW));
             if (lootItems.isEmpty()) {
@@ -190,7 +207,8 @@ public final class EntityDropRemovalCommand {
     }
 
     private static ResourceLocation entityId(CommandContext<CommandSourceStack> context) {
-        return EntityDropRemovalConfig.parseEntityId(StringArgumentType.getString(context, "entity"));
+        return EntityDropRemovalConfig.parseEntityId(
+                ResourceLocationArgument.getId(context, "entity").toString());
     }
 
     private static CompletableFuture<Suggestions> entitySuggestions(CommandContext<CommandSourceStack> context,
@@ -261,7 +279,14 @@ public final class EntityDropRemovalCommand {
 
     private static void appendDropLine(MutableComponent message, ResourceLocation entityId,
                                        ResourceLocation itemId, boolean removed) {
-        Item item = BuiltInRegistries.ITEM.get(itemId);
+        Item item =
+                //#if MC >= 1.21.3
+                //$$ BuiltInRegistries.ITEM.get(itemId)
+                //$$         .map(reference -> reference.value())
+                //$$         .orElseThrow(() -> new IllegalArgumentException("未注册的物品 ID / Unknown item: " + itemId));
+                //#else
+                BuiltInRegistries.ITEM.get(itemId);
+                //#endif
         MutableComponent label = new ItemStack(item).getHoverName().copy();
         message.append(label.withStyle(ChatFormatting.WHITE))
                 .append(FGACompat.literal(" / " + itemId + " ").withStyle(ChatFormatting.GRAY));

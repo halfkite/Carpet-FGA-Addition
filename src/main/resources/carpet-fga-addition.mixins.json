@@ -105,7 +105,7 @@
         "ServerGamePacketListenerPlayerLoadDistanceMixin",
         "EntityPlayerMPFakeMixin"
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         ,"EntityDropRemovalLootMixin",
         "EntityDropRemovalEquipmentMixin"
         //#endif

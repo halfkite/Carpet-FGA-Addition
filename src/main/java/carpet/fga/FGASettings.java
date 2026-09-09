@@ -1822,7 +1822,7 @@ public class FGASettings {
                 || zombifiedPiglinDropReduction.equals("all");
     }
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.2
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,

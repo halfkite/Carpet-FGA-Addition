@@ -98,6 +98,15 @@ public final class FullShulkerBoxCraftingManager {
     }
     //#endif
 
+    /** Returns the authoritative rule state used by click wrappers and result updates. */
+    public static boolean enabled() {
+        //#if MC >= 1.21
+        return ruleEnabled();
+        //#else
+        //$$ return FGASettings.fullShulkerBoxCrafting;
+        //#endif
+    }
+
     private FullShulkerBoxCraftingManager() {
     }
 

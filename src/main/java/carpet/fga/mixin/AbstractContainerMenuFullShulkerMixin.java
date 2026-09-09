@@ -35,6 +35,10 @@ public abstract class AbstractContainerMenuFullShulkerMixin {
                                                   ClickType clickType, Player player,
                                                   //#endif
                                                   Operation<Void> original) {
+        if (!FullShulkerBoxCraftingManager.enabled()) {
+            original.call(menu, slotId, button, clickType, player);
+            return;
+        }
         boolean restock =
                 //#if MC >= 26.1.2
                 //$$ clickType == ContainerInput.QUICK_MOVE || clickType == ContainerInput.THROW;

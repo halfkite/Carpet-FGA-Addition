@@ -88,7 +88,7 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.20.1 && MC <= 26.2
         DropPreStackConfig.load(server);
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         EntityDropRemovalConfig.load(server);
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
@@ -128,7 +128,7 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
         DropPreStackCommand.register(dispatcher);
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         EntityDropRemovalCommand.register(dispatcher);
         //#endif
         //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
@@ -209,7 +209,7 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.20.1 && MC <= 26.2
         DropPreStackConfig.clear();
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         EntityDropRemovalConfig.clear();
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1

@@ -8,6 +8,7 @@ public final class FakePlayerNameAlias {
     private static final int NETWORK_NAME_LIMIT = 16;
     private static final int PREFIX_LENGTH = 7;
     private static final ThreadLocal<Boolean> FULL_NAMES = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Boolean> READ_PREVIOUS = new ThreadLocal<>();
 
     private FakePlayerNameAlias() {
     }
@@ -39,6 +40,27 @@ public final class FakePlayerNameAlias {
         } finally {
             FULL_NAMES.set(previous);
         }
+    }
+
+    /**
+     * Returns whether the current packet operation is explicitly carrying an
+     * FGA long-name PlayerInfo payload.  The value is deliberately scoped to
+     * the current thread so generic UTF fields are left untouched.
+     */
+    public static boolean fullNamesActive() {
+        return FULL_NAMES.get();
+    }
+
+    public static void beginFullNamesRead() {
+        READ_PREVIOUS.set(FULL_NAMES.get());
+        FULL_NAMES.set(true);
+    }
+
+    public static void endFullNamesRead() {
+        Boolean previous = READ_PREVIOUS.get();
+        if (previous == null || !previous) FULL_NAMES.remove();
+        else FULL_NAMES.set(true);
+        READ_PREVIOUS.remove();
     }
 
     public static String alias(String name) {
