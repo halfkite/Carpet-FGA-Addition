@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.7`
+> Documentation version: `1.5.8`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default.
 
@@ -8,6 +8,7 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 
 | Rule | Type | Default | Values | Versions | Description |
 |---|---|---|---|---|---|
+| `playerPossession` | Enum | `false` | `false`, `true`, `onlyfake`, `opreal`, `ops` | 1.21.1 | `false` disables; `true` allows everyone to possess fake or real players; `onlyfake` allows fake players only; `opreal` allows regular players to possess fakes and operators to possess real or fake players; `ops` allows operators only. Also obeys `commandPlayer` entry permission. Source: PlayerControl implementation (CC0-1.0); server-only. |
 | `fakePlayerNameLength` | Integer | `-1` | `-1`, `1-128` | 1.21+ | Controls fake-player name length; `-1` keeps vanilla limits. |
 | `fakePlayerRangeControl` | Boolean | `false` | `false`, `true` | All supported versions | Enables fake-player range placing, interaction, breaking, and continuous tasks. |
 | `endGatewayRegeneration` | Boolean | `false` | `false`, `true` | 1.21+ | Regenerates destroyed vanilla End gateways without changing surrounding blocks. |

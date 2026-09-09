@@ -52,6 +52,12 @@ public final class RangeActionManager {
                                 BlockPos second, boolean continuous, boolean pathfinding, double reach,
                                 boolean airPlace, boolean ignoreObstruction, boolean placeBlock,
                                 boolean interactBlock, int interactSpeed) {
+        //#if MC == 1.21.1
+        if (PlayerPossessionManager.isParticipant(player)) {
+            source.sendFailure(PlayerPossessionManager.text(source.getPlayer(), "busy"));
+            return false;
+        }
+        //#endif
         if (!(player instanceof EntityPlayerMPFake)) {
             source.sendFailure(FGACompat.literal("区域操作只能由假人执行"));
             return false;

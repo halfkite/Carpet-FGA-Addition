@@ -20,6 +20,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = PlayerCommand.class, remap = false)
 public class PlayerCommandMixin {
 
+    //#if MC == 1.21.1
+    @Inject(method = "getPlayerSuggestions", at = @At("RETURN"), cancellable = true, remap = false)
+    private static void fga$possessionSuggestions(CommandSourceStack source,
+            CallbackInfoReturnable<java.util.Collection<String>> cir) {
+        cir.setReturnValue(carpet.fga.PlayerPossessionCommand.suggestNames(source, cir.getReturnValue()));
+    }
+
+    @Inject(method = "cantManipulate", at = @At("HEAD"), cancellable = true, remap = false)
+    private static void fga$protectPossession(CommandContext<CommandSourceStack> context, CallbackInfoReturnable<Boolean> cir) {
+        var target = context.getSource().getServer().getPlayerList().getPlayerByName(
+                com.mojang.brigadier.arguments.StringArgumentType.getString(context, "player"));
+        if (target != null && carpet.fga.PlayerPossessionManager.isParticipant(target)) {
+            context.getSource().sendFailure(carpet.fga.PlayerPossessionManager.text(context.getSource().getPlayer(), "busy"));
+            cir.setReturnValue(true);
+        }
+    }
+    //#endif
+
     //#if MC == 1.20.1 || MC >= 1.21.1
     @Inject(method = "spawn", at = @At("HEAD"), cancellable = true, remap = false)
     private static void carpetFga$preloadCommandFakePlayerProfile(

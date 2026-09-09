@@ -1,6 +1,6 @@
 # Carpet FGA Addition 规则
 
-> 文档版本：`1.5.7`
+> 文档版本：`1.5.8`
 
 所有规则通过 `/carpet <规则名> <值>` 管理。未特别说明时，规则默认关闭。
 
@@ -8,6 +8,7 @@
 
 | 规则 | 类型 | 默认值 | 可选值 | 生效版本 | 说明 |
 |---|---|---|---|---|---|
+| `playerPossession` | 枚举 | `false` | `false`、`true`、`onlyfake`、`opreal`、`ops` | 1.21.1 | `false` 关闭；`true` 所有人可控制假人或真人；`onlyfake` 仅假人；`opreal` 普通玩家仅假人、OP 可控制真人；`ops` 仅 OP 可控制假人或真人。同时受 `commandPlayer` 入口权限限制；功能来源为 PlayerControl 模组实现（CC0-1.0），纯服务端 |
 | `fakePlayerNameLength` | 整数 | `-1` | `-1`、`1-128` | 1.21+ | 控制假人名称长度；`-1` 使用原版限制。 |
 | `fakePlayerRangeControl` | 布尔 | `false` | `false`、`true` | 全版本 | 启用假人区域放置、交互、破坏和连续任务。 |
 | `endGatewayRegeneration` | 布尔 | `false` | `false`、`true` | 1.21+ | 记录并再生被破坏的原版末地折跃门，只恢复折跃门方块。 |

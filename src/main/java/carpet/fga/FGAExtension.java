@@ -2,6 +2,9 @@ package carpet.fga;
 
 import carpet.CarpetExtension;
 import carpet.CarpetServer;
+//#if MC == 1.21.1
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+//#endif
 //#if MC >= 1.19
 import carpet.utils.CommandHelper;
 //#endif
@@ -39,6 +42,10 @@ public class FGAExtension implements CarpetExtension {
         registerUnlimitedFillLegacyBridge();
         registerItemFrameBlockificationObserver();
         registerPlayerLoadDistanceObserver();
+        //#if MC == 1.21.1
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                PlayerPossessionManager.disconnected(handler.getPlayer(), server));
+        //#endif
         // Register FGA rules into carpet's main SettingsManager so they appear under /carpet.
         //#if MC >= 1.19
         carpet.api.settings.SettingsManager carpetManager = CarpetServer.settingsManager;
@@ -152,6 +159,9 @@ public class FGAExtension implements CarpetExtension {
         //#if MC <= 26.2
         DeathDropPreStackManager.clearTickCache();
         //#endif
+        //#if MC == 1.21.1
+        PlayerPossessionManager.tick(server);
+        //#endif
         //#if MC >= 1.20.1
         StackLimitClientRequirement.tick(server);
         //#endif
@@ -188,6 +198,9 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onServerClosed(MinecraftServer server) {
+        //#if MC == 1.21.1
+        PlayerPossessionManager.clear();
+        //#endif
         VehicleStopConfig.clear();
         VehicleStopManager.clear();
         RecipeBookAlwaysUnlockedManager.clear();
@@ -306,6 +319,10 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.19
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
             if (!"droppedItemStackLimit".equals(rule.name())
+                    //#if MC == 1.21.1
+                    && !"playerPossession".equals(rule.name())
+                    && !"commandPlayer".equals(rule.name())
+                    //#endif
                     && !"villagerPerformanceOptimization".equals(rule.name())
                     && !"minecartFeatureCommandPermission".equals(rule.name())
                     && !"terrainRegenerationCommandPermission".equals(rule.name())
@@ -319,6 +336,11 @@ public class FGAExtension implements CarpetExtension {
             }
             MinecraftServer server = CarpetServer.minecraft_server;
             if (server != null) {
+                //#if MC == 1.21.1
+                if ("playerPossession".equals(rule.name()) || "commandPlayer".equals(rule.name())) {
+                    PlayerPossessionManager.onRuleChanged();
+                }
+                //#endif
                 CommandHelper.notifyPlayersCommandsChanged(server);
             }
         });

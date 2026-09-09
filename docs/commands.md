@@ -1,11 +1,12 @@
 # Carpet FGA Addition 命令
 
-> 文档版本：`1.5.7`
+> 文档版本：`1.5.8`
 
 ## 命令总表
 
 | 命令 | 相关规则 | 权限/版本 | 说明 |
 |---|---|---|---|
+| `/player <名字> possess [stop]` | `playerPossession` | `commandPlayer` 与夺舍规则/1.21.1 | 按参考模组交换双方在线实体的状态、身份和位置；双方均可结束会话，无需 FGA 客户端。 |
 | `/player` 区域操作 | `fakePlayerRangeControl` | Carpet 玩家权限/全版本 | 让假人执行区域放置、交互、攻击或连续任务。 |
 | `/droppedItemStackLimit` | `droppedItemStackLimit` | 规则权限/全部支持版本 | 配置地面、玩家背包和容器的独立堆叠上限，主规则开启且背包或容器上限非零时需要 FGA 客户端；主规则关闭后保留配置，但不会因此要求安装 FGA 客户端。 |
 | `/dropPreStack` | `preStackDroppedItems` | 与掉落物上限权限/1.21-26.2 | 配置生物、方块和容器掉落预堆叠。 |
@@ -18,6 +19,18 @@
 | `/regenerateTerrain` | `voidWorldGeneration`、`terrainRegenerationCommandPermission` | 配置权限/1.21-26.2 | 将正常地形重生成或全空气清除任务加入下次重启队列。 |
 | `/trialStop` | `trialStopCommandPermission` | 规则权限/1.21-26.2 | 一次性截停并刷新已加载试炼刷怪笼，可选择无奖励、正常奖励或立即奖励。 |
 | `/playertpend` | `PlayerTpEndControl` | `control` 模式/1.21+ | 管理每名玩家的三种末地门传送偏好。 |
+
+## `/player <名字> possess`
+
+仅 Minecraft 1.21.1，服务端安装 FGA 即可，双方客户端均可使用原版。
+
+- `/player <名字> possess`：按 PlayerControl 参考实现交换双方在线实体的游戏状态、身份、位置、视角、背包、容器和骑乘关系；操控者继续使用自己的连接和命令源。
+- `/player <目标名字> possess stop`：操控者或被接管者结束该会话。
+- `playerPossession` 默认 `false`。`true` 允许所有目标；`onlyfake` 仅假人（OP 也不例外）；`opreal` 仅 OP 可接管真人；`ops` 仅 OP 能接管任何目标。始终同时检查 Carpet `commandPlayer`。
+- 双方实体和 UUID 保持不变，交换期间各实体继续参与世界模拟，期间发生的伤害、移动、经验和物品变化随当前实体状态保留；退出时将双方状态交换回各自实体，不复制或写入离线玩家数据。真人目标保持在线，输入被屏蔽但仍可聊天或主动退出。
+- 禁止自身、重复或嵌套接管。开始时关闭容器并停止双方自动动作与目标范围、整理任务，退出后不恢复任务。目标死亡、移除、断线、权限收紧或规则关闭时自动结束。
+- 夺舍规则启用时，共用的 `/player` 名字补全按夺舍目标权限筛选；参与夺舍的玩家不能启动或继续 Carpet 自动操控任务，退出命令始终保留。
+- 不新增自定义 Payload 或持久化夺舍配置；不修改离线玩家数据。客户端画面和实际多人操作的验收步骤见 `scripts/tests/possession.md`。
 
 ## `/playertpend`
 
