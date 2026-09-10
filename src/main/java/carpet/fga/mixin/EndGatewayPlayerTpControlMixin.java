@@ -31,11 +31,22 @@ public abstract class EndGatewayPlayerTpControlMixin {
     //#if MC >= 1.21
     //#if MC >= 1.21.5
     //#if MC >= 1.21.10
-    //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
+    //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true, require = 0)
     //$$ private void carpetFga$controlPlayerGateway(BlockState state, Level level, BlockPos pos, Entity entity,
     //$$                                             InsideBlockEffectApplier effectApplier, boolean flag, CallbackInfo ci) {
-    //$$     if (carpetFga$isClientSide(level) || !(entity instanceof ServerPlayer player)) return;
-    //$$     if (!PlayerTpEndControlManager.canTeleport(player, PlayerTpEndControlManager.PortalType.GATEWAY)) ci.cancel();
+    //$$     carpetFga$controlPlayerGateway(level, entity, ci);
+    //$$ }
+    //$$
+    //$$ @Inject(
+    //$$         method = "method_9548(Lnet/minecraft/class_2680;Lnet/minecraft/class_1937;Lnet/minecraft/class_2338;Lnet/minecraft/class_1297;Lnet/minecraft/class_10774;)V",
+    //$$         at = @At("HEAD"),
+    //$$         cancellable = true,
+    //$$         require = 0,
+    //$$         remap = false
+    //$$ )
+    //$$ private void carpetFga$controlPlayerGatewayLegacy(BlockState state, Level level, BlockPos pos, Entity entity,
+    //$$                                                     InsideBlockEffectApplier effectApplier, CallbackInfo ci) {
+    //$$     carpetFga$controlPlayerGateway(level, entity, ci);
     //$$ }
     //#else
     //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)

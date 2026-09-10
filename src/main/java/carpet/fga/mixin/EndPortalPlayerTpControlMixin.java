@@ -20,13 +20,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class EndPortalPlayerTpControlMixin {
     //#if MC >= 1.21.5
     //#if MC >= 1.21.10
-    //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
+    //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true, require = 0)
     //$$ private void carpetFga$controlPlayerEndPortal(BlockState state, Level level, BlockPos pos, Entity entity,
     //$$                                                 InsideBlockEffectApplier effectApplier, boolean flag, CallbackInfo ci) {
-    //$$     if (carpetFga$isClientSide(level) || !(entity instanceof ServerPlayer player)) return;
-    //$$     PlayerTpEndControlManager.PortalType type = level.dimension() == Level.END
-    //$$             ? PlayerTpEndControlManager.PortalType.EXIT : PlayerTpEndControlManager.PortalType.ENTER;
-    //$$     if (!PlayerTpEndControlManager.canTeleport(player, type)) ci.cancel();
+    //$$     carpetFga$controlPlayerEndPortal(level, entity, ci);
+    //$$ }
+    //$$
+    //$$ @Inject(
+    //$$         method = "method_9548(Lnet/minecraft/class_2680;Lnet/minecraft/class_1937;Lnet/minecraft/class_2338;Lnet/minecraft/class_1297;Lnet/minecraft/class_10774;)V",
+    //$$         at = @At("HEAD"),
+    //$$         cancellable = true,
+    //$$         require = 0,
+    //$$         remap = false
+    //$$ )
+    //$$ private void carpetFga$controlPlayerEndPortalLegacy(BlockState state, Level level, BlockPos pos, Entity entity,
+    //$$                                                       InsideBlockEffectApplier effectApplier, CallbackInfo ci) {
+    //$$     carpetFga$controlPlayerEndPortal(level, entity, ci);
     //$$ }
     //#else
     //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
