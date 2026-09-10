@@ -39,6 +39,7 @@ dependencies {
             modImplementation fabricApi
         }
         testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
     }
 }
 
@@ -238,8 +239,6 @@ java {
         languageVersion = JavaLanguageVersion.of(javaLanguageVersion)
     }
 }
-
-sourceSets.test.java.srcDir rootProject.file('src/test/java')
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
