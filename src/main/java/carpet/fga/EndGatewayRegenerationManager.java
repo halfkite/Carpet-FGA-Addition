@@ -40,10 +40,6 @@ public final class EndGatewayRegenerationManager {
     }
 
     public static void record(ServerLevel level, BlockPos position) {
-        // The rule is the authoritative gate.  In particular, do not touch
-        // SavedData (or the newer in-memory equivalent) while it is disabled;
-        // existing records remain available for a later re-enable.
-        if (!FGASettings.endGatewayRegeneration) return;
         if (!level.dimension().equals(Level.END)) return;
         BlockEntity blockEntity = level.getBlockEntity(position);
         if (!(blockEntity instanceof TheEndGatewayBlockEntity gateway)) return;

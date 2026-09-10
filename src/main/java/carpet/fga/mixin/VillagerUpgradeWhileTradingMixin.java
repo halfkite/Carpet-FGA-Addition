@@ -34,6 +34,9 @@ public abstract class VillagerUpgradeWhileTradingMixin {
     protected abstract void carpetFga$increaseMerchantCareer();
     //#endif
 
+    @Invoker("shouldIncreaseLevel")
+    protected abstract boolean carpetFga$shouldIncreaseLevel();
+
     @Invoker("resendOffersToTradingPlayer")
     protected abstract void carpetFga$resendOffersToTradingPlayer();
 
@@ -55,11 +58,15 @@ public abstract class VillagerUpgradeWhileTradingMixin {
         }
 
         if (this.increaseProfessionLevelOnUpdate) {
-            //#if MC >= 1.21.11
-            //$$ this.carpetFga$increaseMerchantCareer(level);
-            //#else
-            this.carpetFga$increaseMerchantCareer();
-            //#endif
+            // A single trade can cross multiple level thresholds. Process all of them
+            // before clearing the vanilla pending-upgrade flag and refreshing offers.
+            do {
+                //#if MC >= 1.21.11
+                //$$ this.carpetFga$increaseMerchantCareer(level);
+                //#else
+                this.carpetFga$increaseMerchantCareer();
+                //#endif
+            } while (this.carpetFga$shouldIncreaseLevel());
             this.increaseProfessionLevelOnUpdate = false;
             this.carpetFga$resendOffersToTradingPlayer();
         }

@@ -77,7 +77,7 @@
         ,"AnvilMenuNoPriorWorkPenaltyMixin",
         "PlayerExperienceLevelCostMixin"
         //#endif
-        //#if MC == 1.21.1 || MC == 26.2
+        //#if MC >= 1.21 && MC <= 26.2
         ,"EnchantmentMaxLevelMixin",
         "AnvilMenuEnchantmentAdditionMixin",
         "ItemCombinerMenuAccessor"
@@ -209,6 +209,12 @@
         //#endif
         //#if MC == 1.20.1 || MC >= 1.21.1 && MC <= 1.21.5
         ,"ClientDimensionIdPacketMixin"
+        //#endif
+        //#if MC == 1.21.1
+        ,"NetherPortalStateMixin",
+        "LightEngineAccessor",
+        "NetherPortalLightEngineMixin",
+        "NetherPortalLightUpdateMixin"
         //#endif
         //#if MC == 1.20.1
         //$$ ,"ClientboundRespawnPacketAccessor"

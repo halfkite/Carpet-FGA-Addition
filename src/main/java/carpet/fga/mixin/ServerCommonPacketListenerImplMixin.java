@@ -90,14 +90,7 @@ public abstract class ServerCommonPacketListenerImplMixin {
                 : packetFactory.get();
         fga$sendingCustomizedPlayerInfo = true;
         try {
-            if (sendFullNames) {
-                FakePlayerNameAlias.withFullNames(() -> {
-                    listener.send(customizedPacket);
-                    return null;
-                });
-            } else {
-                listener.send(customizedPacket);
-            }
+            listener.send(customizedPacket);
         } finally {
             fga$sendingCustomizedPlayerInfo = false;
         }

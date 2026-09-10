@@ -1,6 +1,6 @@
 package carpet.fga.mixin;
 
-//#if MC == 1.21.1 || MC == 26.2
+//#if MC >= 1.21 && MC <= 26.2
 import carpet.fga.EnchantmentLevelRules;
 import carpet.fga.FGASettings;
 import com.llamalad7.mixinextras.sugar.Local;

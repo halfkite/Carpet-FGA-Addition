@@ -39,7 +39,7 @@
 
 ## Features
 
-Provides Carpet rule extensions and server commands, including full shulker-box crafting, drop pre-stacking, and the 1.21.1 per-entity, per-item death-drop removal feature.
+Provides Carpet rule extensions and server commands, including full shulker-box crafting, drop pre-stacking, per-entity and per-item death-drop removal, and the 1.21.1 Nether portal no-light feature.
 
 ## Documentation
 
