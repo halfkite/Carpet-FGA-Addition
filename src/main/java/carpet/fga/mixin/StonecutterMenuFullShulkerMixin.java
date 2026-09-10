@@ -7,6 +7,7 @@ import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.ResultContainer;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.inventory.StonecutterMenu;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 //#if MC >= 1.21.3
 //$$ import net.minecraft.world.item.crafting.SelectableRecipe;
@@ -19,6 +20,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +58,7 @@ public abstract class StonecutterMenuFullShulkerMixin {
         StonecutterMenu menu = (StonecutterMenu) (Object) this;
         Container container = menu.container;
         FullShulkerBoxCraftingManager.registerStonecutterMenu(menu);
+        FullShulkerBoxCraftingManager.clearStonecutterPlan(menu);
         ItemStack content = FullShulkerBoxCraftingManager.stonecutterBoxContent(stack);
         if (content.isEmpty()) {
             LIST_CONTENT.remove(menu);
@@ -70,7 +73,11 @@ public abstract class StonecutterMenuFullShulkerMixin {
         //$$         FullShulkerBoxCraftingManager.stonecutterRecipesForContent(this.level, content);
         //#endif
         this.selectedRecipeIndex.set(-1);
-        menu.getSlot(1).set(ItemStack.EMPTY);
+        Slot resultSlot = menu.getSlot(1);
+        resultSlot.set(ItemStack.EMPTY);
+        if (resultSlot.container instanceof ResultContainer resultContainer) {
+            resultContainer.setRecipeUsed(null);
+        }
         LIST_CONTENT.put(menu, content);
         ci.cancel();
     }
@@ -79,6 +86,7 @@ public abstract class StonecutterMenuFullShulkerMixin {
     private void carpetFga$fullBoxResultSlot(CallbackInfo ci) {
         StonecutterMenu menu = (StonecutterMenu) (Object) this;
         FullShulkerBoxCraftingManager.registerStonecutterMenu(menu);
+        FullShulkerBoxCraftingManager.clearStonecutterPlan(menu);
         ItemStack stack = menu.container.getItem(0);
         ItemStack content = FullShulkerBoxCraftingManager.stonecutterBoxContent(stack);
         if (content.isEmpty()) {
@@ -88,13 +96,16 @@ public abstract class StonecutterMenuFullShulkerMixin {
         Slot resultSlot = menu.getSlot(1);
         int index = this.selectedRecipeIndex.get();
         RecipeHolder<StonecutterRecipe> recipe = carpetFga$selectedRecipe(index);
-        FullShulkerBoxCraftingManager.StonecutterPlan plan = recipe == null
-                ? null
-                : FullShulkerBoxCraftingManager.analyzeStonecutter(this.level, stack, recipe);
-        if (plan == null) {
+        ItemStack preview = recipe == null
+                ? ItemStack.EMPTY
+                : FullShulkerBoxCraftingManager.stonecutterPreview(menu, recipe);
+        if (preview.isEmpty()) {
             resultSlot.set(ItemStack.EMPTY);
+            if (resultSlot.container instanceof ResultContainer resultContainer) {
+                resultContainer.setRecipeUsed(null);
+            }
         } else {
-            resultSlot.set(plan.previewBox());
+            resultSlot.set(preview);
             if (resultSlot.container instanceof ResultContainer resultContainer) {
                 resultContainer.setRecipeUsed(recipe);
             }
@@ -117,6 +128,7 @@ public abstract class StonecutterMenuFullShulkerMixin {
     @Inject(method = "slotsChanged", at = @At("HEAD"), cancellable = true)
     private void carpetFga$fullBoxSlotsChanged(Container container, CallbackInfo ci) {
         StonecutterMenu menu = (StonecutterMenu) (Object) this;
+        FullShulkerBoxCraftingManager.clearStonecutterPlan(menu);
         ItemStack stored = LIST_CONTENT.get(menu);
         if (stored == null) return;
         ItemStack current = container.getItem(0);
@@ -131,6 +143,25 @@ public abstract class StonecutterMenuFullShulkerMixin {
             //#endif
             ci.cancel();
         }
+    }
+
+    @Inject(method = "quickMoveStack", at = @At("HEAD"), cancellable = true)
+    private void carpetFga$prepareEachFullBoxQuickMove(Player player, int slot,
+                                                       CallbackInfoReturnable<ItemStack> cir) {
+        if (slot != 1) return;
+        StonecutterMenu menu = (StonecutterMenu) (Object) this;
+        FullShulkerBoxCraftingManager.StonecutterPrepareResult result =
+                FullShulkerBoxCraftingManager.prepareStonecutterTake(menu.getSlot(1), player);
+        if (result == FullShulkerBoxCraftingManager.StonecutterPrepareResult.BLOCKED) {
+            cir.setReturnValue(ItemStack.EMPTY);
+        }
+    }
+
+    @Inject(method = "removed", at = @At("HEAD"))
+    private void carpetFga$clearFullBoxMenuState(Player player, CallbackInfo ci) {
+        StonecutterMenu menu = (StonecutterMenu) (Object) this;
+        LIST_CONTENT.remove(menu);
+        FullShulkerBoxCraftingManager.unregisterStonecutterMenu(menu);
     }
 }
 //#endif

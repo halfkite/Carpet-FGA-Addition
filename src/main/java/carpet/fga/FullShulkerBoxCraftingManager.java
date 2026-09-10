@@ -1,7 +1,7 @@
 //#if MC >= 1.16.5 && MC <= 26.2
 package carpet.fga;
 
-//#if MC >= 1.21
+//#if MC == 1.21.1
 import carpet.fga.mixin.StonecutterMenuAccessor;
 //#endif
 import net.minecraft.core.NonNullList;
@@ -66,6 +66,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
+//#if MC >= 1.21
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+//#endif
 
 /** Server-side full-shulker crafting backed by ordinary crafting recipes. */
 public final class FullShulkerBoxCraftingManager {
@@ -84,6 +88,12 @@ public final class FullShulkerBoxCraftingManager {
 //#endif
 //#if MC >= 1.21
     private static String lastRuleValue = "false";
+    private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/full-shulker-stonecutter");
+    private static final Map<Slot, StonecutterMenu> STONECUTTER_MENUS = new WeakHashMap<>();
+    private static final Map<Slot, StonecutterMenu> STONECUTTER_INPUT_MENUS = new WeakHashMap<>();
+    private static final Map<StonecutterMenu, PreparedStonecutterPlan> PREPARED_STONECUTTER =
+            new WeakHashMap<>();
+    private static long nextStonecutterToken;
     //#else
     //$$ private static boolean lastRuleValue;
     //#endif
@@ -218,6 +228,9 @@ public final class FullShulkerBoxCraftingManager {
     public static void refresh(MinecraftServer server) {
         PLANS.clear();
         LAST_NOTICE.clear();
+        //#if MC >= 1.21
+        PREPARED_STONECUTTER.clear();
+        //#endif
         if (server == null) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             player.containerMenu.slotsChanged(FGACompat.inventory(player));
@@ -240,6 +253,12 @@ public final class FullShulkerBoxCraftingManager {
         PLANS.clear();
         LAST_NOTICE.clear();
         PROCESSING.clear();
+        //#if MC >= 1.21
+        PREPARED_STONECUTTER.clear();
+        STONECUTTER_MENUS.clear();
+        STONECUTTER_INPUT_MENUS.clear();
+        nextStonecutterToken = 0L;
+        //#endif
         //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
         QUICK_RESULT_CONTEXT.remove();
         //#endif
@@ -511,12 +530,17 @@ public final class FullShulkerBoxCraftingManager {
     //#endif
 
     //#if MC >= 1.21
-    /** Plan for one full-box stonecutter craft; previewBox is the first output box, extraBoxes follow. */
-    public record StonecutterPlan(RecipeHolder<StonecutterRecipe> recipe, int requiredInput,
-                                  long crafts, ItemStack previewBox, List<ItemStack> extraBoxes) {
-    }
+    public enum StonecutterPrepareResult { NONE, READY, BLOCKED }
 
-    public enum StonecutterTakeResult { NONE, HANDLED, BLOCKED }
+    public record StonecutterCommitResult(boolean intercepted, ItemStack removedInput) {
+        private static StonecutterCommitResult passThrough() {
+            return new StonecutterCommitResult(false, ItemStack.EMPTY);
+        }
+
+        private static StonecutterCommitResult handled(ItemStack removedInput) {
+            return new StonecutterCommitResult(true, removedInput);
+        }
+    }
 
     /**
      * Recipe list lookup for a full-box input: recipes resolved against the box content item with
@@ -547,17 +571,27 @@ public final class FullShulkerBoxCraftingManager {
         return singleContent(input, shulkerSize(), new long[1]);
     }
 
-    public static StonecutterPlan analyzeStonecutter(Level level, ItemStack input,
-                                                     RecipeHolder<StonecutterRecipe> recipe) {
-        if (!ruleEnabled() || recipe == null) return null;
+    private static StonecutterAnalysis analyzeStonecutter(Level level, ItemStack input,
+                                                          RecipeHolder<StonecutterRecipe> recipe,
+                                                          Inventory inventory,
+                                                          boolean allowPreviewPlaceholders) {
+        if (!ruleEnabled() || recipe == null || inventory == null) return null;
         int shulkerSize = shulkerSize();
-        long[] totalOut = new long[1];
-        ItemStack content = singleContent(input, shulkerSize, totalOut);
+        long[] totalIn = new long[1];
+        ItemStack content = singleContent(input, shulkerSize, totalIn);
         if (content.isEmpty() || content.getMaxStackSize() <= 1) return null;
         int required = WoodStonecuttingRecipes.requiredInputCount(recipe);
         if (required <= 0) return null;
-        long crafts = totalOut[0] / required;
+        long crafts = totalIn[0] / required;
         if (crafts <= 0) return null;
+        long consumedMaterial;
+        try {
+            consumedMaterial = Math.multiplyExact((long) required, crafts);
+        } catch (ArithmeticException exception) {
+            return null;
+        }
+        long remainingMaterial = totalIn[0] - consumedMaterial;
+        if (remainingMaterial < 0) return null;
 
         ItemStack recipeOutput = recipe.value().assemble(new SingleRecipeInput(content)
                 //#if MC < 26.0
@@ -573,7 +607,12 @@ public final class FullShulkerBoxCraftingManager {
                 ? recipeOutput.getMaxStackSize()
                 : FGASettings.effectiveContainerStackLimit(recipeOutput);
         long outputCapacity = (long) outputStackLimit * shulkerSize;
-        long totalOutputItems = crafts * recipeOutput.getCount();
+        long totalOutputItems;
+        try {
+            totalOutputItems = Math.multiplyExact(crafts, (long) recipeOutput.getCount());
+        } catch (ArithmeticException exception) {
+            return null;
+        }
         if (outputCapacity <= 0 || totalOutputItems <= 0) return null;
         long boxCount;
         if (only64Mode()) {
@@ -584,76 +623,300 @@ public final class FullShulkerBoxCraftingManager {
         }
         if (boxCount <= 0 || boxCount > MAX_OUTPUT_BOXES) return null;
 
-        ItemStack template = FGACompat.copyWithCount(input, 1);
-        long firstBoxItems = Math.min(totalOutputItems, outputCapacity);
-        ItemStack previewBox = fillPartialBox(template, recipeOutput, outputStackLimit, shulkerSize, firstBoxItems);
-        List<ItemStack> extraBoxes = new ArrayList<>();
-        long remaining = totalOutputItems - firstBoxItems;
-        while (remaining > 0) {
-            long items = Math.min(outputCapacity, remaining);
-            extraBoxes.add(fillPartialBox(template, recipeOutput, outputStackLimit, shulkerSize, items));
-            remaining -= items;
+        boolean retainsSource = remainingMaterial > 0;
+        int outputBoxCount = (int) boxCount;
+        int requiredEmptyBoxes = outputBoxCount - (retainsSource ? 0 : 1);
+        if (requiredEmptyBoxes < 0) return null;
+        List<InventoryBox> emptyBoxes = findEmptyBoxes(inventory, requiredEmptyBoxes, shulkerSize);
+        if (emptyBoxes.size() < requiredEmptyBoxes) {
+            if (!allowPreviewPlaceholders) return null;
+            emptyBoxes = new ArrayList<>(emptyBoxes);
+            while (emptyBoxes.size() < requiredEmptyBoxes) {
+                emptyBoxes.add(new InventoryBox(-1, FGACompat.copyWithCount(input, 1)));
+            }
         }
-        return new StonecutterPlan(recipe, required, crafts, previewBox, List.copyOf(extraBoxes));
+        StonecutterBoxAllocation.Plan allocation = StonecutterBoxAllocation.allocate(
+                outputBoxCount, retainsSource, emptyBoxes.size());
+        if (allocation == null || allocation.requiredEmptyBoxes() != emptyBoxes.size()) return null;
+
+        ItemStack sourceBox = FGACompat.copyWithCount(input, 1);
+        ItemStack remainderBox = retainsSource
+                ? stonecutterRemainder(sourceBox, shulkerSize, consumedMaterial)
+                : ItemStack.EMPTY;
+        if (retainsSource && remainderBox.isEmpty()) return null;
+
+        List<ItemStack> outputBoxes = new ArrayList<>(outputBoxCount);
+        long outputItemsRemaining = totalOutputItems;
+        for (StonecutterBoxAllocation.Source source : allocation.outputSources()) {
+            ItemStack template = source.kind() == StonecutterBoxAllocation.Kind.SOURCE
+                    ? sourceBox
+                    : emptyBoxes.get(source.emptyBoxIndex()).template();
+            long items = Math.min(outputCapacity, outputItemsRemaining);
+            outputBoxes.add(fillPartialBox(template, recipeOutput, outputStackLimit, shulkerSize, items));
+            outputItemsRemaining -= items;
+        }
+        if (outputItemsRemaining != 0L || outputBoxes.size() != outputBoxCount) return null;
+
+        Map<Integer, ItemStack> emptySlotSnapshots = new HashMap<>();
+        for (InventoryBox emptyBox : emptyBoxes) {
+            if (emptyBox.slot() < 0) continue;
+            emptySlotSnapshots.computeIfAbsent(emptyBox.slot(), slot -> inventory.getItem(slot).copy());
+        }
+        return new StonecutterAnalysis(recipe, required, crafts, consumedMaterial,
+                sourceBox, remainderBox, List.copyOf(outputBoxes), List.copyOf(emptyBoxes),
+                Map.copyOf(emptySlotSnapshots), allocation.retainsSource(),
+                allocation.requiredEmptyBoxes());
     }
 
-    /** Menus by their result slot, so the anonymous result-slot mixin never shadows synthetic fields. */
-    private static final Map<Slot, StonecutterMenu> STONECUTTER_MENUS = new WeakHashMap<>();
+    private static ItemStack stonecutterRemainder(ItemStack sourceBox, int shulkerSize,
+                                                  long consumedMaterial) {
+        NonNullList<ItemStack> remainingContents = contents(sourceBox, shulkerSize);
+        long remainingToConsume = consumedMaterial;
+        for (int i = 0; i < remainingContents.size() && remainingToConsume > 0; i++) {
+            ItemStack stack = remainingContents.get(i);
+            if (stack.isEmpty()) continue;
+            int taken = (int) Math.min(stack.getCount(), remainingToConsume);
+            remainingToConsume -= taken;
+            if (taken >= stack.getCount()) remainingContents.set(i, ItemStack.EMPTY);
+            else remainingContents.set(i, FGACompat.copyWithCount(stack, stack.getCount() - taken));
+        }
+        if (remainingToConsume != 0L || remainingContents.stream().allMatch(ItemStack::isEmpty)) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack remainder = FGACompat.copyWithCount(sourceBox, 1);
+        remainder.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(remainingContents));
+        return remainder;
+    }
 
     public static void registerStonecutterMenu(StonecutterMenu menu) {
         STONECUTTER_MENUS.put(menu.getSlot(1), menu);
+        STONECUTTER_INPUT_MENUS.put(menu.getSlot(0), menu);
     }
 
-    public static StonecutterMenu stonecutterMenuForResult(Slot resultSlot) {
-        return STONECUTTER_MENUS.get(resultSlot);
+    public static void unregisterStonecutterMenu(StonecutterMenu menu) {
+        PREPARED_STONECUTTER.remove(menu);
+        STONECUTTER_MENUS.remove(menu.getSlot(1));
+        STONECUTTER_INPUT_MENUS.remove(menu.getSlot(0));
     }
 
-    /** Handles the stonecutter result-slot take for full-box inputs. */
-    public static StonecutterTakeResult takeStonecutterResult(Slot resultSlot, Player player,
-                                                              RecipeHolder<StonecutterRecipe> recipe) {
+    public static void clearStonecutterPlan(StonecutterMenu menu) {
+        PREPARED_STONECUTTER.remove(menu);
+    }
+
+    public static ItemStack stonecutterPreview(StonecutterMenu menu,
+                                               RecipeHolder<StonecutterRecipe> recipe) {
+        Player player = stonecutterPlayer(menu);
+        if (player == null) return ItemStack.EMPTY;
+        StonecutterAnalysis analysis = analyzeStonecutter(player.level(), menu.container.getItem(0),
+                recipe, FGACompat.inventory(player), true);
+        return analysis == null ? ItemStack.EMPTY : analysis.outputBoxes().get(0).copy();
+    }
+
+    public static StonecutterPrepareResult prepareStonecutterTake(Slot resultSlot, Player player) {
         StonecutterMenu menu = STONECUTTER_MENUS.get(resultSlot);
-        if (menu == null) return StonecutterTakeResult.NONE;
-        return takeStonecutter(menu, player, recipe);
+        if (menu == null) return StonecutterPrepareResult.NONE;
+        if (stonecutterPlayer(menu) != player) {
+            PREPARED_STONECUTTER.remove(menu);
+            return StonecutterPrepareResult.BLOCKED;
+        }
+        ItemStack input = menu.container.getItem(0);
+        if (!ruleEnabled() || !isShulkerBox(input)) {
+            PREPARED_STONECUTTER.remove(menu);
+            return StonecutterPrepareResult.NONE;
+        }
+
+        RecipeHolder<StonecutterRecipe> selectedRecipe = selectedStonecutterRecipe(menu);
+        if (selectedRecipe == null || !resultUsesRecipe(resultSlot, selectedRecipe)) {
+            PREPARED_STONECUTTER.remove(menu);
+            return StonecutterPrepareResult.BLOCKED;
+        }
+        StonecutterAnalysis analysis = analyzeStonecutter(player.level(), input, selectedRecipe,
+                FGACompat.inventory(player), false);
+        if (analysis == null) {
+            PREPARED_STONECUTTER.remove(menu);
+            return StonecutterPrepareResult.BLOCKED;
+        }
+
+        ItemStack preview = analysis.outputBoxes().get(0);
+        if (!ItemStack.matches(resultSlot.getItem(), preview)) {
+            PREPARED_STONECUTTER.remove(menu);
+            resultSlot.set(preview.copy());
+            menu.broadcastChanges();
+            return StonecutterPrepareResult.BLOCKED;
+        }
+
+        // Mirror the gate on an installed client to avoid a transient ghost take. Only the
+        // authoritative server stores and later commits a prepared transaction.
+        if (FGACompat.isClientSide(player.level())) return StonecutterPrepareResult.READY;
+
+        long token = ++nextStonecutterToken;
+        PREPARED_STONECUTTER.put(menu, new PreparedStonecutterPlan(token, menu, resultSlot,
+                menu.getSlot(0), player, FGASettings.fullShulkerBoxCrafting,
+                menu.getSelectedRecipeIndex(), input.copy(), analysis));
+        return StonecutterPrepareResult.READY;
     }
 
-    private static StonecutterTakeResult takeStonecutter(StonecutterMenu menu, Player player,
-                                                         RecipeHolder<StonecutterRecipe> recipe) {
-        ItemStack input = menu.container.getItem(0);
-        boolean boxInput = isShulkerBox(input);
-        if (!ruleEnabled() || !boxInput) return StonecutterTakeResult.NONE;
-        StonecutterPlan plan = analyzeStonecutter(player.level(), input, recipe);
-        if (plan == null) return StonecutterTakeResult.BLOCKED;
+    public static StonecutterCommitResult commitPreparedStonecutterTake(Slot inputSlot, Player player,
+                                                                        ItemStack takenResult) {
+        StonecutterMenu menu = STONECUTTER_INPUT_MENUS.get(inputSlot);
+        if (menu == null) return StonecutterCommitResult.passThrough();
+        PreparedStonecutterPlan prepared = PREPARED_STONECUTTER.remove(menu);
+        boolean activeBoxInput = ruleEnabled() && isShulkerBox(inputSlot.getItem());
+        if (prepared == null) {
+            if (!activeBoxInput) return StonecutterCommitResult.passThrough();
+            return recoverStonecutterInvariant(menu, inputSlot, player, takenResult, null,
+                    "missing prepared plan");
+        }
 
-        int shulkerSize = shulkerSize();
-        NonNullList<ItemStack> contents = contents(input, shulkerSize);
-        long remaining = (long) plan.requiredInput() * plan.crafts();
-        for (int i = 0; i < contents.size() && remaining > 0; i++) {
-            ItemStack stack = contents.get(i);
-            if (stack.isEmpty()) continue;
-            int taken = (int) Math.min(stack.getCount(), remaining);
-            remaining -= taken;
-            if (taken >= stack.getCount()) contents.set(i, ItemStack.EMPTY);
-            else contents.set(i, FGACompat.copyWithCount(stack, stack.getCount() - taken));
+        String invalid = validatePreparedStonecutter(prepared, inputSlot, player, takenResult);
+        if (invalid != null) {
+            return recoverStonecutterInvariant(menu, inputSlot, player, takenResult, prepared, invalid);
         }
-        if (remaining > 0) return StonecutterTakeResult.BLOCKED;
-        if (contents.stream().allMatch(ItemStack::isEmpty)) {
-            input.set(DataComponents.CONTAINER, ItemContainerContents.EMPTY);
-        } else {
-            input.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(contents));
+
+        ItemStack removedSource = inputSlot.remove(1);
+        if (!ItemStack.matches(removedSource, prepared.analysis().sourceBox())) {
+            return recoverStonecutterInvariant(menu, inputSlot, player, takenResult, prepared,
+                    "prepared source removal receipt changed");
         }
-        menu.container.setItem(0, input);
+        StonecutterAnalysis analysis = prepared.analysis();
+        Inventory inventory = FGACompat.inventory(player);
+        consumeEmptyBoxes(inventory, analysis.consumedEmptyBoxes());
+
+        if (analysis.retainsSource()) {
+            ItemStack remainder = analysis.remainderBox().copy();
+            if (inputSlot.getItem().isEmpty()) inputSlot.set(remainder);
+            else giveOrDrop(player, remainder);
+        }
+        for (int index = 1; index < analysis.outputBoxes().size(); index++) {
+            giveOrDrop(player, analysis.outputBoxes().get(index).copy());
+        }
+
         menu.container.setChanged();
+        inventory.setChanged();
+        return StonecutterCommitResult.handled(removedSource);
+    }
 
-        for (ItemStack extra : plan.extraBoxes()) {
-            giveOrDrop(player, extra.copy());
+    private static String validatePreparedStonecutter(PreparedStonecutterPlan prepared, Slot inputSlot,
+                                                       Player player, ItemStack takenResult) {
+        if (prepared.menu() != STONECUTTER_INPUT_MENUS.get(inputSlot)
+                || prepared.inputSlot() != inputSlot || prepared.player() != player
+                || prepared.resultSlot() != prepared.menu().getSlot(1)
+                || stonecutterPlayer(prepared.menu()) != player || prepared.token() <= 0L) {
+            return "menu/player/token identity changed";
         }
+        if (!prepared.ruleValue().equals(FGASettings.fullShulkerBoxCrafting)) return "rule value changed";
+        if (prepared.selectedRecipeIndex() != prepared.menu().getSelectedRecipeIndex()) {
+            return "selected recipe index changed";
+        }
+        RecipeHolder<StonecutterRecipe> selected = selectedStonecutterRecipe(prepared.menu());
+        // awardUsedRecipes clears ResultContainer.recipeUsed before vanilla reaches Slot.remove,
+        // so the commit-side identity check must use the selected recipe list captured at prepare.
+        if (selected == null || !selected.equals(prepared.analysis().recipe())) {
+            return "recipe identity changed";
+        }
+        if (!ItemStack.matches(inputSlot.getItem(), prepared.inputSnapshot())) return "input changed";
+        Inventory inventory = FGACompat.inventory(player);
+        for (Map.Entry<Integer, ItemStack> entry : prepared.analysis().emptySlotSnapshots().entrySet()) {
+            if (entry.getKey() < 0 || entry.getKey() >= inventory.getContainerSize()
+                    || !ItemStack.matches(inventory.getItem(entry.getKey()), entry.getValue())) {
+                return "reserved empty-box slot changed";
+            }
+        }
+        StonecutterAnalysis analysis = prepared.analysis();
+        int retained = analysis.retainsSource() ? 1 : 0;
+        if (1 + analysis.requiredEmptyBoxes() != analysis.outputBoxes().size() + retained) {
+            return "container conservation invariant failed";
+        }
+        if (!takenResult.isEmpty() && !ItemStack.matches(takenResult, analysis.outputBoxes().get(0))) {
+            return "taken result changed";
+        }
+        return null;
+    }
+
+    private static StonecutterCommitResult recoverStonecutterInvariant(StonecutterMenu menu,
+                                                                        Slot inputSlot, Player player,
+                                                                        ItemStack takenResult,
+                                                                        PreparedStonecutterPlan prepared,
+                                                                        String reason) {
+        LOGGER.error("Full-shulker stonecutter invariant failed for {}: {}; applying loss-biased recovery",
+                player.getScoreboardName(), reason);
+
+        ItemStack currentInput = inputSlot.getItem();
+        if (isShulkerBox(currentInput)) {
+            ItemStack sacrificedSource = inputSlot.remove(1);
+            menu.container.setChanged();
+            FGACompat.inventory(player).setChanged();
+            return StonecutterCommitResult.handled(sacrificedSource);
+        }
+
+        ItemStack expected = prepared == null || prepared.analysis().outputBoxes().isEmpty()
+                ? ItemStack.EMPTY : prepared.analysis().outputBoxes().get(0);
+        boolean removed = removeTransferredStonecutterBox(takenResult, player, expected, true);
+        if (!removed) removed = removeTransferredStonecutterBox(takenResult, player, expected, false);
+        if (!removed) {
+            LOGGER.error("Full-shulker stonecutter recovery found no transferred shulker box; "
+                    + "the result was already absent and no further items were changed");
+        }
+        menu.getSlot(1).set(ItemStack.EMPTY);
+        menu.container.setChanged();
+        FGACompat.inventory(player).setChanged();
+        menu.broadcastChanges();
+        return StonecutterCommitResult.handled(ItemStack.EMPTY);
+    }
+
+    private static boolean removeTransferredStonecutterBox(ItemStack takenResult, Player player,
+                                                            ItemStack expected, boolean exactOnly) {
+        if (matchesRecoveryBox(takenResult, expected, exactOnly)) {
+            takenResult.shrink(1);
+            return true;
+        }
+        ItemStack carried = player.containerMenu.getCarried();
+        if (carried != takenResult && matchesRecoveryBox(carried, expected, exactOnly)) {
+            carried.shrink(1);
+            if (carried.isEmpty()) player.containerMenu.setCarried(ItemStack.EMPTY);
+            return true;
+        }
+        Inventory inventory = FGACompat.inventory(player);
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (!matchesRecoveryBox(stack, expected, exactOnly)) continue;
+            stack.shrink(1);
+            if (stack.isEmpty()) inventory.setItem(slot, ItemStack.EMPTY);
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean matchesRecoveryBox(ItemStack candidate, ItemStack expected,
+                                               boolean exactOnly) {
+        if (candidate.isEmpty() || !isShulkerBox(candidate)) return false;
+        return !exactOnly || (!expected.isEmpty() && FGACompat.isSameItemSameTags(candidate, expected));
+    }
+
+    private static Player stonecutterPlayer(StonecutterMenu menu) {
+        if (!(menu.getSlot(2).container instanceof Inventory inventory)) return null;
+        return inventory.player;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static RecipeHolder<StonecutterRecipe> selectedStonecutterRecipe(StonecutterMenu menu) {
+        int index = menu.getSelectedRecipeIndex();
         //#if MC == 1.21.1
-        ((StonecutterMenuAccessor) menu).carpetFga$invokeSetupResultSlot();
+        List<RecipeHolder<StonecutterRecipe>> recipes =
+                ((StonecutterMenuAccessor) menu).carpetFga$getRecipes();
+        return index >= 0 && recipes != null && index < recipes.size() ? recipes.get(index) : null;
         //#else
-        //$$ ((StonecutterMenuAccessor) menu).carpetFga$invokeSetupResultSlot(menu.getSelectedRecipeIndex());
+        //$$ List<SelectableRecipe.SingleInputEntry<StonecutterRecipe>> entries =
+        //$$         menu.getVisibleRecipes().entries();
+        //$$ return index >= 0 && index < entries.size()
+        //$$         ? entries.get(index).recipe().recipe().orElse(null) : null;
         //#endif
-        player.containerMenu.broadcastChanges();
-        return StonecutterTakeResult.HANDLED;
+    }
+
+    private static boolean resultUsesRecipe(Slot resultSlot, RecipeHolder<StonecutterRecipe> recipe) {
+        if (!(resultSlot.container instanceof ResultContainer resultContainer)) return false;
+        RecipeHolder<?> used = resultContainer.getRecipeUsed();
+        return used != null && used.equals(recipe);
     }
     //#endif
 
@@ -801,6 +1064,23 @@ public final class FullShulkerBoxCraftingManager {
 
     private record InventoryBox(int slot, ItemStack template) {
     }
+
+    //#if MC >= 1.21
+    private record StonecutterAnalysis(RecipeHolder<StonecutterRecipe> recipe,
+                                       int requiredInput, long crafts, long consumedMaterial,
+                                       ItemStack sourceBox, ItemStack remainderBox,
+                                       List<ItemStack> outputBoxes,
+                                       List<InventoryBox> consumedEmptyBoxes,
+                                       Map<Integer, ItemStack> emptySlotSnapshots,
+                                       boolean retainsSource, int requiredEmptyBoxes) {
+    }
+
+    private record PreparedStonecutterPlan(long token, StonecutterMenu menu, Slot resultSlot,
+                                            Slot inputSlot, Player player, String ruleValue,
+                                            int selectedRecipeIndex, ItemStack inputSnapshot,
+                                            StonecutterAnalysis analysis) {
+    }
+    //#endif
 
     private record Plan(List<Integer> sourceSlots, List<ItemStack> outputBoxes,
                         List<ItemStack> returnedEmptyBoxes, List<InventoryBox> consumedEmptyBoxes) {

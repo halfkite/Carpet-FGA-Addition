@@ -137,7 +137,7 @@ public final class QuickCraftEntityPlacementServer {
             return;
         }
 
-        List<ItemStack> required = materialsForTree(requested, level);
+        List<ItemStack> required = materialsForTree(requested, level, player);
         if (required == null) {
             sendResult(player, payload.nonce(), "UNSUPPORTED_ENTITY", "");
             return;
@@ -191,6 +191,7 @@ public final class QuickCraftEntityPlacementServer {
             sendResult(player, payload.nonce(), "INTERNAL_ERROR", "");
             return;
         }
+        giveCopperChests(player, requested);
         sendResult(player, payload.nonce(), "SUCCESS", root.getUUID().toString());
     }
 
@@ -345,10 +346,14 @@ public final class QuickCraftEntityPlacementServer {
         root.getPassengersAndSelf().toList().forEach(Entity::discard);
     }
 
-    private static List<ItemStack> materialsForTree(CompoundTag root, ServerLevel level) {
+    private static List<ItemStack> materialsForTree(
+            CompoundTag root,
+            ServerLevel level,
+            ServerPlayer player
+    ) {
         List<ItemStack> materials = new ArrayList<>();
         int[] count = {0};
-        return appendEntityTreeMaterials(root, level, materials, 0, count)
+        return appendEntityTreeMaterials(root, level, materials, 0, count, player)
                 ? mergeMaterials(materials)
                 : null;
     }
@@ -358,14 +363,17 @@ public final class QuickCraftEntityPlacementServer {
             ServerLevel level,
             List<ItemStack> materials,
             int depth,
-            int[] count
+            int[] count,
+            ServerPlayer player
     ) {
         if (depth > MAX_ENTITY_TREE_DEPTH || ++count[0] > MAX_ENTITY_TREE_SIZE) return false;
         String id = readEntityId(nbt);
         if (id == null || entityTypeForId(id) == null) return false;
-        ItemStack baseStack = stackForEntity(id, nbt, level);
-        if (baseStack == null || baseStack.isEmpty()) return false;
-        materials.add(baseStack);
+        if (!appendConstructedEntityMaterials(id, materials, player)) {
+            ItemStack baseStack = stackForEntity(id, nbt, level);
+            if (baseStack == null || baseStack.isEmpty()) return false;
+            materials.add(baseStack);
+        }
 
         if (!pathOf(id).equals("item") && !appendStoredItem(materials, nbt, "Item", level)) return false;
         for (String key : List.of("SaddleItem", "ArmorItem", "DecorItem", "body_armor_item")) {
@@ -381,7 +389,7 @@ public final class QuickCraftEntityPlacementServer {
 
         ListTag passengers = listValue(nbt, "Passengers");
         for (int i = 0; i < passengers.size(); i++) {
-            if (!appendEntityTreeMaterials(compoundAt(passengers, i), level, materials, depth + 1, count)) {
+            if (!appendEntityTreeMaterials(compoundAt(passengers, i), level, materials, depth + 1, count, player)) {
                 return false;
             }
         }
@@ -417,6 +425,84 @@ public final class QuickCraftEntityPlacementServer {
         if (direct != null) return new ItemStack(direct);
         Item egg = itemForId(namespaceOf(id), path + "_spawn_egg");
         return egg == null ? null : new ItemStack(egg);
+    }
+
+    private static boolean appendConstructedEntityMaterials(
+            String id,
+            List<ItemStack> materials,
+            ServerPlayer player
+    ) {
+        String path = pathOf(id);
+        Item spawnEgg = itemForId(namespaceOf(id), path + "_spawn_egg");
+        if (spawnEgg != null && hasInventoryItem(player, spawnEgg)) return false;
+        switch (path) {
+            case "snow_golem" -> {
+                materials.add(new ItemStack(constructionPumpkin(player)));
+                materials.add(new ItemStack(Items.SNOW_BLOCK, 2));
+                return true;
+            }
+        case "iron_golem" -> {
+            materials.add(new ItemStack(constructionPumpkin(player)));
+            materials.add(new ItemStack(Items.IRON_BLOCK, 4));
+            return true;
+        }
+        case "copper_golem" -> {
+            Item copperBlock = itemForId("minecraft", "copper_block");
+            if (copperBlock == null) return false;
+            materials.add(new ItemStack(copperBlock));
+            materials.add(new ItemStack(constructionPumpkin(player)));
+            return true;
+        }
+        case "wither" -> {
+            materials.add(new ItemStack(constructionWitherBase(player), 4));
+            materials.add(new ItemStack(Items.WITHER_SKELETON_SKULL, 3));
+            return true;
+        }
+            default -> {
+                return false;
+            }
+        }
+    }
+
+    private static boolean hasInventoryItem(ServerPlayer player, Item item) {
+        return player != null && inventoryItems(player).stream()
+                .anyMatch(stack -> stack.is(item) && !stack.isEmpty());
+    }
+
+    private static Item constructionPumpkin(ServerPlayer player) {
+        return hasInventoryItem(player, Items.CARVED_PUMPKIN)
+                ? Items.CARVED_PUMPKIN
+                : hasInventoryItem(player, Items.PUMPKIN)
+                ? Items.PUMPKIN
+                : Items.CARVED_PUMPKIN;
+    }
+
+    private static Item constructionWitherBase(ServerPlayer player) {
+        return hasInventoryItem(player, Items.SOUL_SAND)
+                ? Items.SOUL_SAND
+                : hasInventoryItem(player, Items.SOUL_SOIL)
+                ? Items.SOUL_SOIL
+                : Items.SOUL_SAND;
+    }
+
+    private static void giveCopperChests(ServerPlayer player, CompoundTag root) {
+        Item copperChest = itemForId("minecraft", "copper_chest");
+        if (copperChest == null) return;
+        int count = countEntities(root, "copper_golem");
+        for (int index = 0; index < count; index++) {
+            ItemStack stack = new ItemStack(copperChest);
+            if (!FGACompat.inventory(player).add(stack) && !stack.isEmpty()) player.drop(stack, false);
+        }
+    }
+
+    private static int countEntities(CompoundTag nbt, String path) {
+        String id = readEntityId(nbt);
+        int count = path.equals(id == null ? "" : pathOf(id)) ? 1 : 0;
+        ListTag passengers = listValue(nbt, "Passengers");
+        for (int index = 0; index < passengers.size(); index++) {
+            count += countEntities(compoundAt(passengers, index), path);
+        }
+        return count;
     }
 
     private static boolean appendStoredItem(

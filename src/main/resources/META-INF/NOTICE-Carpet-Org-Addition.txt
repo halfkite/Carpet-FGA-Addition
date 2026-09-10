@@ -1,0 +1,10 @@
+The offline fake-player inventory access layer in Carpet FGA Addition is informed by
+the playerdata inventory handling design used by Carpet Org Addition.
+
+Carpet Org Addition:
+https://github.com/fcsailboat/Carpet-Org-Addition
+
+Copyright (c) Carpet Org Addition contributors.
+Carpet Org Addition is licensed under the MIT License.
+
+Carpet FGA Addition does not depend on Carpet Org Addition at runtime.

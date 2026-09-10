@@ -1,4 +1,5 @@
 SaveMyRecipeBook functionality attribution
+https://github.com/MoePus/SaveMyRecipeBook
 
 This mod includes a Fabric adaptation of the recipe-book behavior from
 SaveMyRecipeBook by MoePus.

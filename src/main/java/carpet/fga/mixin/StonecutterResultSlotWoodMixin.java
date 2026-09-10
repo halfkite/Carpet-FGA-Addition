@@ -1,7 +1,11 @@
 //#if MC >= 1.20.1 && MC <= 26.2
 package carpet.fga.mixin;
 
+//#if MC >= 1.21
+import carpet.fga.FullShulkerBoxCraftingManager;
+//#endif
 import carpet.fga.WoodStonecuttingRecipes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +21,14 @@ abstract class StonecutterResultSlotWoodMixin {
                     target = "Lnet/minecraft/world/inventory/Slot;remove(I)Lnet/minecraft/world/item/ItemStack;"
             )
     )
-    private ItemStack carpetFga$consumeWoodInput(Slot inputSlot, int amount) {
+    private ItemStack carpetFga$consumeStonecutterInput(Slot inputSlot, int amount,
+                                                        Player player, ItemStack takenResult) {
+        //#if MC >= 1.21
+        FullShulkerBoxCraftingManager.StonecutterCommitResult fullShulker =
+                FullShulkerBoxCraftingManager.commitPreparedStonecutterTake(
+                        inputSlot, player, takenResult);
+        if (fullShulker.intercepted()) return fullShulker.removedInput();
+        //#endif
         int required = WoodStonecuttingRecipes.isTwoInputRecipe(inputSlot)
                 ? WoodStonecuttingRecipes.requiredInputCount(inputSlot)
                 : amount;

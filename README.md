@@ -43,7 +43,8 @@
 
 ## 文档
 
-- [规则](docs/rules.md)
+- [简体中文规则](docs/rules_ch_cn.md)
+- [繁體中文規則](docs/rules_ch_tw.md)
 - [命令](docs/commands.md)
 - [QuickCraft 轻松放置实体服务端支持](docs/quickcraft-entity-placement-server.md)
 - [发布流程](docs/releasing.md)
