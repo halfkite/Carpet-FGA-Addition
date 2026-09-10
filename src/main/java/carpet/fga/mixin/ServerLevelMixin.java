@@ -14,7 +14,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ServerLevel.class)
 public abstract class ServerLevelMixin {
-    @Inject(method = "addFreshEntity", at = @At("HEAD"), cancellable = true)
+    // addFreshEntity is mapped on LevelWriter; target ServerLevel's concrete helper so the refmap owns the method.
+    @Inject(method = "addEntity(Lnet/minecraft/world/entity/Entity;)Z", at = @At("HEAD"), cancellable = true)
     private void carpetFga$captureMobDeathDrop(Entity entity, CallbackInfoReturnable<Boolean> cir) {
         if (DeathDropPreStackManager.capture((ServerLevel) (Object) this, entity)) {
             cir.setReturnValue(true);
