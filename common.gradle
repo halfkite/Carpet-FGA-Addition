@@ -5,6 +5,7 @@ apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-l
 apply plugin: 'com.replaymod.preprocess'
 
 repositories {
+    mavenCentral()
     maven {
         url = 'https://masa.dy.fi/maven'
         content { includeModule('carpet', 'fabric-carpet') }
@@ -37,6 +38,7 @@ dependencies {
         } else {
             modImplementation fabricApi
         }
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     }
 }
 
@@ -69,6 +71,13 @@ tasks.withType(org.gradle.api.tasks.bundling.AbstractArchiveTask).configureEach 
 loom {
     mixin {
         useLegacyMixinAp = !unobfuscated
+    }
+    if (project.findProperty('clientRunDir') != null) {
+        runs {
+            client {
+                runDir project.property('clientRunDir')
+            }
+        }
     }
 }
 
@@ -228,6 +237,12 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(javaLanguageVersion)
     }
+}
+
+sourceSets.test.java.srcDir rootProject.file('src/test/java')
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }
 
 if (mcVersion < 1_18_00) {

@@ -19,8 +19,17 @@ public abstract class SlotFullShulkerMixin {
             CraftingContainer crafting = ((ResultSlotCraftingAccessor) resultSlot).carpetFga$getCraftSlots();
             if (FullShulkerBoxCraftingManager.isCustomResult(crafting)) {
                 cir.setReturnValue(FullShulkerBoxCraftingManager.mayTake(crafting, player));
+                return;
             }
         }
+        //#if MC >= 1.21
+        Slot slot = (Slot) (Object) this;
+        FullShulkerBoxCraftingManager.StonecutterPrepareResult result =
+                FullShulkerBoxCraftingManager.prepareStonecutterTake(slot, player);
+        if (result != FullShulkerBoxCraftingManager.StonecutterPrepareResult.NONE) {
+            cir.setReturnValue(result == FullShulkerBoxCraftingManager.StonecutterPrepareResult.READY);
+        }
+        //#endif
     }
 }
 //#endif

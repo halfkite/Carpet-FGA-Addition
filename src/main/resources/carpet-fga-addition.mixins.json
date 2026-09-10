@@ -104,10 +104,11 @@
         ,"ClientboundUpdateRecipesDeepslateMixin",
         "StonecutterMenuDeepslateMixin"
         //#endif
+        //#if MC == 1.21.1
+        ,"StonecutterMenuAccessor"
+        //#endif
         //#if MC >= 1.21
-        ,"StonecutterMenuAccessor",
-        "StonecutterMenuFullShulkerMixin",
-        "StonecutterResultSlotFullShulkerMixin"
+        ,"StonecutterMenuFullShulkerMixin"
         //#endif
         //#if MC == 1.21.1
         ,"ChunkMapPlayerLoadDistanceAccessor",
