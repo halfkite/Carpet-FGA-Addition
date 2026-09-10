@@ -6,7 +6,7 @@
 
 提示：可以使用 `Ctrl+F` 快速查找自己想要的规则
 
-### 夺舍操控玩家(playerPossession)
+### 夺舍操控玩家(playerPossession) · [相关指令](commands.md#cmd-player-possession)
 
 使用 `/player <名字> possess` 夺舍操控在线玩家或假人，无需安装 FGA 客户端
 规则值为 `false` 时关闭本功能
@@ -43,7 +43,7 @@
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21+`
 
-### 假人范围控制(fakePlayerRangeControl)
+### 假人范围控制(fakePlayerRangeControl) · [相关指令](commands.md#cmd-player-range)
 
 启用假人的区域放置、方块右键、区域破坏、持续执行和基础寻路功能，默认关闭
 
@@ -63,7 +63,7 @@
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21+`
 
-### 流浪商人不消失(wanderingTraderNoDespawn)
+### 流浪商人不消失(wanderingTraderNoDespawn) · [相关指令](commands.md#cmd-villager-performance)
 
 false 保持原版；true 使全部流浪商人不消失；controlled 仅保护命中 /villagerPerformance wanderingTrader 名称或脚下方块名单的流浪商人
 
@@ -113,7 +113,7 @@ false 保持原版；true 使全部流浪商人不消失；controlled 仅保护�
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21+`
 
-### 玩家生命值显示(playerHealthDisplay)
+### 玩家生命值显示(playerHealthDisplay) · [相关指令](commands.md#cmd-player-health)
 
 在多人游戏列表名称最右侧显示生命值；true 显示全部玩家，false 仅向 /log playerHealth 订阅者显示，nofake 不显示假人血量
 
@@ -133,7 +133,7 @@ false 保持原版；true 使全部流浪商人不消失；controlled 仅保护�
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21.1`
 
-### 烟花矿车加速(fireworkMinecartBoost)
+### 烟花矿车加速(fireworkMinecartBoost) · [相关指令](commands.md#cmd-minecart)
 
 允许玩家乘坐普通矿车时使用烟花火箭，以可配置速度维持满速后线性减速
 
@@ -143,7 +143,7 @@ false 保持原版；true 使全部流浪商人不消失；controlled 仅保护�
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21.1`
 
-### 锁链绑定矿车(chainMinecartBinding)
+### 锁链绑定矿车(chainMinecartBinding) · [相关指令](commands.md#cmd-minecart)
 
 允许使用锁链将普通矿车连接为可持久保存的线性列车
 
@@ -153,7 +153,7 @@ false 保持原版；true 使全部流浪商人不消失；controlled 仅保护�
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21.1`
 
-### 矿车功能命令权限(minecartFeatureCommandPermission)
+### 矿车功能命令权限(minecartFeatureCommandPermission) · [相关指令](commands.md#cmd-minecart)
 
 控制矿车烟花加速与锁链列车配置命令的使用权限
 
@@ -163,7 +163,7 @@ false 保持原版；true 使全部流浪商人不消失；controlled 仅保护�
 - 分类：`FGA`，`特性`，`命令`
 - 生效版本：`1.21.1`
 
-### 玩家离开载具急停(vehicleStopOnDismount)
+### 玩家离开载具急停(vehicleStopOnDismount) · [相关指令](commands.md#cmd-vehicle-stop)
 
 控制驾驶者离开矿车或船时是否立即清除载具水平速度
 
@@ -173,7 +173,7 @@ false 保持原版；true 使全部流浪商人不消失；controlled 仅保护�
 - 分类：`FGA`，`特性`
 - 生效版本：`全部支持版本`
 
-### 虚空世界生成(voidWorldGeneration)
+### 虚空世界生成(voidWorldGeneration) · [相关指令](commands.md#cmd-regenerate-terrain)
 
 让新生成区块为空白，同时保留群系和结构定位数据
 
@@ -183,7 +183,7 @@ false 保持原版；true 使全部流浪商人不消失；controlled 仅保护�
 - 分类：`FGA`，`特性`
 - 生效版本：`全部支持版本`
 
-### 地形重生成命令权限(terrainRegenerationCommandPermission)
+### 地形重生成命令权限(terrainRegenerationCommandPermission) · [相关指令](commands.md#cmd-regenerate-terrain)
 
 控制地形重生成与虚空清除命令的使用权限
 
@@ -223,7 +223,7 @@ false 保持原版；true 使全部流浪商人不消失；controlled 仅保护�
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21.1`
 
-### 玩家末地门传送控制(PlayerTpEndControl)
+### 玩家末地门传送控制(PlayerTpEndControl) · [相关指令](commands.md#cmd-playertpend)
 
 控制玩家通过末地传送门、末地主岛出口和末地折跃门传送：false 保持原版，true 阻止所有玩家传送，control 按 /playertpend 的个人设置决定
 
@@ -406,7 +406,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 - 分类：`FGA`，`生存`
 - 生效版本：`1.21-26.2`
 
-### 村民性能优化(villagerPerformanceOptimization)
+### 村民性能优化(villagerPerformanceOptimization) · [相关指令](commands.md#cmd-villager-performance)
 
 启用村民性能优化并控制 /villagerPerformance 权限：true 允许所有人，ops 需要 OP 2，1-4 表示最低权限等级
 
@@ -426,7 +426,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 - 分类：`FGA`，`生存`
 - 生效版本：`全版本`
 
-### 地面掉落物堆叠上限(droppedItemStackLimit)
+### 地面掉落物堆叠上限(droppedItemStackLimit) · [相关指令](commands.md#cmd-dropped-item-stack-limit)
 
 启用地面掉落物、玩家背包和容器的独立服务端堆叠上限；使用 /droppedItemStackLimit 配置，最大数量为 1000000000；false 关闭功能，true 允许所有玩家管理，ops 或 0-4 设置管理命令的最低权限等级
 
@@ -456,7 +456,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 - 分类：`FGA`，`生存`，`命令`
 - 生效版本：`1.21.8+`
 
-### 掉落物预堆叠(preStackDroppedItems)
+### 掉落物预堆叠(preStackDroppedItems) · [相关指令](commands.md#cmd-drop-pre-stack)
 
 开启由 /dropPreStack 配置的生物死亡与方块掉落物预堆叠；新命令条目默认范围为 1
 
@@ -496,7 +496,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 - 分类：`FGA`，`生存`
 - 生效版本：`全版本`
 
-### 生物掉落物自定义去除(entityDropRemoval)
+### 生物掉落物自定义去除(entityDropRemoval) · [相关指令](commands.md#cmd-entity-drop-removal)
 
 按生物配置要去除的死亡掉落物；false 关闭命令，true 允许所有人，ops 或 0-4 控制配置权限
 
@@ -540,7 +540,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21+`
 
-### 玩家加载距离(playerLoadDistance)
+### 玩家加载距离(playerLoadDistance) · [相关指令](commands.md#cmd-player-load-distance)
 
 控制每名玩家的区块发送与跟踪距离，不改变模拟距离
 
@@ -570,7 +570,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 - 分类：`FGA`，`特性`，`命令`
 - 生效版本：`1.21-26.2`
 
-### 试炼截停命令权限(trialStopCommandPermission)
+### 试炼截停命令权限(trialStopCommandPermission) · [相关指令](commands.md#cmd-trial-stop)
 
 启用并控制 /trialStop 截停刷新命令，支持 false、true、ops 和 0-4
 
@@ -586,7 +586,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 
 以下规则在 Minecraft `1.21-26.2` 注册：
 
-### 假人物品分类(fakePlayerItemSort)
+### 假人物品分类(fakePlayerItemSort) · [相关指令](commands.md#cmd-fake-player-item-sort)
 
 启用假人物品分类，使用 /fakePlayerItemSort 管理模式和分类配置
 
