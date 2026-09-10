@@ -1,6 +1,5 @@
 package carpet.fga.mixin;
 
-import carpet.fga.FakePlayerNameAlias;
 import net.minecraft.network.FriendlyByteBuf;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,6 +26,6 @@ public abstract class FriendlyByteBufMixin {
         index = 1
     )
     private int increaseMaxLength(int maxLength) {
-        return maxLength == 16 && FakePlayerNameAlias.fullNamesActive() ? 128 : maxLength;
+        return maxLength == 16 ? 128 : maxLength;
     }
 }

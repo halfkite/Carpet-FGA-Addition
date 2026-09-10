@@ -181,5 +181,7 @@
     "carpet.fga.trialStop.reward.none":  "Skip this trial's rewards",
     "carpet.fga.trialStop.reward.reward":  "Eject rewards at vanilla timing",
     "carpet.fga.trialStop.reward.fast":  "Eject all rewards immediately",
-    "carpet.fga.trialStop.clear":  "Remove only mobs tracked by this spawner"
+    "carpet.fga.trialStop.clear":  "Remove only mobs tracked by this spawner",
+    "carpet.rule.netherPortalNoLight.name": "Nether Portal No Light",
+    "carpet.rule.netherPortalNoLight.desc": "Controls Nether portal block light: false keeps vanilla behavior, true disables light from all portals, and onlynew disables light from portals created while the rule is active; disabling the rule does not actively refresh existing portals"
 }

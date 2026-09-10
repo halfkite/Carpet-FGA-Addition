@@ -6,36 +6,38 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 
 Tip: use `Ctrl+F` to quickly find a rule
 
-### Player possession(playerPossession) · [Related command](commands_en.md#cmd-player-possession)
+### Player Possession(playerPossession) · [Related command](commands_en.md#cmd-player-possession)
 
-Use `/player <name> possess` to possess an online player or fake player without installing the FGA client
-`false` disables the feature
-`true` allows every player to possess fake or real players
-`onlyfake` allows every player to possess fake players only
-`opreal` allows regular players to possess fake players while operators may possess fake or real players
-`ops` allows operators only to possess fake or real players
-The feature also obeys Carpet `commandPlayer` entry permission, is based on the PlayerControl implementation (CC0-1.0), and is server-side only
+Use `/player <name> possess` to possess an online player or fake player without installing the FGA client<br>
+Use `/player <name> possess stop` to end a session for yourself or the possessed player<br>
+`false` disables the feature<br>
+`true` allows every player to possess fake or real players<br>
+`onlyfake` allows every player to possess fake players only<br>
+`opreal` allows regular players to possess fake players while operators may possess fake or real players<br>
+`ops` allows operators only to possess fake or real players<br>
+The feature also obeys Carpet `commandPlayer` entry permission. Its implementation and main code come from the [PlayerControl](https://modrinth.com/mod/playercontrol) mod (CC0-1.0), and it is server-side only
 
 - Type: `Enum`
 - Default: `false`
 - Options: `false`, `true`, `onlyfake`, `opreal`, `ops`
 - Categories: `FGA`, `Feature`, `Command`
+- Effective versions: `1.21.1`
 
 ## Fake players and general features
 
 ### QuickCraft Easy Place Entities(quickCraftEasyPlaceEntities)
 
-Allows QuickCraft clients to request schematic entity placement. The server validates reach, entity data, and materials before consuming materials and spawning the entity.
+Allows [QuickCraft](https://modrinth.com/mod/quickcraft-yiyihehe) clients to request placement of projected entities; the server validates reach, entity data, and materials, then consumes materials only after a successful spawn
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21-26.2`
+- Effective versions: `1.21+`
 
 ### Fake Player Name Length(fakePlayerNameLength)
 
-Sets the maximum fake-player name length from 1 to 128. Long names use a client-compatible network alias.
+Vanilla player names are limited to 16 characters. This rule changes the limit to 1-128; the client is optional, and names longer than 16 characters are sent to clients without FGA using a compatible alias such as `half...`
 
 - Type: `Integer`
 - Default: `-1`
@@ -45,17 +47,17 @@ Sets the maximum fake-player name length from 1 to 128. Long names use a client-
 
 ### Fake Player Range Control(fakePlayerRangeControl) · [Related command](commands_en.md#cmd-player-range)
 
-Enables area placement, block interaction, area breaking, continuous tasks, and basic pathfinding for fake players.
+Enables area placement, right-click block interaction, area breaking, and related fake-player range features (incomplete and not recommended for general use)
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `All supported versions`
+- Effective versions: `1.16.5+`
 
 ### End Gateway Regeneration(endGatewayRegeneration)
 
-Regenerates destroyed vanilla End gateways using only the gateway block and its own data; surrounding blocks are unchanged.
+Allows destroyed End gateways to regenerate after the Ender Dragon is killed. Only the gateway block and its own data are restored; surrounding blocks are unchanged
 
 - Type: `Boolean`
 - Default: `false`
@@ -65,7 +67,7 @@ Regenerates destroyed vanilla End gateways using only the gateway block and its 
 
 ### Wandering Trader No Despawn(wanderingTraderNoDespawn) · [Related command](commands_en.md#cmd-villager-performance)
 
-false keeps vanilla behavior; true prevents every wandering trader from despawning; controlled protects only traders matching the /villagerPerformance wanderingTrader name or block lists.
+`false`: keeps vanilla behavior<br>`true`: prevents all wandering traders from despawning<br>`controlled`: protects only wandering traders matching the name or block lists configured by `/villagerPerformance wanderingTrader`
 
 - Type: `Enum`
 - Default: `false`
@@ -75,27 +77,27 @@ false keeps vanilla behavior; true prevents every wandering trader from despawni
 
 ### Fake Player Profile Preload(fakePlayerProfilePreload)
 
-Moves fake-player profile lookup off the server thread before spawning. Available on Minecraft 1.21 and newer.
+Asynchronously queries a player profile before summoning a fake player so authentication requests do not block the server thread<br>`false`: keeps Carpet’s synchronous profile lookup<br>`always`: asynchronously preloads the profile before every summon<br>`adaptive`: the first summon keeps the original behavior; a second summon within 30 seconds opens a two-minute preload window, and each summon in the window resets its remaining time
 
 - Type: `Enum`
 - Default: `false`
 - Options: `false`, `always`, `adaptive`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1`
+- Effective versions: `1.21+`
 
-### FGA Unicode Arguments Support(fgaUnicodeArgumentsSupport)
+### FGA Unicode Command Argument Support(fgaUnicodeArgumentsSupport)
 
-Allows unquoted command arguments to contain non-English and other Unicode characters. This independent FGA rule does not conflict with YACA's rule.
+Allows unquoted command arguments to contain Chinese and other Unicode characters, enabling operations such as Chinese-named fake players<br>Ported from [YACA](https://modrinth.com/mod/yaca), which stopped at 26.1+. The rule was renamed to avoid conflicts with the original YACA rule on older versions
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `All supported versions`
+- Effective versions: `1.16.5+`
 
 ### Always-Unlocked Recipe Book(recipeBookAlwaysUnlocked)
 
-Gives every player all registered recipes on login with a one-minute per-player cooldown without discarding saved recipe unlock data
+Automatically grants every registered recipe when a player joins, with a one-minute cooldown per player, while retaining saved recipe unlock data
 
 - Type: `Boolean`
 - Default: `false`
@@ -105,7 +107,7 @@ Gives every player all registered recipes on login with a one-minute per-player 
 
 ### Inventory Advancement Optimization(inventoryAdvancementOptimization)
 
-Uses exact item candidate indexing for inventory_changed advancements. false keeps vanilla behavior; exact preserves vanilla matching and falls back safely on inconsistencies.
+Uses an exact item-candidate index for `inventory_changed` advancements; `false` keeps vanilla behavior, while `exact` preserves vanilla matching semantics and safely falls back when an inconsistency is detected
 
 - Type: `String`
 - Default: `false`
@@ -115,7 +117,7 @@ Uses exact item candidate indexing for inventory_changed advancements. false kee
 
 ### Player Health Display(playerHealthDisplay) · [Related command](commands_en.md#cmd-player-health)
 
-Shows health at the right side of player-list names. true shows all players, false shows only for /log playerHealth subscribers, and nofake hides fake-player health.
+Shows health at the far right of names in the player list<br>`true` shows all players<br>`false` shows it only to `/log playerHealth` subscribers<br>`nofake` hides fake-player health
 
 - Type: `Enum`
 - Default: `false`
@@ -125,7 +127,7 @@ Shows health at the right side of player-list names. true shows all players, fal
 
 ### Item Frame Blockification(itemFrameBlockification)
 
-Removes item frames from server entity tick scheduling and validates support changes while preserving vanilla rendering, interaction, drops, maps, and comparator output
+Removes item frames from server entity tick scheduling and validates them when supporting blocks change, while preserving vanilla rendering, interaction, drops, maps, and comparator output
 
 - Type: `Boolean`
 - Default: `false`
@@ -135,7 +137,7 @@ Removes item frames from server entity tick scheduling and validates support cha
 
 ### Firework Minecart Boost(fireworkMinecartBoost) · [Related command](commands_en.md#cmd-minecart)
 
-Lets players riding normal minecarts use firework rockets for configurable full-speed boosts followed by linear deceleration
+Allows players riding normal minecarts to use firework rockets, maintaining a configurable full speed before linear deceleration
 
 - Type: `Boolean`
 - Default: `false`
@@ -145,7 +147,7 @@ Lets players riding normal minecarts use firework rockets for configurable full-
 
 ### Chain Minecart Binding(chainMinecartBinding) · [Related command](commands_en.md#cmd-minecart)
 
-Lets chains connect normal minecarts into persistent linear trains
+Allows chains to connect normal minecarts into persistent linear trains (not recommended for general use)
 
 - Type: `Boolean`
 - Default: `false`
@@ -155,7 +157,7 @@ Lets chains connect normal minecarts into persistent linear trains
 
 ### Minecart Feature Command Permission(minecartFeatureCommandPermission) · [Related command](commands_en.md#cmd-minecart)
 
-Controls access to firework minecart and chain train configuration commands
+Controls permission for minecart firework boosting and chain-train configuration commands<br>`false`: disables the related commands<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum command permission level
 
 - Type: `Permission`
 - Default: `false`
@@ -165,7 +167,7 @@ Controls access to firework minecart and chain train configuration commands
 
 ### Vehicle Stop On Dismount(vehicleStopOnDismount) · [Related command](commands_en.md#cmd-vehicle-stop)
 
-Controls whether a vehicle immediately loses horizontal speed when its controlling player dismounts
+Immediately clears vehicle speed when the driver leaves a minecart or boat<br>`false`: disables the emergency stop<br>`minecart`: clears horizontal speed when leaving a minecart<br>`boat`: clears horizontal speed when leaving a boat<br>`all`: handles both minecarts and boats<br>`custom`: uses each player’s minecart and boat settings saved by `/vehicleStop`<br>Only horizontal speed is cleared; vertical speed is preserved, and speed is kept when another passenger remains
 
 - Type: `Enum`
 - Default: `false`
@@ -175,7 +177,7 @@ Controls whether a vehicle immediately loses horizontal speed when its controlli
 
 ### Void World Generation(voidWorldGeneration) · [Related command](commands_en.md#cmd-regenerate-terrain)
 
-Makes newly generated chunks empty while retaining biome and structure-location data
+Makes newly generated chunks void while retaining biome and structure-location data; terrain can be regenerated with the related command
 
 - Type: `Boolean`
 - Default: `false`
@@ -185,17 +187,17 @@ Makes newly generated chunks empty while retaining biome and structure-location 
 
 ### Terrain Regeneration Command Permission(terrainRegenerationCommandPermission) · [Related command](commands_en.md#cmd-regenerate-terrain)
 
-Controls access to terrain regeneration and void clearing commands
+Controls permission for terrain regeneration and terrain clearing commands<br>`false`: disables the related commands<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum command permission level
 
 - Type: `Permission`
 - Default: `ops`
 - Options: `false`, `true`, `ops`, `0-4`
 - Categories: `FGA`, `Feature`, `Command`
-- Effective versions: `1.21-26.2`
+- Effective versions: `1.21+`
 
 ### Full Shulker Box Crafting(fullShulkerBoxCrafting)
 
-Crafts shulker boxes of one item through matching ordinary crafting and stonecutter recipes; only64 requires exact vanilla-full boxes and whole-box outputs, any accepts any content amount and crafts one click's worth with a partial final box
+Allows shulker boxes containing one item type to craft directly through matching crafting or stonecutter recipes<br>`false`: disables the feature<br>`only64`: input boxes must be full at the vanilla stack limit, and outputs and recipe returns must form whole full boxes<br>`any`: input boxes may contain the same amount from 1 to the container stack limit; the total is crafted in one operation, a final output box may be partial, and leftovers remain in the input boxes<br>All input boxes must contain the same stackable item type and amount and have the same capacity<br>The legacy value `true` is treated as `any`
 
 - Type: `String`
 - Default: `false`
@@ -205,7 +207,7 @@ Crafts shulker boxes of one item through matching ordinary crafting and stonecut
 
 ### Spectator Free Teleport(spectatorFreeTeleport)
 
-Allows spectators to use /tp and /teleport on themselves only. Operators keep full vanilla teleport permissions unless TIS or AMS cheat prevention is enabled.
+Allows spectators to use `/tp` and `/teleport`, but only to control their own teleportation; when TIS or AMS administrator-cheat prevention is disabled, operators retain full teleport permission<br>`false`: keeps vanilla spectator teleport permission<br>`true`: spectators can teleport only themselves and cannot use this to teleport other entities; when TIS or AMS administrator-cheat prevention is enabled, operators are restricted in the same way
 
 - Type: `Boolean`
 - Default: `false`
@@ -215,7 +217,7 @@ Allows spectators to use /tp and /teleport on themselves only. Operators keep fu
 
 ### Nether Portal No Light(netherPortalNoLight)
 
-Controls Nether portal block light: false keeps vanilla behavior, true disables light from all portals, and onlynew disables light from portals created while the rule is active; disabling the rule does not actively refresh existing portals
+Controls Nether portal light emission<br>`false`: keeps vanilla behavior<br>`true`: disables light from all Nether portals<br>`onlynew`: only Nether portals created while the rule is enabled have no light<br>Disabling the rule does not actively refresh portal lighting; the client-side light display of [MiniHUD](https://modrinth.com/mod/minihud) is synchronized automatically
 
 - Type: `Enum`
 - Default: `false`
@@ -225,7 +227,7 @@ Controls Nether portal block light: false keeps vanilla behavior, true disables 
 
 ### Player End Portal Teleport Control(PlayerTpEndControl) · [Related command](commands_en.md#cmd-playertpend)
 
-Controls player teleportation through End portals, End exit portals, and End gateways: false keeps vanilla behavior, true blocks all player portal teleports, and control uses per-player preferences managed by /playertpend
+Controls player teleportation through End portals, the End main-island exit portal, and End gateways<br>`false`: keeps vanilla behavior<br>`true`: blocks teleportation for all players<br>`control`: uses each player’s `/playertpend` setting; portals without a setting allow teleportation by default. This server-side rule does not block non-player entities
 
 - Type: `Enum`
 - Default: `false`
@@ -235,13 +237,13 @@ Controls player teleportation through End portals, End exit portals, and End gat
 
 ### Client Dimension IDs(clientDimensionIds)
 
-Maps the client-visible dimension IDs for the Overworld, Nether, and End. This separates minimap and Voxy data without changing server-side dimensions.
+Maps the client-visible IDs of the Overworld, Nether, and End to separate minimap and Voxy data without changing server dimensions<br>Use `[overworld,the_nether,the_end]` or three client dimension IDs in the same order; omitted namespaces default to `minecraft`<br>Reconnect after changing the rule; fake-player summoning, teleportation, server saves, and server-side dimensions are unchanged
 
 - Type: `List`
 - Default: `[overworld,the_nether,the_end]`
 - Options: `Three client dimension IDs`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1+`
+- Effective versions: `1.21+`
 
 ### Remove Command Confirmation Warning(removeDialogWarning)
 
@@ -255,274 +257,251 @@ Removes the confirmation warning for server-sent run-command clicks and dialog a
 
 ### Restore Pre-26.2 Bee Collision Box(restorePre26BeeCollisionBox)
 
-Restores the bee collision box from before Minecraft 26.2: 0.7 blocks wide and 0.6 blocks high.
+Restores the bee collision box from before Minecraft 26.2: 0.7 blocks wide and 0.6 blocks high
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `26.2`
-
+- Effective versions: `26.2+`
 
 ## Villagers, entities, and drops
 
 ### Animalized Villager Breeding(villagerBreedingAnimalization)
 
-Allows shift-right-click feeding to give adult villagers breeding willingness and speed up baby villager growth like other animals.
+Sneak-right-click feeding an adult villager can create breeding willingness; feeding a baby villager can speed growth like other animals<br>`false`: keeps only vanilla villager breeding<br>`true`: keeps both vanilla food pickup and direct player feeding<br>`only`: only direct player feeding can create breeding willingness<br>Each feeding consumes one food item; bread accelerates growth as much as four consecutive carrots, potatoes, or beetroots
 
 - Type: `Enum`
 - Default: `false`
 - Options: `false`, `true`, `only`
-- Categories: `FGA`, `Feature`
-- Effective versions: `All supported versions`
+- Categories: `FGA`, `Survival`
+- Effective versions: `1.16.5+`
 
 ### Baby Mob No Growth(babyMobNoGrowth)
 
-Prevents all baby mobs or baby mobs with an exact case-sensitive custom name from growing, including tadpoles
+Prevents baby mobs from growing, including tadpoles<br>`false`: disabled<br>`true`: prevents all baby mobs from growing, including tadpoles<br>`mini`: affects only babies whose exact lowercase custom name is `mini`; `Mini` does not match<br>Other values match the entity custom name as complete, case-sensitive text; names containing spaces must be quoted<br>Only natural growth and feeding acceleration are blocked; direct age changes through `/data` or NBT are not blocked
 
 - Type: `String`
 - Default: `false`
-- Options: `false`, `true`, `mini`, custom name`
-- Categories: `FGA`, `Feature`
-- Effective versions: `1.21-26.2`
+- Options: `false`, `true`, `mini`, `custom name`
+- Categories: `FGA`, `Survival`
+- Effective versions: `1.21+`
 
 ### Resilient Plants(resilientPlants)
 
-Lets matching plants ignore vanilla survival restrictions and be placed without normal support
+Makes matching plants ignore vanilla survival restrictions and allows them to be placed in air or on any block<br>`false`: disabled<br>`true`: matches all supported plant candidates<br>`[]`: clears the matching list<br>Block ID list: matches only listed blocks; namespaces may be omitted
 
 - Type: `String`
 - Default: `false`
-- Options: `false`, `true`, `[]`, block ID list`
-- Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1+`
+- Options: `false`, `true`, `[]`, `block ID list`
+- Categories: `FGA`, `Survival`
+- Effective versions: `1.21+`
 
 ### Resilient Blocks(resilientBlocks)
 
-Configured blocks skip the below-block support check when placed and ignore block updates instead of checking their own state
+Configured blocks do not check the block below when placed and do not check their own state when updated<br>`false` or `[]`: disabled<br>Block ID list: skips placement support checks, update survival checks, and falling schedules; namespaces may be omitted, and saved values are normalized to a complete sorted ID list
 
 - Type: `String`
 - Default: `false`
-- Options: `false`, `[]`, block ID list`
-- Categories: `FGA`, `Feature`
-- Effective versions: `1.21-26.2`
+- Options: `false`, `[]`, `block ID list`
+- Categories: `FGA`, `Survival`
+- Effective versions: `1.21+`
 
 ### Comparator Container Signal Through Blocks(comparatorThroughBlocks)
 
-Lets comparators read an analog container signal through configured front blocks such as [chain,piston] without changing their other redstone behavior
+Allows comparators to read a container signal through configured front blocks such as `[chain,piston]` without changing other redstone behavior<br>`false`: disabled<br>Block ID list: allows reading through listed blocks; namespaces may be omitted
 
 - Type: `Block list`
 - Default: `false`
-- Options: `false`, `[chain]`, `[piston]`, `[chain,piston]`, custom block ID list`
-- Categories: `FGA`, `Feature`
+- Options: `false`, `[chain]`, `[piston]`, `[chain,piston]`, `custom block ID list`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Shulker Bedrock Duplication(shulkerBedrockDuplication)
 
-A shulker killed by a shulker bullet, its own or another shulker's, always respawns a new shulker at the same spot, like Bedrock Edition
+A shulker is guaranteed to duplicate when the direct lethal damage source is a shulker bullet. The new shulker spawns at the pre-hit position and inherits color and attachment face; the original still plays its death animation and drops loot, and vanilla hit-based duplication is unchanged
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Shulker Bedrock Looting(shulkerBedrockLooting)
 
-Shulker shell drops follow Bedrock Edition looting: a flat 50% chance to drop, dropping 1 to 1+Looting shells uniformly
+Shulker shell drops use the Bedrock formula: a flat 50% chance to drop, with a uniform quantity from 1 to 1 plus the Looting level<br>Without Looting, the expected drop matches Java Edition; when enabled, the loot-table roll uses the Bedrock formula
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Shulker Attack Armor Stand(shulkerAttackArmorStand)
 
-Allows shulkers to target and shoot armor stands: true targets all, pumpkin targets only those wearing a carved pumpkin on the head
+Allows shulkers to target and shoot armor stands<br>`false`: keeps vanilla behavior and never targets armor stands<br>`true`: targets all armor stands in range<br>`pumpkin`: targets only armor stands wearing a carved pumpkin on the head
 
 - Type: `Enum`
 - Default: `false`
 - Options: `false`, `true`, `pumpkin`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Remove Anvil Enchantment Penalty(anvilNoPriorWorkPenalty)
 
-Removes the anvil prior-work penalty and too-expensive limit while keeping enchantment conflicts and material costs
+Removes the anvil prior-work penalty and the too-expensive limit while retaining enchantment conflict checks and material costs
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Increase Enchantment Level Limits(enchantmentLevelLimitIncrease)
 
-false or 0 keeps vanilla limits; enter N directly to add N to every enchantment's vanilla maximum, capped at stored level 255
+`false` or `0` keeps vanilla limits; enter N to add N to every enchantment’s vanilla maximum, with the stored level capped at 255
 
 - Type: `String`
 - Default: `false`
 - Options: `false`, `0`, `1`, integer `0-254`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Add Enchantment Levels(enchantmentLevelAddition)
 
-Adds matching enchantment levels in an anvil, so 2+2 becomes 4; an input at the maximum gives no result, while sums above it are capped at the maximum
+When an anvil combines matching enchantments, adds their levels directly, so 2+2 becomes 4; an input at the maximum produces no result, and sums above the maximum are capped at the maximum
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Flat Experience Level Costs(experienceLevelCost)
 
-false keeps vanilla costs; 29-30 makes level 30+ cost the same as level 29 to 30; 0-1 makes every level cost the same as level 0 to 1
+`false` uses the vanilla experience curve; `29-30` makes every level after 30 cost the same as levels 29 to 30; `0-1` makes every level cost the same as levels 0 to 1
 
 - Type: `String`
 - Default: `false`
 - Options: `false`, `29-30`, `0-1`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Villagers Do Not Craft Bread(villagerDoNotCraftBread)
 
-Makes farmer villagers handle wheat like 26.3+ by no longer crafting it into bread
+Makes farmer villagers handle wheat like 26.3+: they no longer craft wheat into bread
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Villager Upgrade While Trading(villagerUpgradeWhileTrading)
 
-Lets villagers wait for and complete profession upgrades without closing the trading screen, like 26.3+
+Makes villager profession upgrades behave like 26.3+, allowing the upgrade to wait and complete without closing the trading screen
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21-26.2`
 
 ### Villager Performance Optimization(villagerPerformanceOptimization) · [Related command](commands_en.md#cmd-villager-performance)
 
-Enables villager performance optimization and controls access to /villagerPerformance: true for everyone, ops for OP level 2, or 1-4 for a minimum permission level.
+Enables villager performance optimization and controls `/villagerPerformance` permission<br>`false`: disables optimization and the related command<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`1-4`: sets the minimum command permission level
 
 - Type: `Enum`
 - Default: `false`
 - Options: `false`, `true`, `ops`, `1-4`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
 ### Hostile Mob Inventory Access(hostileMobInventoryAccess)
 
-Opens a hostile mob's six equipment slots by shift-right-clicking it with both hands empty.
+While holding nothing in either hand, sneak-right-click a hostile mob to open its six equipment slots
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
-- Categories: `FGA`, `Feature`
-- Effective versions: `All supported versions`
+- Categories: `FGA`, `Survival`
+- Effective versions: `1.16.5+`
 
 ### Dropped Item Stack Limit(droppedItemStackLimit) · [Related command](commands_en.md#cmd-dropped-item-stack-limit)
 
-Enables separately configured server-side stack limits for ground items, player inventories, and containers through /droppedItemStackLimit, up to 1000000000 items. false disables the feature; true allows everyone to manage it; ops or 0-4 set the manager permission level.
+Enables separate server-side stack limits for ground items, player inventories, and containers; configure them with `/droppedItemStackLimit`, up to 1000000000<br>`false`: disables the rule and keeps vanilla limits<br>`true`: lets all players manage the configuration<br>`ops`: only OP level 2 or higher can manage it<br>`0-4`: sets the minimum management-command permission level
 
 - Type: `Enum`
 - Default: `false`
 - Options: `false`, `true`, `ops`, `0-4`
-- Categories: `FGA`, `Feature`
+- Categories: `FGA`, `Survival`
 - Effective versions: `All supported versions`
 
 ### Dropped Item Merge Distance(droppedItemMergeDistance)
 
-Changes the horizontal search distance for merging ground item entities; -1 keeps vanilla 0.5 blocks. The vertical search range is unchanged.
+Changes the horizontal merge search distance for ground item entities; `-1` keeps the vanilla 0.5-block distance, vertical search is unchanged, and the rule remains registered
 
 - Type: `Decimal`
 - Default: `-1`
 - Options: `-1`, `0-16`
-- Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1+`
+- Categories: `FGA`, `Survival`
+- Effective versions: `1.21.1-26.2`
 
 ### Unlimited Fill Commands(unlimitedFillCommands)
 
-Removes the volume limit from /fill and /fillbiome. Chunks must still be loaded and all other vanilla checks remain active.
+Removes the volume limit from `/fill` and `/fillbiome`; chunks must still be loaded and all other vanilla checks remain active<br>`false`: keeps the vanilla volume limit<br>`true`: removes the volume limit
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
-- Categories: `FGA`, `Feature`, `Command`
-- Effective versions: `1.21.8+`
+- Categories: `FGA`, `Survival`, `Command`
+- Effective versions: `1.21+`
 
 ### Drop Pre-stacking(preStackDroppedItems) · [Related command](commands_en.md#cmd-drop-pre-stack)
 
-Enables entity-death and block-drop pre-stacking configured by /dropPreStack. New command entries default to range 1.
+Enables pre-stacking of mob-death and block drops configured by `/dropPreStack`; new command entries default to range 1
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
-- Categories: `FGA`, `Feature`
-- Effective versions: `1.21-26.2`
-
-### Pre-stack Mob Death Drops(preStackMobDeathDrops)
-
-Immediately pre-stacks compatible death drops from selected mob entity types. Use false or a list such as [zombified_piglin,zombie].
-
-- Type: `String`
-- Default: `false`
-- Options: `false`, `[zombified_piglin]`
-- Categories: `FGA`, `Feature`
-- Effective versions: `1.21-26.2`
-
-### Pre-stack Mob Death Drop Range(preStackMobDeathDropsRange)
-
-Sets the legacy three-dimensional same-tick merge range from 0 to 16 blocks; default is 1.5. Migrate to per-entity ranges with /dropPreStack.
-
-- Type: `Decimal`
-- Default: `1.5`
-- Options: `0`, `1`, `3`, `8`, `16`
-- Categories: `FGA`, `Feature`
-- Effective versions: `1.21-26.2`
+- Categories: `FGA`, `Survival`
+- Effective versions: `1.21+`
 
 ### Zombified Piglin Drop Reduction(zombifiedPiglinDropReduction)
 
-Removes selected drops from zombified piglins.
+Customizes removal of selected zombified piglin drops<br>`false`: keeps vanilla drops<br>`goldEquipment`: removes golden armor, golden swords, and golden spears<br>`rottenFlesh`: removes rotten flesh<br>`all`: removes both golden equipment and rotten flesh<br>Gold nuggets and gold ingots are unaffected
 
 - Type: `Enum`
 - Default: `false`
 - Options: `false`, `goldEquipment`, `rottenFlesh`, `all`
-- Categories: `FGA`, `Feature`
-- Effective versions: `All supported versions`
+- Categories: `FGA`, `Survival`
+- Effective versions: `1.16.5+`
 
 ### Custom Entity Drop Removal(entityDropRemoval) · [Related command](commands_en.md#cmd-entity-drop-removal)
 
-Configures death drops to remove per entity; false disables the command, true allows everyone, and ops or 0-4 controls configuration access
+Configures death drops to remove per entity<br>`false`: disables the command<br>`true`: lets all players configure it<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum configuration-command permission level<br>Use `/entityDropRemoval set <entity ID> <item ID>` to add an item, or `allEquipment` to remove drops from six equipment slots<br>A selected item filters loot-table and equipment drops; `allEquipment` filters only the six equipment slots and does not remove an identically named item from the loot table
 
 - Type: `Permission`
 - Default: `false`
 - Options: `false`, `true`, `ops`, `0-4`
-- Categories: `FGA`, `Feature`, `Command`
+- Categories: `FGA`, `Survival`, `Command`
 - Effective versions: `1.21+`
 
 ### Piglin Barter Item Exclusions(piglinBarterItemExclusions)
 
-Excludes selected items from piglin bartering results.
+Customizes removal of selected piglin barter results<br>`false`: keeps vanilla bartering<br>`[ironBoots]`: removes iron boots<br>`[potions]`: removes regular, splash, and lingering potions<br>`[ironBoots,potions]`: removes both iron boots and potions<br>Item ID list: custom items to remove; the `minecraft` namespace may be omitted
 
 - Type: `List`
 - Default: `false`
-- Options: `false`, presets, or item IDs`
-- Categories: `FGA`, `Feature`
-- Effective versions: `All supported versions`
-
-
+- Options: `false`, `ironBoots`, `potions`, `item ID list`
+- Categories: `FGA`, `Survival`
+- Effective versions: `1.16.5+`
 
 ## Deepslate stonecutting and player loading
 
 ### Deepslate Stonecutting Recipes(deepslateStonecuttingRecipes)
 
-Makes deepslate behave in the stonecutter like it does in 26.1+
+Makes deepslate behave in the stonecutter like 26.1+, and allows it to be placed directly into the stonecutter
 
 - Type: `Boolean`
 - Default: `false`
@@ -542,7 +521,7 @@ Allows wood products to be crafted in the stonecutter
 
 ### Player Load Distance(playerLoadDistance) · [Related command](commands_en.md#cmd-player-load-distance)
 
-Controls per-player chunk sending and tracking distance without changing simulation distance
+Controls per-player chunk sending and tracking distance without changing simulation distance<br>`false`: disables the related commands<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum command permission level<br>Use `/playerLoadDistance help` for command help; append `persistent` to save across restarts<br>`-1` weakly loads only the center chunk, `0` strongly loads the center and keeps a 3x3 weak-loading area, `1-32` sets the chunk radius, and `none` removes the player loading view
 
 - Type: `Permission string`
 - Default: `false`
@@ -552,7 +531,7 @@ Controls per-player chunk sending and tracking distance without changing simulat
 
 ### Trial Spawner Equivalent Players(trialSpawnerPlayerMultiplier)
 
-Counts each matching trial participant as the configured number of players for trial mobs and rewards
+Counts each matching trial participant as the configured number of players, affecting only trial spawning and reward scale<br>Range 1-10000, default 100; setting it to 1 keeps the scale of one vanilla player
 
 - Type: `Integer`
 - Default: `100`
@@ -560,19 +539,19 @@ Counts each matching trial participant as the configured number of players for t
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21-26.2`
 
-### 试炼刷怪笼多倍触发(trialSpawnerPlayerFilter)
+### Trial Spawner Player Filter(trialSpawnerPlayerFilter)
 
-Selects players affected by the trial multiplier: false, true, bot_, or a custom name prefix
+Selects which players trigger the equivalent-player multiplier: `false`, `true`, `bot_`, or a custom name prefix<br>`false`: disables the multiplier<br>`true`: matches all players<br>Other values match a case-sensitive name prefix
 
 - Type: `String`
 - Default: `false`
-- Options: `false`, `true`, `bot_`, custom prefix`
+- Options: `false`, `true`, `bot_`, `custom prefix`
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21-26.2`
 
 ### Trial Stop Command Permission(trialStopCommandPermission) · [Related command](commands_en.md#cmd-trial-stop)
 
-Enables and controls the /trialStop stop-and-refresh command with false, true, ops, or permission levels 0-4
+Enables and controls `/trialStop` and `/fga trialStop` stop-and-refresh commands<br>`false`: disables the command<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum permission level; the command handles only trial spawners in loaded chunks and supports reward modes `none`, `reward`, and `fast`
 
 - Type: `Permission string`
 - Default: `false`
@@ -580,13 +559,11 @@ Enables and controls the /trialStop stop-and-refresh command with false, true, o
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21-26.2`
 
-
-
 ## Fake-player item sorting, Minecraft 1.21+
 
 ### Fake Player Item Sorting(fakePlayerItemSort) · [Related command](commands_en.md#cmd-fake-player-item-sort)
 
-Enables fake-player inventory sorting; use /fakePlayerItemSort to manage mode and sorter settings
+Enables fake-player item sorting; use `/fakePlayerItemSort` to manage modes and sorting configuration
 
 - Type: `Boolean`
 - Default: `false`
@@ -594,10 +571,4 @@ Enables fake-player inventory sorting; use /fakePlayerItemSort to manage mode an
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21+`
 
-
-Sorter settings are stored in `world/config/carpetfgaaddition/fake-player-item-sort.json`. `/fakePlayerItemSort mode summon` uses online Carpet fake players; `mode quickopen` edits offline playerdata directly. Legacy `fakePlayerItemSort*` Carpet settings are migrated once at startup and are no longer registered as rules.
-
-
 ## Configuration files
-
-World configuration is stored in `world/config/carpetfgaaddition/`. Upgrades migrate files from `world/carpet/carpetfgaaddition/`; successfully migrated files are renamed with a `.migrated` suffix. Corrupt files are preserved and never overwritten.

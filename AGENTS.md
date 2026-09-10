@@ -188,8 +188,8 @@ Mixin 失败应优先检查：
 * `carpet-fga-addition.mixins.json`
 * `en_us.json`
 * `zh_cn.json`
-* `docs/rules.md`
-* `docs/rules_en.md`
+* `docs/rules_ch_cn.md`
+* `docs/rules_en_us.md`
 
 FGA 规则注册到 Carpet 主 SettingsManager，通过 `/carpet` 管理。
 
@@ -387,8 +387,8 @@ src/main/resources/META-INF/LICENSE-*.txt
 规则变化检查：
 
 ```text
-docs/rules.md
-docs/rules_en.md
+docs/rules_ch_cn.md
+docs/rules_en_us.md
 ```
 
 命令变化检查：

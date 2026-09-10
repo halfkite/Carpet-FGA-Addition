@@ -58,6 +58,8 @@ public final class FakePlayerProfilePreloadManager {
     private static final Map<MinecraftServer, ServerState> STATES = new WeakHashMap<>();
     private static final ThreadLocal<Boolean> REPLAYING = ThreadLocal.withInitial(() -> false);
     private static final ThreadLocal<Integer> COMMAND_PASSTHROUGH = ThreadLocal.withInitial(() -> 0);
+    private static volatile boolean externalSpawnCallbackLookupDone;
+    private static volatile java.lang.reflect.Field externalSpawnCallbackField;
 
     private FakePlayerProfilePreloadManager() {
     }
@@ -82,7 +84,19 @@ public final class FakePlayerProfilePreloadManager {
     public static boolean interceptDirectSpawn(String name, MinecraftServer server, Vec3 position,
                                                double yaw, double pitch, ResourceKey<Level> dimension,
                                                GameType gameMode, boolean flying) {
-        if (REPLAYING.get() || COMMAND_PASSTHROUGH.get() > 0 || !shouldPreload(server)) {
+        if (REPLAYING.get() || COMMAND_PASSTHROUGH.get() > 0) {
+            return false;
+        }
+        if ("false".equals(FGASettings.fakePlayerProfilePreload)) {
+            return false;
+        }
+        // Carpet Org Addition attaches playerManager startup actions to this callback
+        // while it creates a fake player. Let its original createFake call complete so
+        // the callback is retained instead of being replaced by the preload replay.
+        if (hasExternalFakePlayerSpawnCallback()) {
+            return false;
+        }
+        if (!shouldPreload(server)) {
             return false;
         }
         if (server.getPlayerList().getPlayerByName(name) != null) {
@@ -215,6 +229,39 @@ public final class FakePlayerProfilePreloadManager {
 
     private static synchronized ServerState state(MinecraftServer server) {
         return STATES.computeIfAbsent(server, ignored -> new ServerState());
+    }
+
+    private static boolean hasExternalFakePlayerSpawnCallback() {
+        java.lang.reflect.Field field = externalSpawnCallbackField();
+        if (field == null) {
+            return false;
+        }
+        try {
+            Object value = field.get(null);
+            if (value instanceof ThreadLocal<?> callbacks) {
+                return callbacks.get() != null;
+            }
+        } catch (IllegalAccessException | RuntimeException ignored) {
+            // Optional compatibility only; a missing or inaccessible Org class must
+            // never prevent the normal FGA fake-player path from running.
+        }
+        return false;
+    }
+
+    private static synchronized java.lang.reflect.Field externalSpawnCallbackField() {
+        if (externalSpawnCallbackLookupDone) {
+            return externalSpawnCallbackField;
+        }
+        externalSpawnCallbackLookupDone = true;
+        try {
+            Class<?> genericUtils = Class.forName(
+                    "org.carpetorgaddition.util.GenericUtils", false,
+                    FakePlayerProfilePreloadManager.class.getClassLoader());
+            externalSpawnCallbackField = genericUtils.getField("FAKE_PLAYER_SPAWNING");
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            externalSpawnCallbackField = null;
+        }
+        return externalSpawnCallbackField;
     }
 
     private static void withReplay(Runnable action) {

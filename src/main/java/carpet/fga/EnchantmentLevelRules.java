@@ -1,10 +1,10 @@
 package carpet.fga;
 
-//#if MC == 1.21.1 || MC == 26.2
+//#if MC >= 1.21 && MC <= 26.2
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Shared validation and arithmetic for the 1.21.1 enchantment rules. */
+/** Shared validation and arithmetic for the 1.21+ enchantment rules. */
 public final class EnchantmentLevelRules {
     public static final int MAX_STORED_LEVEL = 255;
     public static final int MAX_INCREASE = 254;

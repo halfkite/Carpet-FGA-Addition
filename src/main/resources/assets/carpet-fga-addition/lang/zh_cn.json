@@ -184,5 +184,7 @@
     "carpet.fga.trialStop.reward.none":  "不发放本次奖励",
     "carpet.fga.trialStop.reward.reward":  "按原版节奏逐次喷出奖励",
     "carpet.fga.trialStop.reward.fast":  "立即喷出全部本次奖励",
-    "carpet.fga.trialStop.clear":  "仅清理该刷怪笼登记的当前怪物"
+    "carpet.fga.trialStop.clear":  "仅清理该刷怪笼登记的当前怪物",
+    "carpet.rule.netherPortalNoLight.name": "地狱门不发光",
+    "carpet.rule.netherPortalNoLight.desc": "控制地狱门是否发出光照，false保持原版，true关闭所有地狱门光照，onlynew仅关闭规则启用后新生成的地狱门光照，关闭规则不会主动刷新已有地狱门"
 }

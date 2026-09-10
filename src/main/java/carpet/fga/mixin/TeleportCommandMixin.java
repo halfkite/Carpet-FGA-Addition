@@ -2,7 +2,6 @@
 package carpet.fga.mixin;
 
 import carpet.fga.SpectatorFreeTeleport;
-import carpet.fga.FGASettings;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
@@ -38,9 +37,6 @@ public abstract class TeleportCommandMixin {
     private static Predicate<CommandSourceStack> carpetFga$allowSpectatorFreeTeleport(
             Predicate<CommandSourceStack> original) {
         return source -> {
-            if (!FGASettings.spectatorFreeTeleport) {
-                return original.test(source);
-            }
             try {
                 if (original != null && original.test(source)) {
                     return true;

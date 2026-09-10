@@ -46,6 +46,9 @@ public class FGAExtension implements CarpetExtension {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 PlayerPossessionManager.disconnected(handler.getPlayer(), server));
         //#endif
+        //#if MC == 1.21.1
+        registerNetherPortalLightObserver();
+        //#endif
         // Register FGA rules into carpet's main SettingsManager so they appear under /carpet.
         //#if MC >= 1.19
         carpet.api.settings.SettingsManager carpetManager = CarpetServer.settingsManager;
@@ -97,6 +100,9 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC >= 1.21 && MC <= 26.2
         EntityDropRemovalConfig.load(server);
+        //#endif
+        //#if MC == 1.21.1
+        if (NetherPortalLightManager.isActive()) NetherPortalLightManager.activate(server);
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         PlayerLoadDistanceCompat.load(server);
@@ -159,8 +165,11 @@ public class FGAExtension implements CarpetExtension {
         //#if MC <= 26.2
         DeathDropPreStackManager.clearTickCache();
         //#endif
+        //#if MC >= 1.21 && MC <= 26.2
         //#if MC == 1.21.1
+        NetherPortalLightManager.tick(server);
         PlayerPossessionManager.tick(server);
+        //#endif
         //#endif
         //#if MC >= 1.20.1
         StackLimitClientRequirement.tick(server);
@@ -224,6 +233,9 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC >= 1.21 && MC <= 26.2
         EntityDropRemovalConfig.clear();
+        //#endif
+        //#if MC == 1.21.1
+        NetherPortalLightManager.clear();
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         PlayerLoadDistanceCompat.clear();
@@ -401,6 +413,17 @@ public class FGAExtension implements CarpetExtension {
         });
         //#endif
     }
+
+    //#if MC == 1.21.1
+    private static void registerNetherPortalLightObserver() {
+        carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
+            if (!"netherPortalNoLight".equals(rule.name())) return;
+            if (!"true".equals(rule.value()) && !"onlynew".equals(rule.value())) return;
+            MinecraftServer server = CarpetServer.minecraft_server;
+            if (server != null) NetherPortalLightManager.activate(server);
+        });
+    }
+    //#endif
 
     private static void syncCarpetFillLimitForLegacyVersions(boolean unlimited) {
         //#if MC < 1.19.4

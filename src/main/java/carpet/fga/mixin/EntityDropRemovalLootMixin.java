@@ -13,14 +13,14 @@ import java.util.function.Consumer;
 @Mixin(LivingEntity.class)
 public abstract class EntityDropRemovalLootMixin {
     @ModifyArg(
-            method =
-                    //#if MC >= 1.21.10
-                    //$$ "dropFromLootTable(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;ZLnet/minecraft/resources/ResourceKey;Ljava/util/function/Consumer;)V",
-                    //#elseif MC >= 1.21.2
-                    //$$ "dropFromLootTable(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;Z)V",
-                    //#else
-                    "dropFromLootTable(Lnet/minecraft/world/damagesource/DamageSource;Z)V",
-                    //#endif
+             method =
+                     //#if MC >= 1.21.10
+                     //$$ "dropFromLootTable(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;ZLnet/minecraft/resources/ResourceKey;Ljava/util/function/Consumer;)V",
+                     //#elseif MC >= 1.21.2
+                     //$$ "dropFromLootTable(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;Z)V",
+                     //#else
+                     "dropFromLootTable(Lnet/minecraft/world/damagesource/DamageSource;Z)V",
+                     //#endif
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/level/storage/loot/LootTable;getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;JLjava/util/function/Consumer;)V"

@@ -351,13 +351,13 @@ public class FGASettings {
     public static boolean anvilNoPriorWorkPenalty = false;
     //#endif
 
-    //#if MC == 1.21.1 || MC == 26.2
+    //#if MC >= 1.21 && MC <= 26.2
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "0", "1"},
         strict = false,
         validators = FGASettings.EnchantmentLevelLimitIncreaseValidator.class,
-        conditions = FGASettings.Minecraft1_21_1OnlyCondition.class
+        conditions = FGASettings.Minecraft1_21OrNewerCondition.class
     )
     //#else
     //$$ @Rule(
@@ -366,7 +366,7 @@ public class FGASettings {
         //$$ options = {"false", "0", "1"},
         //$$ strict = false,
         //$$ validate = FGASettings.EnchantmentLevelLimitIncreaseValidator.class,
-        //$$ condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        //$$ condition = FGASettings.Minecraft1_21OrNewerCondition.class
     //$$ )
     //#endif
     public static String enchantmentLevelLimitIncrease = "false";
@@ -374,14 +374,14 @@ public class FGASettings {
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
-        conditions = FGASettings.Minecraft1_21_1OnlyCondition.class
+        conditions = FGASettings.Minecraft1_21OrNewerCondition.class
     )
     //#else
     //$$ @Rule(
         //$$ desc = "Adds enchantment levels together when combining items in an anvil",
         //$$ category = {FGA, FEATURE},
         //$$ options = {"false", "true"},
-        //$$ condition = FGASettings.Minecraft1_21_1OnlyCondition.class
+        //$$ condition = FGASettings.Minecraft1_21OrNewerCondition.class
     //$$ )
     //#endif
     public static boolean enchantmentLevelAddition = false;
@@ -1197,6 +1197,26 @@ public class FGASettings {
             String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
             if (Set.of("false", "true", "control").contains(value)) return value;
             Messenger.m(source, "r PlayerTpEndControl must be false, true, or control");
+            return null;
+        }
+    }
+    //#endif
+
+    //#if MC >= 1.21 && MC <= 26.2
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true", "onlynew"},
+        strict = false,
+        validators = FGASettings.NetherPortalNoLightValidator.class
+    )
+    public static String netherPortalNoLight = "false";
+
+    public static class NetherPortalNoLightValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (Set.of("false", "true", "onlynew").contains(value)) return value;
+            Messenger.m(source, "r netherPortalNoLight must be false, true, or onlynew");
             return null;
         }
     }
