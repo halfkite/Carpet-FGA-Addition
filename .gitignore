@@ -12,7 +12,6 @@ mod-builds/
 
 # Generated run and preprocessor state
 run/
-versions/mainProject
 
 # IDE
 .agents/
