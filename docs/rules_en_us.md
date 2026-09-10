@@ -6,7 +6,7 @@ All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, ru
 
 Tip: use `Ctrl+F` to quickly find a rule
 
-### Player possession(playerPossession)
+### Player possession(playerPossession) · [Related command](commands_en.md#cmd-player-possession)
 
 Use `/player <name> possess` to possess an online player or fake player without installing the FGA client
 `false` disables the feature
@@ -43,7 +43,7 @@ Sets the maximum fake-player name length from 1 to 128. Long names use a client-
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
 
-### Fake Player Range Control(fakePlayerRangeControl)
+### Fake Player Range Control(fakePlayerRangeControl) · [Related command](commands_en.md#cmd-player-range)
 
 Enables area placement, block interaction, area breaking, continuous tasks, and basic pathfinding for fake players.
 
@@ -63,7 +63,7 @@ Regenerates destroyed vanilla End gateways using only the gateway block and its 
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
 
-### Wandering Trader No Despawn(wanderingTraderNoDespawn)
+### Wandering Trader No Despawn(wanderingTraderNoDespawn) · [Related command](commands_en.md#cmd-villager-performance)
 
 false keeps vanilla behavior; true prevents every wandering trader from despawning; controlled protects only traders matching the /villagerPerformance wanderingTrader name or block lists.
 
@@ -113,7 +113,7 @@ Uses exact item candidate indexing for inventory_changed advancements. false kee
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
 
-### Player Health Display(playerHealthDisplay)
+### Player Health Display(playerHealthDisplay) · [Related command](commands_en.md#cmd-player-health)
 
 Shows health at the right side of player-list names. true shows all players, false shows only for /log playerHealth subscribers, and nofake hides fake-player health.
 
@@ -133,7 +133,7 @@ Removes item frames from server entity tick scheduling and validates support cha
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21.1`
 
-### Firework Minecart Boost(fireworkMinecartBoost)
+### Firework Minecart Boost(fireworkMinecartBoost) · [Related command](commands_en.md#cmd-minecart)
 
 Lets players riding normal minecarts use firework rockets for configurable full-speed boosts followed by linear deceleration
 
@@ -143,7 +143,7 @@ Lets players riding normal minecarts use firework rockets for configurable full-
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21.1`
 
-### Chain Minecart Binding(chainMinecartBinding)
+### Chain Minecart Binding(chainMinecartBinding) · [Related command](commands_en.md#cmd-minecart)
 
 Lets chains connect normal minecarts into persistent linear trains
 
@@ -153,7 +153,7 @@ Lets chains connect normal minecarts into persistent linear trains
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21.1`
 
-### Minecart Feature Command Permission(minecartFeatureCommandPermission)
+### Minecart Feature Command Permission(minecartFeatureCommandPermission) · [Related command](commands_en.md#cmd-minecart)
 
 Controls access to firework minecart and chain train configuration commands
 
@@ -163,7 +163,7 @@ Controls access to firework minecart and chain train configuration commands
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21.1`
 
-### Vehicle Stop On Dismount(vehicleStopOnDismount)
+### Vehicle Stop On Dismount(vehicleStopOnDismount) · [Related command](commands_en.md#cmd-vehicle-stop)
 
 Controls whether a vehicle immediately loses horizontal speed when its controlling player dismounts
 
@@ -173,7 +173,7 @@ Controls whether a vehicle immediately loses horizontal speed when its controlli
 - Categories: `FGA`, `Feature`
 - Effective versions: `All supported versions`
 
-### Void World Generation(voidWorldGeneration)
+### Void World Generation(voidWorldGeneration) · [Related command](commands_en.md#cmd-regenerate-terrain)
 
 Makes newly generated chunks empty while retaining biome and structure-location data
 
@@ -183,7 +183,7 @@ Makes newly generated chunks empty while retaining biome and structure-location 
 - Categories: `FGA`, `Feature`
 - Effective versions: `All supported versions`
 
-### Terrain Regeneration Command Permission(terrainRegenerationCommandPermission)
+### Terrain Regeneration Command Permission(terrainRegenerationCommandPermission) · [Related command](commands_en.md#cmd-regenerate-terrain)
 
 Controls access to terrain regeneration and void clearing commands
 
@@ -223,7 +223,7 @@ Controls Nether portal block light: false keeps vanilla behavior, true disables 
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21.1`
 
-### Player End Portal Teleport Control(PlayerTpEndControl)
+### Player End Portal Teleport Control(PlayerTpEndControl) · [Related command](commands_en.md#cmd-playertpend)
 
 Controls player teleportation through End portals, End exit portals, and End gateways: false keeps vanilla behavior, true blocks all player portal teleports, and control uses per-player preferences managed by /playertpend
 
@@ -406,7 +406,7 @@ Lets villagers wait for and complete profession upgrades without closing the tra
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21-26.2`
 
-### Villager Performance Optimization(villagerPerformanceOptimization)
+### Villager Performance Optimization(villagerPerformanceOptimization) · [Related command](commands_en.md#cmd-villager-performance)
 
 Enables villager performance optimization and controls access to /villagerPerformance: true for everyone, ops for OP level 2, or 1-4 for a minimum permission level.
 
@@ -426,7 +426,7 @@ Opens a hostile mob's six equipment slots by shift-right-clicking it with both h
 - Categories: `FGA`, `Feature`
 - Effective versions: `All supported versions`
 
-### Dropped Item Stack Limit(droppedItemStackLimit)
+### Dropped Item Stack Limit(droppedItemStackLimit) · [Related command](commands_en.md#cmd-dropped-item-stack-limit)
 
 Enables separately configured server-side stack limits for ground items, player inventories, and containers through /droppedItemStackLimit, up to 1000000000 items. false disables the feature; true allows everyone to manage it; ops or 0-4 set the manager permission level.
 
@@ -456,7 +456,7 @@ Removes the volume limit from /fill and /fillbiome. Chunks must still be loaded 
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21.8+`
 
-### Drop Pre-stacking(preStackDroppedItems)
+### Drop Pre-stacking(preStackDroppedItems) · [Related command](commands_en.md#cmd-drop-pre-stack)
 
 Enables entity-death and block-drop pre-stacking configured by /dropPreStack. New command entries default to range 1.
 
@@ -496,7 +496,7 @@ Removes selected drops from zombified piglins.
 - Categories: `FGA`, `Feature`
 - Effective versions: `All supported versions`
 
-### Custom Entity Drop Removal(entityDropRemoval)
+### Custom Entity Drop Removal(entityDropRemoval) · [Related command](commands_en.md#cmd-entity-drop-removal)
 
 Configures death drops to remove per entity; false disables the command, true allows everyone, and ops or 0-4 controls configuration access
 
@@ -540,7 +540,7 @@ Allows wood products to be crafted in the stonecutter
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
 
-### Player Load Distance(playerLoadDistance)
+### Player Load Distance(playerLoadDistance) · [Related command](commands_en.md#cmd-player-load-distance)
 
 Controls per-player chunk sending and tracking distance without changing simulation distance
 
@@ -570,7 +570,7 @@ Selects players affected by the trial multiplier: false, true, bot_, or a custom
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21-26.2`
 
-### Trial Stop Command Permission(trialStopCommandPermission)
+### Trial Stop Command Permission(trialStopCommandPermission) · [Related command](commands_en.md#cmd-trial-stop)
 
 Enables and controls the /trialStop stop-and-refresh command with false, true, ops, or permission levels 0-4
 
@@ -584,7 +584,7 @@ Enables and controls the /trialStop stop-and-refresh command with false, true, o
 
 ## Fake-player item sorting, Minecraft 1.21+
 
-### Fake Player Item Sorting(fakePlayerItemSort)
+### Fake Player Item Sorting(fakePlayerItemSort) · [Related command](commands_en.md#cmd-fake-player-item-sort)
 
 Enables fake-player inventory sorting; use /fakePlayerItemSort to manage mode and sorter settings
 
