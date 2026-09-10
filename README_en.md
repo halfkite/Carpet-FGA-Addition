@@ -43,7 +43,7 @@ Provides Carpet rule extensions and server commands, including full shulker-box 
 
 ## Documentation
 
-- [Rules](docs/rules_en.md)
+- [Rules (English US)](docs/rules_en_us.md)
 - [Commands](docs/commands_en.md)
 - [QuickCraft entity-placement server support (Chinese)](docs/quickcraft-entity-placement-server.md)
 - [Release process (Chinese)](docs/releasing.md)
