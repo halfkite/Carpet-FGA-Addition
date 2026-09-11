@@ -12,6 +12,8 @@ import net.minecraft.resources.ResourceLocation;
 //#endif
 import net.minecraft.world.phys.Vec3;
 
+import java.util.UUID;
+
 /**
  * QuickCraft entity placement wire types shared with the client mod.
  * The binary name and record layouts must remain identical in both repositories because
@@ -19,7 +21,9 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class QuickLitematicaEntityPlacementPayloads {
     public static final int PROTOCOL_VERSION = 2;
-    public static final int CLIENT_FEATURES = 0;
+    public static final int FEATURE_PASSENGER_SUPPLEMENT = 1;
+    public static final int CLIENT_FEATURES = FEATURE_PASSENGER_SUPPLEMENT;
+    public static final int SERVER_FEATURES = FEATURE_PASSENGER_SUPPLEMENT;
     public static final int MAX_CLIENT_NBT_BYTES = 262_144;
 
     private QuickLitematicaEntityPlacementPayloads() {
@@ -153,6 +157,58 @@ public final class QuickLitematicaEntityPlacementPayloads {
             buffer.writeFloat(yaw);
             buffer.writeFloat(pitch);
             writeVec3(buffer, velocity);
+            buffer.writeBoolean(creativeMaterialBypass);
+            buffer.writeNbt(entityNbt);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return ID;
+        }
+    }
+
+    public record PassengerRequestPayload(
+            String sessionToken,
+            long nonce,
+            //#if MC >= 1.21.11
+            //$$ Identifier dimension,
+            //#else
+            ResourceLocation dimension,
+            //#endif
+            UUID vehicleUuid,
+            boolean creativeMaterialBypass,
+            CompoundTag entityNbt
+    ) implements CustomPacketPayload {
+        //#if MC >= 1.21.11
+        //$$ public static final Type<PassengerRequestPayload> ID = new Type<>(
+        //$$         Identifier.fromNamespaceAndPath("quickcraft", "entity_place_passengers"));
+        //#else
+        public static final Type<PassengerRequestPayload> ID = new Type<>(
+                ResourceLocation.fromNamespaceAndPath("quickcraft", "entity_place_passengers"));
+        //#endif
+        public static final StreamCodec<FriendlyByteBuf, PassengerRequestPayload> CODEC =
+                CustomPacketPayload.codec(PassengerRequestPayload::write, PassengerRequestPayload::new);
+
+        public PassengerRequestPayload(FriendlyByteBuf buffer) {
+            //#if MC >= 1.21.11
+            //$$ this(buffer.readUtf(128), buffer.readLong(), buffer.readIdentifier(),
+            //$$         new UUID(buffer.readLong(), buffer.readLong()), buffer.readBoolean(), buffer.readNbt());
+            //#else
+            this(buffer.readUtf(128), buffer.readLong(), buffer.readResourceLocation(),
+                    new UUID(buffer.readLong(), buffer.readLong()), buffer.readBoolean(), buffer.readNbt());
+            //#endif
+        }
+
+        private void write(FriendlyByteBuf buffer) {
+            buffer.writeUtf(sessionToken, 128);
+            buffer.writeLong(nonce);
+            //#if MC >= 1.21.11
+            //$$ buffer.writeIdentifier(dimension);
+            //#else
+            buffer.writeResourceLocation(dimension);
+            //#endif
+            buffer.writeLong(vehicleUuid.getMostSignificantBits());
+            buffer.writeLong(vehicleUuid.getLeastSignificantBits());
             buffer.writeBoolean(creativeMaterialBypass);
             buffer.writeNbt(entityNbt);
         }
