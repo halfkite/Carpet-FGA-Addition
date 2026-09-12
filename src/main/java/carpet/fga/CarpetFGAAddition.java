@@ -36,6 +36,14 @@ public class CarpetFGAAddition implements ModInitializer {
                 QuickLitematicaEntityPlacementPayloads.RequestPayload.CODEC
         );
         //#if MC >= 26.1.2
+        //$$ PayloadTypeRegistry.serverboundPlay().register(
+        //#else
+        PayloadTypeRegistry.playC2S().register(
+        //#endif
+                QuickLitematicaEntityPlacementPayloads.PassengerRequestPayload.ID,
+                QuickLitematicaEntityPlacementPayloads.PassengerRequestPayload.CODEC
+        );
+        //#if MC >= 26.1.2
         //$$ PayloadTypeRegistry.clientboundPlay().register(
         //#else
         PayloadTypeRegistry.playS2C().register(
@@ -60,6 +68,11 @@ public class CarpetFGAAddition implements ModInitializer {
                 QuickLitematicaEntityPlacementPayloads.RequestPayload.ID,
                 (payload, context) -> context.server().execute(
                         () -> QuickCraftEntityPlacementServer.handleRequest(context.player(), payload))
+        );
+        ServerPlayNetworking.registerGlobalReceiver(
+                QuickLitematicaEntityPlacementPayloads.PassengerRequestPayload.ID,
+                (payload, context) -> context.server().execute(
+                        () -> QuickCraftEntityPlacementServer.handlePassengerRequest(context.player(), payload))
         );
         //#endif
         CarpetServer.manageExtension(new FGAExtension());
