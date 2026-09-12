@@ -276,6 +276,9 @@ public class FGAExtension implements CarpetExtension {
     @Override
     public void onPlayerLoggedOut(net.minecraft.server.level.ServerPlayer player) {
         FGAModDetector.remove(player);
+        //#if MC >= 1.20.1
+        StackLimitClientRequirement.onPlayerLoggedOut(player);
+        //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();
         MinecartFeatureManager.removePlayer(player);
@@ -290,6 +293,9 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onPlayerLoggedIn(net.minecraft.server.level.ServerPlayer player) {
+        //#if MC >= 1.20.1
+        StackLimitClientRequirement.onPlayerLoggedIn(player);
+        //#endif
         RecipeBookAlwaysUnlockedManager.onPlayerLoggedIn(player);
         //#if MC == 1.20.1 || MC == 1.21.1
         if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();

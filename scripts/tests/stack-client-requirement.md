@@ -14,8 +14,9 @@ limits, failed configuration loading, disabling and re-enabling, and preservatio
 of the configured state. This is not a network or world persistence test.
 
 Use only disposable test worlds for the following integration matrix. Keep each
-accepted connection online for at least 120 server ticks. The existing check uses
-a global 40-tick counter, not a per-player handshake grace period.
+accepted connection online for at least 240 server ticks. The server checks every
+40 ticks and gives each newly logged-in player a separate 200-tick handshake grace
+period before enforcing the requirement.
 
 | Client and configuration | Expected result |
 | --- | --- |
@@ -30,7 +31,7 @@ a global 40-tick counter, not a per-player handshake grace period.
 | Vanilla already online while rule is false; enable retained scoped limits | Existing rejection resumes |
 | Carpet fake player, active scoped limits | Existing exemption remains |
 
-Repeat connection cases near the global check boundary and with delayed FGA
+Repeat connection cases near the per-player check boundary and with delayed FGA
 handshakes. Test existing oversized stacks, pickup, and container clicks separately:
 scoped effective-limit computation currently lacks the main-rule gate, which this
 client-requirement fix intentionally does not refactor. Do not infer vanilla item
