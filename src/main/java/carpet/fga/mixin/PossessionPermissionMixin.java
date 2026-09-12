@@ -21,7 +21,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.UUID;
 
-/** Applies the requested permission policy while the live player bodies are swapped. */
+/**
+ * Applies the requested permission policy while the live player bodies are swapped.
+ * Only the controlling side adopts the possessed body's permission level. The watched
+ * target's own connection always keeps its original permission level, so a possession
+ * session can never hand the target's permissions back to the target's connection
+ * (previously an operator possessing a real player let that player run commands with
+ * the operator's permission level).
+ */
 @Mixin(MinecraftServer.class)
 public abstract class PossessionPermissionMixin {
     private static final ThreadLocal<Boolean> FGA_PERMISSION_REENTRY =
@@ -36,7 +43,7 @@ public abstract class PossessionPermissionMixin {
     //$$         CallbackInfoReturnable<LevelBasedPermissionSet> callback) {
     //$$     if (!FGASettings.permissionSwapsToo || FGA_PERMISSION_REENTRY.get()) return;
     //$$     UUID id = profile.id();
-    //$$     if (id == null || !PlayerPossessionManager.isParticipantId(id)) return;
+    //$$     if (id == null || !PlayerPossessionManager.isControllerId(id)) return;
     //$$     UUID partnerId = PlayerPossessionManager.swapPartner(id);
     //$$     ServerPlayer partner = partnerId == null ? null : getPlayerList().getPlayer(partnerId);
     //$$     if (partner == null) return;
@@ -53,7 +60,7 @@ public abstract class PossessionPermissionMixin {
     //$$ private void fga$permissionForPossession(NameAndId profile, CallbackInfoReturnable<Integer> callback) {
     //$$     if (!FGASettings.permissionSwapsToo || FGA_PERMISSION_REENTRY.get()) return;
     //$$     UUID id = profile.id();
-    //$$     if (id == null || !PlayerPossessionManager.isParticipantId(id)) return;
+    //$$     if (id == null || !PlayerPossessionManager.isControllerId(id)) return;
     //$$     UUID partnerId = PlayerPossessionManager.swapPartner(id);
     //$$     ServerPlayer partner = partnerId == null ? null : getPlayerList().getPlayer(partnerId);
     //$$     if (partner == null) return;
@@ -70,7 +77,7 @@ public abstract class PossessionPermissionMixin {
     private void fga$permissionForPossession(GameProfile profile, CallbackInfoReturnable<Integer> callback) {
         if (!FGASettings.permissionSwapsToo || FGA_PERMISSION_REENTRY.get()) return;
         UUID id = profile.getId();
-        if (id == null || !PlayerPossessionManager.isParticipantId(id)) return;
+        if (id == null || !PlayerPossessionManager.isControllerId(id)) return;
         UUID partnerId = PlayerPossessionManager.swapPartner(id);
         ServerPlayer partner = partnerId == null ? null : getPlayerList().getPlayer(partnerId);
         if (partner == null) return;

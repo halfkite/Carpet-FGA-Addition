@@ -970,6 +970,17 @@ public final class FullShulkerBoxCraftingManager {
         for (InventoryBox box : boxes) counts.merge(box.slot(), 1, Integer::sum);
         for (Map.Entry<Integer, Integer> entry : counts.entrySet()) {
             ItemStack stack = inventory.getItem(entry.getKey());
+            // The plan's reserved slot may have changed since the snapshot (shift-click skips
+            // the per-slot re-validation path). Only consume slots still holding the exact
+            // empty box that was reserved; never shrink unrelated player items.
+            ItemStack template = boxes.stream().filter(box -> box.slot() == entry.getKey())
+                    .findFirst().map(InventoryBox::template).orElse(null);
+            if (template == null || stack.isEmpty() || stack.getCount() < entry.getValue()
+                    || !FGACompat.isSameItemSameTags(stack, template)) {
+                LOGGER.warn("Full-shulker crafting reserved empty box at inventory slot {} no longer matches; skipping consumption",
+                        entry.getKey());
+                continue;
+            }
             stack.shrink(entry.getValue());
             if (stack.isEmpty()) inventory.setItem(entry.getKey(), ItemStack.EMPTY);
         }

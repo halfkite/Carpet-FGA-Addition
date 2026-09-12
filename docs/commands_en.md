@@ -63,7 +63,7 @@ Related rules: `voidWorldGeneration`, `terrainRegenerationCommandPermission`
 /regenerateTerrain list [page]
 ```
 
-Coordinates are block coordinates and expand to whole chunks. Every X/Z argument offers Tab suggestions for the player's position and targeted block, and previews show the exact chunk count and effective range. The green confirmation button executes the confirmation directly; confirmation only queues the task, and the world changes on the next server restart. Multiple confirmed tasks can run together. `regenerate` deletes and normally regenerates terrain. `clear` reads an all-air network payload into every section palette, clears block entities, non-player entities, POI, scheduled ticks, heightmaps, and lighting data, and removes adjacent fluids within eight blocks outside the effective horizontal border, covering the maximum horizontal spread of vanilla water and Nether lava; waterlogged blocks keep the block and lose only their waterlogged state. Region files touched by the clear range or its border are backed up before execution. A failed task can be retried without overwriting its original backup.
+Coordinates are block coordinates and expand to whole chunks. Every X/Z argument offers Tab suggestions for the player's position and targeted block, and previews show the exact chunk count and effective range. The green confirmation button executes the confirmation directly; confirmation only queues the task, and the world changes on the next server restart. Multiple confirmed tasks can run together. `regenerate` deletes and normally regenerates terrain. `clear` reads an all-air network payload into every section palette, clears block entities, non-player entities, POI, scheduled ticks, heightmaps, and lighting data, and removes adjacent fluids within eight blocks outside the effective horizontal border, covering the maximum horizontal spread of vanilla water and Nether lava; waterlogged blocks keep the block and lose only their waterlogged state. Region files touched by the clear range or its border are backed up before execution. A failed task can be retried without overwriting its original backup. A single task (including merged ones) cannot exceed 4096 chunks; oversized drafts cannot be confirmed, and legacy oversized tasks are marked failed on load.
 
 ## Player and fake-player range commands (player)
 
@@ -199,7 +199,8 @@ Changes apply immediately and are saved to the world configuration. In `controll
 
 ### `/fakePlayerItemSort` and `bot_sort`
 
-The sorter core is registered on Minecraft `1.21+`. Dashboard/API, disk route cache, inventory rebuild, automatic restock, and worker tuning remain `1.21.1` only.
+The sorter core is registered on Minecraft `1.21+`. Dashboard/API, disk route cache, inventory rebuild, automatic restock, and worker tuning remain `1.21.1` only.<br>
+Besides the read-only subcommands (`status`, `whitelist list`, `name list`, `format status`, `dashboard status`, `bot_sort stop`), configuration, whitelist changes, and sort start all require OP level 2 or higher.
 
 ```text
 /fakePlayerItemSort status

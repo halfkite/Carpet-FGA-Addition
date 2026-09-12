@@ -99,6 +99,10 @@ public final class PlayerPossessionManager {
         return player != null && CONTROLLERS.containsKey(player.getUUID());
     }
 
+    public static boolean isControllerId(UUID id) {
+        return id != null && CONTROLLERS.containsKey(id);
+    }
+
     /** A real participant whose own connection must remain a viewer during a swap. */
     public static boolean isWatchedTarget(ServerPlayer player) {
         return player != null && isParticipant(player) && !isController(player);

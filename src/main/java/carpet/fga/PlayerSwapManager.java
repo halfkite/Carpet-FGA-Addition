@@ -26,6 +26,8 @@ public final class PlayerSwapManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/possession-swap");
     private final Map<UUID, UUID> activeSwaps = new HashMap<>();
     private final Map<UUID, SwapSnapshot> originalStates = new HashMap<>();
+    /** Release interrupted midway; kept until both sides are restored so the swap is never half-committed. */
+    private final Map<UUID, PendingRelease> pendingReleases = new HashMap<>();
 
     public SwapResult swap(ServerPlayer playerA, ServerPlayer playerB) {
         UUID uidA = playerA.getUUID();
@@ -69,30 +71,63 @@ public final class PlayerSwapManager {
         UUID uidB = activeSwaps.get(uidA);
         if (uidB == null) return SwapResult.fail(Component.translatable("fga.possession.no_session"));
 
-        SwapSnapshot origA = originalStates.get(uidA);
-        SwapSnapshot origB = originalStates.get(uidB);
-        ServerPlayer playerB = server.getPlayerList().getPlayer(uidB);
-        SwapSnapshot currentA = SwapSnapshot.capture(initiator);
-        SwapSnapshot currentB = playerB == null ? null : SwapSnapshot.capture(playerB);
-        activeSwaps.remove(uidA);
-        activeSwaps.remove(uidB);
-        originalStates.remove(uidA);
-        originalStates.remove(uidB);
-
-        if (origA == null) return SwapResult.fail(Component.translatable("fga.possession.failed"));
-        try {
-            if (currentB != null) currentB.applyTo(initiator, origA.gameProfile());
-            else origA.applyTo(initiator, origA.gameProfile());
-            if (playerB != null) {
-                GameProfile profileForB = origB == null ? playerB.getGameProfile() : origB.gameProfile();
-                currentA.applyTo(playerB, profileForB);
+        PendingRelease pending = pendingReleases.get(uidA);
+        if (pending == null) pending = pendingReleases.get(uidB);
+        if (pending == null) {
+            SwapSnapshot origA = originalStates.get(uidA);
+            SwapSnapshot origB = originalStates.get(uidB);
+            ServerPlayer playerB = server.getPlayerList().getPlayer(uidB);
+            if (origA == null) {
+                activeSwaps.remove(uidA);
+                activeSwaps.remove(uidB);
+                originalStates.remove(uidA);
+                originalStates.remove(uidB);
+                return SwapResult.fail(Component.translatable("fga.possession.failed"));
             }
-            server.getPlayerList().sendPlayerPermissionLevel(initiator);
-            if (playerB != null) server.getPlayerList().sendPlayerPermissionLevel(playerB);
-            return SwapResult.successResult();
+            SwapSnapshot currentA = SwapSnapshot.capture(initiator);
+            SwapSnapshot currentB = playerB == null ? null : SwapSnapshot.capture(playerB);
+            GameProfile profileForB = origB == null ? null : origB.gameProfile();
+            pending = new PendingRelease(uidA, uidB, currentB, origA.gameProfile(),
+                    currentA, profileForB, origA, origB);
+            pendingReleases.put(uidA, pending);
+            pendingReleases.put(uidB, pending);
+        }
+        return completeRelease(pending, server);
+    }
+
+    private SwapResult completeRelease(PendingRelease pending, MinecraftServer server) {
+        ServerPlayer playerA = server.getPlayerList().getPlayer(pending.uidA());
+        ServerPlayer playerB = server.getPlayerList().getPlayer(pending.uidB());
+        try {
+            if (!pending.restoredA()) {
+                if (playerA != null) {
+                    SwapSnapshot payloadA = pending.currentB() == null ? pending.origA() : pending.currentB();
+                    payloadA.applyTo(playerA, pending.profileForA());
+                    server.getPlayerList().sendPlayerPermissionLevel(playerA);
+                }
+                pending.markRestoredA();
+            }
+            if (!pending.restoredB()) {
+                if (playerB != null && pending.currentA() != null) {
+                    GameProfile profileForB = pending.profileForB() == null
+                            ? playerB.getGameProfile() : pending.profileForB();
+                    pending.currentA().applyTo(playerB, profileForB);
+                    server.getPlayerList().sendPlayerPermissionLevel(playerB);
+                }
+                pending.markRestoredB();
+            }
         } catch (RuntimeException failure) {
+            LOGGER.warn("Possession release incomplete between {} and {}; state kept for retry",
+                    pending.uidA(), pending.uidB(), failure);
             return SwapResult.fail(Component.translatable("fga.possession.failed"));
         }
+        activeSwaps.remove(pending.uidA());
+        activeSwaps.remove(pending.uidB());
+        originalStates.remove(pending.uidA());
+        originalStates.remove(pending.uidB());
+        pendingReleases.remove(pending.uidA());
+        pendingReleases.remove(pending.uidB());
+        return SwapResult.successResult();
     }
 
     public SwapResult forceRelease(UUID targetUid, MinecraftServer server) {
@@ -101,18 +136,31 @@ public final class PlayerSwapManager {
         if (target != null) return release(target, server);
 
         UUID partnerUid = activeSwaps.get(targetUid);
-        SwapSnapshot partnerOriginal = originalStates.get(partnerUid);
+        SwapSnapshot origTarget = originalStates.get(targetUid);
+        SwapSnapshot origPartner = originalStates.get(partnerUid);
         ServerPlayer partner = server.getPlayerList().getPlayer(partnerUid);
-        activeSwaps.remove(targetUid);
-        activeSwaps.remove(partnerUid);
-        originalStates.remove(targetUid);
-        originalStates.remove(partnerUid);
-        if (partner != null && partnerOriginal != null) {
-            partnerOriginal.applyTo(partner, partnerOriginal.gameProfile());
-            partner.sendSystemMessage(PlayerPossessionManager.text(partner, "ended"));
-            server.getPlayerList().sendPlayerPermissionLevel(partner);
+        if (partner == null || origPartner == null) {
+            activeSwaps.remove(targetUid);
+            activeSwaps.remove(partnerUid);
+            originalStates.remove(targetUid);
+            originalStates.remove(partnerUid);
+            pendingReleases.remove(targetUid);
+            pendingReleases.remove(partnerUid);
+            return SwapResult.fail(Component.translatable("fga.possession.failed"));
         }
-        return SwapResult.successResult();
+        // The target is offline: restore the partner to their own original state and
+        // discard the target's session changes (offline playerdata is never written).
+        PendingRelease pending = new PendingRelease(partnerUid, targetUid, null,
+                origPartner.gameProfile(), null, origTarget == null ? null : origTarget.gameProfile(),
+                origPartner, origTarget);
+        pending.markRestoredB();
+        pendingReleases.put(targetUid, pending);
+        pendingReleases.put(partnerUid, pending);
+        SwapResult result = completeRelease(pending, server);
+        if (result.success() && partner.isAlive() && !partner.isRemoved()) {
+            partner.sendSystemMessage(PlayerPossessionManager.text(partner, "ended"));
+        }
+        return result;
     }
 
     public boolean isSwapped(UUID uid) { return activeSwaps.containsKey(uid); }
@@ -141,6 +189,45 @@ public final class PlayerSwapManager {
     public void clear() {
         activeSwaps.clear();
         originalStates.clear();
+        pendingReleases.clear();
+    }
+
+    private static final class PendingRelease {
+        private final UUID uidA;
+        private final UUID uidB;
+        private final SwapSnapshot currentB;
+        private final GameProfile profileForA;
+        private final SwapSnapshot currentA;
+        private final GameProfile profileForB;
+        private final SwapSnapshot origA;
+        private final SwapSnapshot origB;
+        private boolean restoredA;
+        private boolean restoredB;
+
+        private PendingRelease(UUID uidA, UUID uidB, SwapSnapshot currentB, GameProfile profileForA,
+                               SwapSnapshot currentA, GameProfile profileForB,
+                               SwapSnapshot origA, SwapSnapshot origB) {
+            this.uidA = uidA;
+            this.uidB = uidB;
+            this.currentB = currentB;
+            this.profileForA = profileForA;
+            this.currentA = currentA;
+            this.profileForB = profileForB;
+            this.origA = origA;
+            this.origB = origB;
+        }
+
+        private UUID uidA() { return uidA; }
+        private UUID uidB() { return uidB; }
+        private SwapSnapshot currentB() { return currentB; }
+        private GameProfile profileForA() { return profileForA; }
+        private SwapSnapshot currentA() { return currentA; }
+        private GameProfile profileForB() { return profileForB; }
+        private SwapSnapshot origA() { return origA; }
+        private boolean restoredA() { return restoredA; }
+        private boolean restoredB() { return restoredB; }
+        private void markRestoredA() { restoredA = true; }
+        private void markRestoredB() { restoredB = true; }
     }
 
     public record SwapResult(boolean success, Component message) {

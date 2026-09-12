@@ -96,6 +96,10 @@ public final class QuickCraftEntityPlacementServer {
             sendResult(player, payload.nonce(), "INVALID_NBT", "");
             return;
         }
+        if (!Float.isFinite(payload.yaw()) || !Float.isFinite(payload.pitch())) {
+            sendResult(player, payload.nonce(), "INVALID_NBT", "");
+            return;
+        }
         BlockPos targetPos = BlockPos.containing(payload.target());
         if (!level.hasChunkAt(targetPos)) {
             sendResult(player, payload.nonce(), "WORLD_RULE_BLOCKED", "");

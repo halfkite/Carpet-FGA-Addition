@@ -181,7 +181,11 @@ public final class PlayerLoadDistanceManager {
         int maximum = originalViewDistance;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             int value = configured(player);
-            if (value >= 1) maximum = Math.max(maximum, value);
+            // Only operators may raise the server-wide view distance; a non-op's larger
+            // value still applies to their own chunk loading but never burdens everyone.
+            if (value >= 1 && PlayerPossessionManager.isOp(server, player.getGameProfile())) {
+                maximum = Math.max(maximum, value);
+            }
         }
         maximum = Math.min(32, maximum);
         if (maximum != appliedViewDistance) {

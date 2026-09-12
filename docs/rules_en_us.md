@@ -36,7 +36,7 @@ This applies to the player list, entity names, and other player-name components 
 
 ### Swap Permissions During Possession(permissionSwapsToo) · [Related command](commands_en.md#cmd-control-player)
 
-When enabled, command permission levels follow the possessed body; when disabled, both players retain the permissions they had before possession<br>
+When enabled, the controller adopts the possessed body's command permission level; the possessed player's own connection always keeps its original permission level and never gains the controller's permissions<br>When disabled, the controller keeps the permissions held before possession<br>
 This only changes command permissions and does not change possession entry permissions, save ownership, or offline player data
 
 - Type: `Boolean`
@@ -573,7 +573,7 @@ Allows wood products to be crafted in the stonecutter
 
 ### Player Load Distance(playerLoadDistance) · [Related command](commands_en.md#cmd-player-load-distance)
 
-Controls per-player chunk sending and tracking distance without changing simulation distance<br>`false`: disables the related commands<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum command permission level<br>Use `/playerLoadDistance help` for command help; append `persistent` to save across restarts<br>`-1` weakly loads only the center chunk, `0` strongly loads the center and keeps a 3x3 weak-loading area, `1-32` sets the chunk radius, and `none` removes the player loading view
+Controls per-player chunk sending and tracking distance without changing simulation distance<br>`false`: disables the related commands<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum command permission level<br>Use `/playerLoadDistance help` for command help; append `persistent` to save across restarts<br>A non-op player's setting only affects their own chunk loading and no longer raises the server-wide view distance; raising the global view distance requires an operator<br>`-1` weakly loads only the center chunk, `0` strongly loads the center and keeps a 3x3 weak-loading area, `1-32` sets the chunk radius, and `none` removes the player loading view
 
 - Type: `Permission string`
 - Default: `false`
@@ -583,7 +583,7 @@ Controls per-player chunk sending and tracking distance without changing simulat
 
 ### Trial Spawner Equivalent Players(trialSpawnerPlayerMultiplier)
 
-Counts each matching trial participant as the configured number of players, affecting only trial spawning and reward scale<br>Range 1-10000, default 100; setting it to 1 keeps the scale of one vanilla player
+Counts each matching trial participant as the configured number of players, affecting only trial spawning and reward scale<br>The multiplier fully applies to mob spawning, but reward ejection is capped at 64 copies per player per settlement to avoid dropping tens of thousands of items at once<br>Range 1-10000, default 100; setting it to 1 keeps the scale of one vanilla player
 
 - Type: `Integer`
 - Default: `100`

@@ -123,8 +123,10 @@ public final class VillagerMinimumTradePriceManager {
         }
 
         if (best != original) {
+            // Never write a non-positive cost: a zero-cost offer would allow buying items for free.
+            int writeCount = Math.max(1, bestCount);
             ((MerchantOfferAccessor) (Object) original).carpetFga$setBaseCostA(
-                    new ItemCost(original.getItemCostA().item(), bestCount,
+                    new ItemCost(original.getItemCostA().item(), writeCount,
                             original.getItemCostA().components()));
         }
         return original;

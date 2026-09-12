@@ -37,6 +37,8 @@ import java.util.UUID;
 public final class RangeActionManager {
     public static final int MAX_VOLUME = 1_000_000;
     public static final double MAX_REACH = 64.0;
+    /** Per-tick scan/act budget per task; keeps a million-block task from stalling a tick. */
+    private static final int MAX_TARGETS_PER_TICK = 1024;
 
     private static final Map<TaskKey, RangeTask> TASKS = new HashMap<>();
     //#if MC >= 1.17
@@ -206,13 +208,33 @@ public final class RangeActionManager {
             }
 
             ServerLevel level = FGACompat.serverLevel(player);
-            if (!continuous) {
-                targets.removeIf(pos -> isComplete(level, pos));
+            int completed = 0;
+            int scanned = 0;
+            BlockPos nearest = null;
+            double nearestDistance = Double.MAX_VALUE;
+            Iterator<BlockPos> iterator = targets.iterator();
+            while (iterator.hasNext() && scanned < MAX_TARGETS_PER_TICK) {
+                BlockPos target = iterator.next();
+                scanned++;
+                if (isComplete(level, target)) {
+                    if (!continuous) {
+                        iterator.remove();
+                    }
+                    continue;
+                }
+                double distance = Vec3.atCenterOf(target).distanceToSqr(player.position());
+                if (distance < nearestDistance) {
+                    nearest = target;
+                    nearestDistance = distance;
+                }
+                if (inReach(player, target) && perform(player, target)) {
+                    if (!continuous) {
+                        iterator.remove();
+                    }
+                    completed++;
+                }
             }
-            List<BlockPos> pending = continuous
-                    ? targets.stream().filter(pos -> !isComplete(level, pos)).toList()
-                    : targets;
-            if (pending.isEmpty()) {
+            if (targets.isEmpty()) {
                 stopMovement(player);
                 if (continuous) {
                     miningProgress.clear();
@@ -225,22 +247,10 @@ public final class RangeActionManager {
                 //#endif
                 return false;
             }
-
-            int completed = 0;
-            Iterator<BlockPos> iterator = pending.iterator();
-            while (iterator.hasNext()) {
-                BlockPos target = iterator.next();
-                if (inReach(player, target) && perform(player, target)) {
-                    if (!continuous) {
-                        iterator.remove();
-                    }
-                    completed++;
-                }
-            }
-            if (completed > 0 || !pathfinding) {
+            if (completed > 0 || !pathfinding || nearest == null) {
                 stopMovement(player);
             } else {
-                moveToward(player, nearestTarget(player, pending));
+                moveToward(player, nearest);
             }
             return true;
         }
@@ -421,10 +431,6 @@ public final class RangeActionManager {
             return level.getBlockState(pos).isAir();
         }
 
-        private BlockPos nearestTarget(ServerPlayer player, List<BlockPos> pending) {
-            return pending.stream().min(Comparator.comparingDouble(pos ->
-                    Vec3.atCenterOf(pos).distanceToSqr(player.position()))).orElseThrow();
-        }
 
         private void moveToward(ServerPlayer player, BlockPos target) {
             EntityPlayerActionPack actionPack = FGACompat.actionPack(player);
