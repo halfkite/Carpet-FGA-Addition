@@ -26,6 +26,7 @@ public abstract class EndPortalPlayerTpControlMixin {
     //$$     carpetFga$controlPlayerEndPortal(level, entity, ci);
     //$$ }
     //$$
+    //#if MC < 1.21.10
     //$$ @Inject(
     //$$         method = "method_9548(Lnet/minecraft/class_2680;Lnet/minecraft/class_1937;Lnet/minecraft/class_2338;Lnet/minecraft/class_1297;Lnet/minecraft/class_10774;)V",
     //$$         at = @At("HEAD"),
@@ -37,6 +38,7 @@ public abstract class EndPortalPlayerTpControlMixin {
     //$$                                                       InsideBlockEffectApplier effectApplier, CallbackInfo ci) {
     //$$     carpetFga$controlPlayerEndPortal(level, entity, ci);
     //$$ }
+    //#endif
     //#else
     //$$ @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
     //$$ private void carpetFga$controlPlayerEndPortal(BlockState state, Level level, BlockPos pos, Entity entity,

@@ -21,7 +21,8 @@
 //$$         method = "<clinit>",
 //$$         at = @At(
 //$$             value = "INVOKE",
-//$$             target = "Lcom/mojang/serialization/Codec;dispatch(Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/Codec;"
+//$$             target = "Lcom/mojang/serialization/Codec;dispatch(Ljava/util/function/Function;Ljava/util/function/Function;)Lcom/mojang/serialization/Codec;",
+//$$             remap = false
 //$$         )
 //$$     )
 //$$     private static <A> Codec<Dialog> carpetFga$customCodec(

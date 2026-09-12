@@ -88,7 +88,7 @@ processResources {
             minecraft_dependency: project.minecraft_dependency,
             carpet_dependency: project.carpet_dependency,
             fabric_api_dependency: mcVersion >= 1_21_00 && mcVersion <= 26_02_00
-                    ? '"fabric-api": "*",' : '',
+                    ? '*' : '__FGA_NO_FABRIC_API__',
             java_level: javaVersion == JavaVersion.VERSION_25 ? 25 : (javaVersion == JavaVersion.VERSION_21 ? 21 : 16),
             compatibility_level: javaVersion == JavaVersion.VERSION_25 ? 'JAVA_25' : (javaVersion == JavaVersion.VERSION_21 ? 'JAVA_21' : 'JAVA_16')
     ]
@@ -96,6 +96,16 @@ processResources {
     filesMatching('fabric.mod.json') { expand properties }
     filesMatching('carpet-fga-addition.mixins.json') {
         filter { line -> line.replace('{{COMPATIBILITY_LEVEL}}', properties.compatibility_level) }
+    }
+    doLast {
+        if (mcVersion < 1_21_00 || mcVersion > 26_02_00) {
+            def descriptor = destinationDir.toPath().resolve('fabric.mod.json')
+            if (java.nio.file.Files.isRegularFile(descriptor)) {
+                def text = java.nio.file.Files.readString(descriptor)
+                text = text.replaceFirst(/(?m)^\s*"fabric-api": "__FGA_NO_FABRIC_API__",\r?\n/, '')
+                java.nio.file.Files.writeString(descriptor, text)
+            }
+        }
     }
     doLast {
         if (mcVersion < 1_17_00) return

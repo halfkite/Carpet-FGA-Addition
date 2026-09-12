@@ -42,9 +42,6 @@
         //$$ "LegacyCustomPayloadAccessor",
         //$$ "LegacyServerGamePacketListenerImplMixin",
         //#endif
-        //#if MC >= 1.19.4 && MC < 1.20.2
-        //$$ "ServerGamePacketListenerHealthMixin",
-        //#endif
         "StringReaderUnicodeSupportMixin",
         "EntityTypeDimensionsMixin",
         "VillagerBreedingMixin"
@@ -180,7 +177,7 @@
         //#if MC < 1.20.5
         //$$ ,"ItemStackLegacyCountNbtMixin"
         //#endif
-        //#if MC >= 1.16.5
+        //#if MC >= 1.16.5 && MC < 1.21.3
         ,"RecipeBookMixin",
         "ServerPlaceRecipeMixin"
         //#endif
