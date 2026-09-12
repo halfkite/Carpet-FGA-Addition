@@ -2,7 +2,7 @@ package carpet.fga;
 
 import carpet.CarpetExtension;
 import carpet.CarpetServer;
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 //#endif
 //#if MC >= 1.19
@@ -42,11 +42,11 @@ public class FGAExtension implements CarpetExtension {
         registerUnlimitedFillLegacyBridge();
         registerItemFrameBlockificationObserver();
         registerPlayerLoadDistanceObserver();
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 PlayerPossessionManager.disconnected(handler.getPlayer(), server));
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         registerNetherPortalLightObserver();
         //#endif
         // Register FGA rules into carpet's main SettingsManager so they appear under /carpet.
@@ -101,7 +101,7 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.21 && MC <= 26.2
         EntityDropRemovalConfig.load(server);
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         if (NetherPortalLightManager.isActive()) NetherPortalLightManager.activate(server);
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
@@ -126,6 +126,9 @@ public class FGAExtension implements CarpetExtension {
                                  //#endif
     ) {
         RangePlayerCommand.register(dispatcher);
+        //#if MC >= 1.21 && MC <= 26.2
+        PlayerPossessionStatusCommand.register(dispatcher);
+        //#endif
         //#if MC <= 26.2
         DroppedItemStackLimitCommand.register(dispatcher);
         //#endif
@@ -166,10 +169,10 @@ public class FGAExtension implements CarpetExtension {
         DeathDropPreStackManager.clearTickCache();
         //#endif
         //#if MC >= 1.21 && MC <= 26.2
-        //#if MC == 1.21.1
         NetherPortalLightManager.tick(server);
-        PlayerPossessionManager.tick(server);
         //#endif
+        //#if MC >= 1.21 && MC <= 26.2
+        PlayerPossessionManager.tick(server);
         //#endif
         //#if MC >= 1.20.1
         StackLimitClientRequirement.tick(server);
@@ -207,7 +210,7 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onServerClosed(MinecraftServer server) {
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         PlayerPossessionManager.clear();
         //#endif
         VehicleStopConfig.clear();
@@ -234,7 +237,7 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.21 && MC <= 26.2
         EntityDropRemovalConfig.clear();
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         NetherPortalLightManager.clear();
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
@@ -331,9 +334,11 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.19
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
             if (!"droppedItemStackLimit".equals(rule.name())
-                    //#if MC == 1.21.1
+                    //#if MC >= 1.21 && MC <= 26.2
                     && !"playerPossession".equals(rule.name())
                     && !"commandPlayer".equals(rule.name())
+                    && !"showControllerPrefix".equals(rule.name())
+                    && !"permissionSwapsToo".equals(rule.name())
                     //#endif
                     && !"villagerPerformanceOptimization".equals(rule.name())
                     && !"minecartFeatureCommandPermission".equals(rule.name())
@@ -348,9 +353,15 @@ public class FGAExtension implements CarpetExtension {
             }
             MinecraftServer server = CarpetServer.minecraft_server;
             if (server != null) {
-                //#if MC == 1.21.1
+                //#if MC >= 1.21 && MC <= 26.2
                 if ("playerPossession".equals(rule.name()) || "commandPlayer".equals(rule.name())) {
                     PlayerPossessionManager.onRuleChanged();
+                }
+                if ("showControllerPrefix".equals(rule.name())) {
+                    PlayerPossessionManager.refreshDisplayNames(server);
+                }
+                if ("permissionSwapsToo".equals(rule.name())) {
+                    PlayerPossessionManager.refreshPermissions(server);
                 }
                 //#endif
                 CommandHelper.notifyPlayersCommandsChanged(server);
@@ -414,7 +425,7 @@ public class FGAExtension implements CarpetExtension {
         //#endif
     }
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.2
     private static void registerNetherPortalLightObserver() {
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
             if (!"netherPortalNoLight".equals(rule.name())) return;

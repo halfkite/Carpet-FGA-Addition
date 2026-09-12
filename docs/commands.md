@@ -8,7 +8,7 @@
 
 ### `/player <名字> possess`
 
-仅 Minecraft 1.21.1，服务端安装 FGA 即可，双方客户端均可使用原版。
+生效版本：`1.21+`，服务端安装 FGA 即可，双方客户端均可使用原版。
 
 - `/player <名字> possess`：按 PlayerControl 参考实现交换双方在线实体的游戏状态、身份、位置、视角、背包、容器和骑乘关系；操控者继续使用自己的连接和命令源。
 - `/player <目标名字> possess stop`：操控者或被接管者结束该会话。
@@ -17,6 +17,17 @@
 - 禁止自身、重复或嵌套接管。开始时关闭容器并停止双方自动动作与目标范围、整理任务，退出后不恢复任务。目标死亡、移除、断线、权限收紧或规则关闭时自动结束。
 - 夺舍规则启用时，共用的 `/player` 名字补全按夺舍目标权限筛选；参与夺舍的玩家不能启动或继续 Carpet 自动操控任务，退出命令始终保留。
 - 不新增自定义 Payload 或持久化夺舍配置；不修改离线玩家数据。客户端画面和实际多人操作的验收步骤见 `scripts/tests/possession.md`。
+
+<a id="cmd-control-player"></a>
+
+### `/controlPlayer` 与 `/fga controlPlayer`
+
+仅 `playerPossession` 开启后提供，查询命令不额外要求 OP
+
+- `/controlPlayer list`：查看全部活动夺舍关系，输出控制者到被控制者；点击名称可填入指定玩家查询
+- `/controlPlayer @`：查看执行者自己的夺舍关系
+- `/controlPlayer <玩家名>`：查看指定在线玩家是否正在控制或被控制
+- `/fga controlPlayer ...`：与 `/controlPlayer ...` 相同
 
 <a id="cmd-playertpend"></a>
 
@@ -287,7 +298,6 @@
 - `playerHealthDisplay=false`：默认不显示；执行 `/log playerHealth` 的玩家订阅后，只该玩家看到生命值。
 - `playerHealthDisplay=nofake`：所有查看者只看到真人生命值，订阅不会显示假人生命值。
 - 再次执行命令会取消当前玩家的订阅。
-- 生命值固定追加在多人游戏列表名称最右侧，吸收生命值大于 0 时同时显示金色吸收段。
 - 不创建计分板、头顶文本实体或其他聊天输出。
 
 #### 权限与版本

@@ -1,6 +1,6 @@
 package carpet.fga.mixin;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerPlayerConnection;

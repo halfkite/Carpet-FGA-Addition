@@ -21,7 +21,29 @@
 - 默认值：`false`
 - 参考选项：`false`，`true`，`onlyfake`，`opreal`，`ops`
 - 分类：`FGA`，`特性`，`命令`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21+`
+
+### 显示夺舍关系名称(showControllerPrefix) · [相关指令](commands.md#cmd-control-player)
+
+开启后，在参与夺舍的双方名称后追加对方名称，格式为当前名称(对方名称)<br>
+可用于玩家列表、实体名称和其他由服务端生成的玩家名称显示
+
+- 类型：`布尔`
+- 默认值：`false`
+- 参考选项：`false`、`true`
+- 分类：`FGA`、`特性`
+- 生效版本：`1.21+`
+
+### 夺舍时交换权限(permissionSwapsToo) · [相关指令](commands.md#cmd-control-player)
+
+开启后，夺舍双方的命令权限等级随身体交换；关闭后双方保留夺舍开始前的权限<br>
+该规则只影响命令权限，不改变夺舍入口权限、存档归属或离线玩家数据
+
+- 类型：`布尔`
+- 默认值：`true`
+- 参考选项：`false`、`true`
+- 分类：`FGA`、`特性`
+- 生效版本：`1.21+`
 
 ## 假人与通用功能
 
@@ -123,7 +145,7 @@ adaptive：第一次召唤保持原行为；30 秒内第二次召唤开启 2 分
 
 ### 玩家生命值显示(playerHealthDisplay) · [相关指令](commands.md#cmd-player-health)
 
-在多人游戏列表名称最右侧显示生命值<br>
+在多人游戏列表显示生命值<br>
 true 显示全部玩家<br>
 false 仅向 /log playerHealth 订阅者显示<br>
 nofake 不显示假人血量
@@ -191,7 +213,7 @@ custom：按 `/vehicleStop` 为每名玩家保存的矿车和船设置处理<br>
 - 默认值：`false`
 - 参考选项：`false`、`minecart`、`boat`、`all`、`custom`
 - 分类：`FGA`，`特性`
-- 生效版本：`全部支持版本`
+- 生效版本：`1.21+`
 
 ### 虚空世界生成(voidWorldGeneration) · [相关指令](commands.md#cmd-regenerate-terrain)
 
@@ -201,7 +223,7 @@ custom：按 `/vehicleStop` 为每名玩家保存的矿车和船设置处理<br>
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`，`特性`
-- 生效版本：`全部支持版本`
+- 生效版本：`1.21+`
 
 ### 地形重生成命令权限(terrainRegenerationCommandPermission) · [相关指令](commands.md#cmd-regenerate-terrain)
 
@@ -256,7 +278,7 @@ onlynew：仅规则启用新生成的地狱门无光照<br>
 - 默认值：`false`
 - 参考选项：`false`、`true`、`onlynew`
 - 分类：`FGA`，`特性`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21.1-26.2`
 
 ### 玩家末地门传送控制(PlayerTpEndControl) · [相关指令](commands.md#cmd-playertpend)
 
@@ -419,7 +441,7 @@ pumpkin：仅攻击头戴雕刻南瓜的盔甲架
 
 ### 附魔等级上限增加(enchantmentLevelLimitIncrease)
 
-false 或 0 保持原版上限；直接输入数字 N 让所有附魔的原版等级上限增加 N，最高保存为255级
+false 或 0 保持原版上限；直接输入数字 N 让附魔的原版等级上限增加 N，最高保存为255级；水下速掘、精准采集、火矢、无限、引雷、多重射击、经验修补、绑定诅咒和消失诅咒始终保持 I 级
 
 - 类型：`字符串`
 - 默认值：`false`
@@ -459,13 +481,43 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 
 ### 交易时村民升级(villagerUpgradeWhileTrading)
 
-让村民升级时的表现与26.3+一样，无需关闭交易界面即可等待并完成升级
+让村民在交易过程中达到经验门槛后立即升级，并同步交易界面的等级、经验和交易列表
 
 - 类型：`布尔`
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`，`生存`
 - 生效版本：`1.21-26.2`
+
+### 村民售价最低(villagerMinimumTradePrice)
+
+村民生成交易时使用原版随机售价的最低值，同时保留需求、声望和英雄奖励修正，仅在无职业村民重新绑定职业时生效
+
+- 类型：`枚举`
+- 默认值：`false`
+- 参考选项：`false`、`true`
+- 分类：`FGA`，`生存`
+- 生效版本：`1.21.1-26.2`
+
+### 村民只售最高级附魔书(villagerOnlyMaxEnchantmentBooks)
+
+村民新生成的附魔书会把抽到的附魔直接提升到目标等级；`false` 关闭，`onlyvanilla` 提升到附魔书交易可达到的原版最高等级，`more` 允许提升到 `enchantmentLevelLimitIncrease` 设置的等级；仅影响村民重新获得职业或升级时新生成的交易
+
+- 类型：`枚举`
+- 默认值：`false`
+- 参考选项：`false`、`onlyvanilla`、`more`
+- 分类：`FGA`，`特性`
+- 生效版本：`1.21.1-26.2`
+
+### 村民只售最高级附魔武器装备(villagerOnlyMaxEnchantmentEquipment)
+
+村民新生成的附魔武器和装备会把抽到的附魔直接提升到目标等级；`false` 关闭，`onlyvanilla` 按原版装备交易的 5-19 附魔强度和物品附魔能力计算可达到的最高等级，因此不会把效率、锋利等附魔直接提升到原版装备交易无法达到的 V 级；`more` 允许提升到 `enchantmentLevelLimitIncrease` 设置的等级；未附魔装备和其他交易不受影响，仅影响村民重新获得职业或升级时新生成的交易
+
+- 类型：`枚举`
+- 默认值：`false`
+- 参考选项：`false`、`onlyvanilla`、`more`
+- 分类：`FGA`，`特性`
+- 生效版本：`1.21.1-26.2`
 
 ### 村民性能优化(villagerPerformanceOptimization) · [相关指令](commands.md#cmd-villager-performance)
 
@@ -503,7 +555,7 @@ ops：仅 OP 2 及以上可管理配置<br>
 - 默认值：`false`
 - 参考选项：`false`、`true`、`ops`、`0-4`
 - 分类：`FGA`，`生存`
-- 生效版本：`全部支持版本`
+- 生效版本：`1.21+`
 
 ### 地面掉落物合并距离(droppedItemMergeDistance)
 
@@ -513,7 +565,7 @@ ops：仅 OP 2 及以上可管理配置<br>
 - 默认值：`-1`
 - 参考选项：`-1`、`0-16`
 - 分类：`FGA`，`生存`
-- 生效版本：`1.21.1-26.2`
+- 生效版本：`1.21+`
 
 ### 解除填充命令上限(unlimitedFillCommands)
 
@@ -595,7 +647,7 @@ false：保持原版交易<br>
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`，`特性`
-- 生效版本：`1.21+`
+- 生效版本：`1.21-26.1`
 
 ### 木材切石机配方(woodStonecuttingRecipes)
 
@@ -632,7 +684,7 @@ ops：需要 OP 2 及以上<br>
 - 默认值：`100`
 - 参考选项：`1-10000`
 - 分类：`FGA`，`特性`，`命令`
-- 生效版本：`1.21-26.2`
+- 生效版本：`1.21+`
 
 ### 试炼刷怪笼多倍触发(trialSpawnerPlayerFilter)
 
@@ -645,7 +697,7 @@ true：匹配所有玩家<br>
 - 默认值：`false`
 - 参考选项：`false`、`true`、`bot_`、自定义前缀`
 - 分类：`FGA`，`特性`，`命令`
-- 生效版本：`1.21-26.2`
+- 生效版本：`1.21+`
 
 ### 试炼截停命令权限(trialStopCommandPermission) · [相关指令](commands.md#cmd-trial-stop)
 
@@ -659,7 +711,7 @@ ops：需要 OP 2 及以上<br>
 - 默认值：`false`
 - 参考选项：`false`、`true`、`ops`、`0-4`
 - 分类：`FGA`，`特性`，`命令`
-- 生效版本：`1.21-26.2`
+- 生效版本：`1.21+`
 
 
 

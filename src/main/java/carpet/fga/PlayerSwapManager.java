@@ -1,6 +1,7 @@
 package carpet.fga;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
+import carpet.CarpetServer;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -43,7 +44,7 @@ public final class PlayerSwapManager {
         try {
             snapB.applyTo(playerA, snapB.gameProfile());
             snapA.applyTo(playerB, snapA.gameProfile());
-            MinecraftServer server = playerA.getServer();
+            MinecraftServer server = CarpetServer.minecraft_server;
             server.getPlayerList().sendPlayerPermissionLevel(playerA);
             server.getPlayerList().sendPlayerPermissionLevel(playerB);
             return SwapResult.successResult();
@@ -117,8 +118,11 @@ public final class PlayerSwapManager {
     public boolean isSwapped(UUID uid) { return activeSwaps.containsKey(uid); }
     public Optional<UUID> getSwapPartner(UUID uid) { return Optional.ofNullable(activeSwaps.get(uid)); }
 
-    public Set<UUID> getAllParticipantIds() {
-        return Set.copyOf(activeSwaps.keySet());
+    public String originalName(UUID uid, MinecraftServer server) {
+        SwapSnapshot snapshot = originalStates.get(uid);
+        if (snapshot != null) return PlayerPossessionManager.profileName(snapshot.gameProfile());
+        ServerPlayer player = server == null ? null : server.getPlayerList().getPlayer(uid);
+        return player == null ? uid.toString() : PlayerPossessionManager.profileName(player.getGameProfile());
     }
 
     public List<Map.Entry<UUID, UUID>> getAllSwapPairs() {
@@ -128,6 +132,10 @@ public final class PlayerSwapManager {
             if (seen.add(entry.getKey()) && seen.add(entry.getValue())) pairs.add(entry);
         }
         return pairs;
+    }
+
+    public Set<UUID> getAllParticipantIds() {
+        return Set.copyOf(activeSwaps.keySet());
     }
 
     public void clear() {

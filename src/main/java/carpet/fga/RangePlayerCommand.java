@@ -31,7 +31,7 @@ public final class RangePlayerCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("player")
                 .requires(source -> {
-                    //#if MC == 1.21.1
+                    //#if MC >= 1.21 && MC <= 26.2
                     if (PlayerPossessionManager.isParticipant(source.getPlayer())) return true;
                     //#endif
                     return
@@ -43,7 +43,7 @@ public final class RangePlayerCommand {
                             ;
                 })
                 .then(Commands.argument("player", StringArgumentType.word())
-                        //#if MC == 1.21.1
+                        //#if MC >= 1.21 && MC <= 26.2
                         .then(PlayerPossessionCommand.node())
                         //#endif
                         .then(Commands.literal("stop").executes(RangePlayerCommand::stop))
@@ -255,7 +255,7 @@ public final class RangePlayerCommand {
             context.getSource().sendFailure(FGACompat.literal("只能控制在线玩家"));
             return 0;
         }
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         if (PlayerPossessionManager.isParticipant(player)) {
             context.getSource().sendFailure(PlayerPossessionManager.text(context.getSource().getPlayer(), "busy"));
             return 0;

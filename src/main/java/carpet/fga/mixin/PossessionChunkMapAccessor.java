@@ -1,6 +1,6 @@
 package carpet.fga.mixin;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 import net.minecraft.server.level.ChunkMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.spongepowered.asm.mixin.Mixin;

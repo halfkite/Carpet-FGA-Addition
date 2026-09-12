@@ -88,7 +88,7 @@ public final class FakePlayerItemSortManager {
     private FakePlayerItemSortManager() {}
 
     private static boolean supportsExtendedFeatures() {
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         return true;
         //#else
         //$$ return false;
@@ -179,7 +179,7 @@ public final class FakePlayerItemSortManager {
     }
 
     public static boolean start(ServerPlayer player, boolean continuous, UUID initiator, StringBuilder error) {
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         if (PlayerPossessionManager.isParticipant(player)) {
             error.append(PlayerPossessionManager.text(player, "busy").getString());
             return false;

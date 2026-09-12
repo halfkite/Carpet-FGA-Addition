@@ -8,7 +8,7 @@
 
 ### `/player <name> possess`
 
-Minecraft 1.21.1 only. Install FGA on the server; both participants may use vanilla clients.
+Effective versions: `1.21+`. Install FGA on the server; both participants may use vanilla clients.
 
 - `/player <name> possess` follows the PlayerControl reference implementation: it swaps the live entities' game state, identity, position, view, inventory, containers and riding relationship while the controller keeps its own connection and command source.
 - `/player <target-name> possess stop` ends that session for either participant.
@@ -17,6 +17,17 @@ Minecraft 1.21.1 only. Install FGA on the server; both participants may use vani
 - Self-possession, overlapping sessions and nested possession are rejected. Starting closes containers and stops automatic actions and range/sorting tasks; they do not resume on exit. Death, removal, disconnection or loss of permission ends the session.
 - While enabled, the shared `/player` name suggestions are filtered by possession permissions. Participants cannot start or continue Carpet automatic manipulation tasks, while the stop command remains available.
 - No custom payload or persistent possession configuration is added, and offline player data is not edited. See `scripts/tests/possession.md` for manual multiplayer acceptance checks.
+
+<a id="cmd-control-player"></a>
+
+### `/controlPlayer` and `/fga controlPlayer`
+
+These read-only commands are available while `playerPossession` is enabled and do not require OP
+
+- `/controlPlayer list`: lists every active possession relationship from controller to possessed player; names are clickable for a targeted query
+- `/controlPlayer @`: shows the executor's own possession relationship
+- `/controlPlayer <player name>`: shows whether an online player is controlling or being controlled
+- `/fga controlPlayer ...`: equivalent to `/controlPlayer ...`
 
 <a id="cmd-playertpend"></a>
 
@@ -287,7 +298,6 @@ Players can manage only themselves. Operators and the console can manage online 
 - `playerHealthDisplay=false`: health is hidden by default; after subscribing, only the executing player sees it.
 - `playerHealthDisplay=nofake`: real-player health is visible, but fake-player health remains hidden even for subscribers.
 - Running the command again removes the current player's subscription.
-- Health is appended at the far right of the multiplayer player-list name. A gold absorption segment is added when absorption is greater than zero.
 - It does not create scoreboards, nametag text entities, or periodic chat output.
 
 #### Permission and version

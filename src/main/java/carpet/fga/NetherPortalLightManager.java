@@ -1,9 +1,11 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 package carpet.fga;
 
 import carpet.fga.mixin.ChunkMapLoadedChunksAccessor;
 import net.minecraft.core.BlockPos;
+//#if MC == 1.21.1
 import net.minecraft.core.HolderLookup;
+//#endif
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -12,14 +14,19 @@ import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.protocol.game.ClientboundLightUpdatePacket;
+//#if MC == 1.21.1
 import net.minecraft.util.datafix.DataFixTypes;
+//#endif
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+//#if MC == 1.21.1
 import net.minecraft.world.level.saveddata.SavedData;
+//#endif
 
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,8 +36,12 @@ public final class NetherPortalLightManager {
     private static final String DATA_NAME = "carpet_fga_nether_portal_light";
     private static final String MODE_FALSE = "false";
     private static final String MODE_TRUE = "true";
+    //#if MC == 1.21.1
     private static final SavedData.Factory<PortalData> FACTORY = new SavedData.Factory<>(
             PortalData::new, PortalData::load, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
+    //#else
+    //$$ private static final Map<ServerLevel, PortalData> NEW_API_DATA = new IdentityHashMap<>();
+    //#endif
     private static final Map<ServerLevel, Set<Long>> PENDING_CLIENT_REFRESHES = new ConcurrentHashMap<>();
     private static boolean clientRefreshArmed;
 
@@ -57,10 +68,16 @@ public final class NetherPortalLightManager {
         PortalData portalData = data(level);
         String portalKey = key(level, position);
         boolean changed = isPortal ? portalData.portals.add(portalKey) : portalData.portals.remove(portalKey);
+        //#if MC == 1.21.1
         if (changed) portalData.setDirty();
+        //#endif
         if (changed) {
             level.getChunkSource().getLightEngine().checkBlock(position);
+            //#if MC >= 26.1
+            //$$ queueClientRefresh(level, ChunkPos.containing(position));
+            //#else
             queueClientRefresh(level, new ChunkPos(position));
+            //#endif
         }
     }
 
@@ -86,7 +103,11 @@ public final class NetherPortalLightManager {
         for (Map.Entry<ServerLevel, Set<Long>> entry : PENDING_CLIENT_REFRESHES.entrySet()) {
             ServerLevel level = entry.getKey();
             for (long packedChunk : entry.getValue()) {
+                //#if MC >= 26.1
+                //$$ sendBlockLightUpdate(level, ChunkPos.unpack(packedChunk));
+                //#else
                 sendBlockLightUpdate(level, new ChunkPos(packedChunk));
+                //#endif
             }
         }
         PENDING_CLIENT_REFRESHES.clear();
@@ -113,7 +134,11 @@ public final class NetherPortalLightManager {
         Set<Long> pending = PENDING_CLIENT_REFRESHES.remove(level);
         if (pending == null) return;
         for (long packedChunk : pending) {
+            //#if MC >= 26.1
+            //$$ sendBlockLightUpdate(level, ChunkPos.unpack(packedChunk));
+            //#else
             sendBlockLightUpdate(level, new ChunkPos(packedChunk));
+            //#endif
         }
         clientRefreshArmed = false;
     }
@@ -121,15 +146,26 @@ public final class NetherPortalLightManager {
     public static void clear() {
         PENDING_CLIENT_REFRESHES.clear();
         clientRefreshArmed = false;
+        //#if MC != 1.21.1
+        //$$ NEW_API_DATA.clear();
+        //#endif
     }
 
     private static void refreshLoaded(ServerLevel level) {
         ChunkMapLoadedChunksAccessor chunks = (ChunkMapLoadedChunksAccessor) level.getChunkSource().chunkMap;
         Set<Long> seen = new HashSet<>();
+        //#if MC >= 1.21.10
+        //$$ for (ChunkHolder holder : chunks.carpetFga$getVisibleChunkMap().values()) {
+        //#else
         for (ChunkHolder holder : chunks.carpetFga$getLoadedChunks()) {
+        //#endif
             LevelChunk chunk = holder.getTickingChunk();
             if (chunk == null) chunk = holder.getChunkToSend();
+            //#if MC >= 26.1
+            //$$ if (chunk == null || !seen.add(chunk.getPos().pack())) continue;
+            //#else
             if (chunk == null || !seen.add(chunk.getPos().toLong())) continue;
+            //#endif
             boolean[] hasPortal = {false};
             chunk.findBlockLightSources((position, state) -> {
                 if (state.is(Blocks.NETHER_PORTAL)) {
@@ -147,13 +183,21 @@ public final class NetherPortalLightManager {
         // its immediate neighbors without forcing an unloaded chunk to load.
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
+                //#if MC >= 26.1
+                //$$ pending.add(ChunkPos.pack(chunkPos.x() + dx, chunkPos.z() + dz));
+                //#else
                 pending.add(ChunkPos.asLong(chunkPos.x + dx, chunkPos.z + dz));
+                //#endif
             }
         }
     }
 
     private static void sendBlockLightUpdate(ServerLevel level, ChunkPos chunkPos) {
+        //#if MC >= 26.1
+        //$$ if (!level.hasChunk(chunkPos.x(), chunkPos.z())) return;
+        //#else
         if (!level.hasChunk(chunkPos.x, chunkPos.z)) return;
+        //#endif
         // Send every block-light section. A portal's light may have spread into
         // neighboring sections/chunks, so a portal-section-only packet leaves
         // stale client light data behind.
@@ -165,16 +209,25 @@ public final class NetherPortalLightManager {
     }
 
     private static PortalData data(ServerLevel level) {
+        //#if MC == 1.21.1
         return level.getServer().overworld().getDataStorage().computeIfAbsent(FACTORY, DATA_NAME);
+        //#else
+        //$$ return NEW_API_DATA.computeIfAbsent(level.getServer().overworld(), ignored -> new PortalData());
+        //#endif
     }
 
     private static String key(ServerLevel level, BlockPos position) {
         return level.dimension().location() + "|" + position.asLong();
     }
 
-    private static final class PortalData extends SavedData {
+    private static final class PortalData
+            //#if MC == 1.21.1
+            extends SavedData
+            //#endif
+    {
         private final Set<String> portals = new HashSet<>();
 
+        //#if MC == 1.21.1
         private static PortalData load(CompoundTag tag, HolderLookup.Provider provider) {
             PortalData data = new PortalData();
             ListTag list = tag.getList("portals", 8);
@@ -192,6 +245,7 @@ public final class NetherPortalLightManager {
             tag.put("portals", list);
             return tag;
         }
+        //#endif
     }
 }
 //#endif

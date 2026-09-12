@@ -1,6 +1,6 @@
 package carpet.fga.mixin;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 import carpet.fga.PlayerPossessionManager;
 import carpet.patches.EntityPlayerMPFake;
 import org.spongepowered.asm.mixin.Mixin;

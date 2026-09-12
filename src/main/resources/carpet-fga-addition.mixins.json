@@ -3,7 +3,7 @@
     "package": "carpet.fga.mixin",
     "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
     "mixins": [
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         "PossessionTrackedEntityAccessor",
         "PossessionChunkMapAccessor",
         "PossessionPlayerAccessor",
@@ -13,6 +13,9 @@
         "PossessionRemovalMixin",
         "PossessionInputMixin",
         "PossessionActionPackMixin",
+        "PossessionPermissionMixin",
+        "PossessionPlayerNameMixin",
+        "PossessionPlayerInfoMixin",
         //#endif
         //#if MC >= 1.20
         "PlayerCommandMixin",
@@ -53,6 +56,17 @@
         //#if MC >= 1.20.1
         ,"VillagerTradeOnlyMixin",
         "BrainVillagerPerformanceMixin"
+        //#endif
+        //#if MC >= 1.21 && MC <= 1.21.11
+        ,"MerchantOfferAccessor",
+        "AbstractVillagerMinimumTradePriceMixin",
+        "VillagerMinimumTradePriceMixin",
+        "VisibleTradersFutureMerchantOfferMixin"
+        //#endif
+        //#if MC >= 26.1
+        //$$ ,"MerchantOfferAccessor",
+        //$$ "ModernVillagerTradeMixin",
+        //$$ "ModernVillagerProfessionMixin"
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.2
         ,"AgeableMobNoGrowthMixin",
@@ -105,7 +119,8 @@
         "StonecutterMenuDeepslateMixin"
         //#endif
         //#if MC == 1.21.1
-        ,"StonecutterMenuAccessor"
+        ,"StonecutterMenuAccessor",
+        "CarpetRuleDescriptionMixin"
         //#endif
         //#if MC >= 1.21
         ,"StonecutterMenuFullShulkerMixin"
@@ -210,7 +225,7 @@
         //#if MC == 1.20.1 || MC >= 1.21.1 && MC <= 1.21.5
         ,"ClientDimensionIdPacketMixin"
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.2
         ,"NetherPortalStateMixin",
         "LightEngineAccessor",
         "NetherPortalLightEngineMixin",

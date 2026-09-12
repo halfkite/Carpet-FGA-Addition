@@ -13,9 +13,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class EnchantmentMaxLevelMixin {
     @Inject(method = "getMaxLevel", at = @At("RETURN"), cancellable = true)
     private void carpetFga$increaseMaximumLevel(CallbackInfoReturnable<Integer> callback) {
+        // These vanilla level-I enchantments have no stronger behavior at higher levels.
+        // Keep their effective maximum at I even when the global limit is increased.
+        int vanillaMaximum = callback.getReturnValue();
+        if (vanillaMaximum <= 1) {
+            return;
+        }
         int increase = FGASettings.enchantmentLevelLimitIncrease();
         if (increase > 0) {
-            callback.setReturnValue(EnchantmentLevelRules.increaseLimit(callback.getReturnValue(), increase));
+            callback.setReturnValue(EnchantmentLevelRules.increaseLimit(vanillaMaximum, increase));
         }
     }
 }

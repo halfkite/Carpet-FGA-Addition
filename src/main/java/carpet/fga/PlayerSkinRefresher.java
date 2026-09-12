@@ -1,6 +1,7 @@
 package carpet.fga;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
+import carpet.CarpetServer;
 import carpet.fga.mixin.PossessionChunkMapAccessor;
 import carpet.fga.mixin.PossessionPlayerAccessor;
 import carpet.fga.mixin.PossessionTrackedEntityAccessor;
@@ -34,6 +35,9 @@ public final class PlayerSkinRefresher {
 
     public static void applyProfileAndRefresh(ServerPlayer player, GameProfile newProfile) {
         GameProfile current = player.getGameProfile();
+        //#if MC >= 1.21.10
+        //$$ GameProfile applied = new GameProfile(current.id(), newProfile.name(), newProfile.properties());
+        //#else
         PropertyMap merged = new PropertyMap();
         for (var entry : current.getProperties().entries()) {
             if (!TEXTURES_KEY.equals(entry.getKey())) merged.put(entry.getKey(), entry.getValue());
@@ -43,9 +47,10 @@ public final class PlayerSkinRefresher {
         }
         GameProfile applied = new GameProfile(current.getId(), newProfile.getName());
         applied.getProperties().putAll(merged);
+        //#endif
         ((PossessionPlayerAccessor) player).fga$gameProfile(applied);
 
-        PlayerList players = Objects.requireNonNull(player.getServer()).getPlayerList();
+        PlayerList players = Objects.requireNonNull(CarpetServer.minecraft_server).getPlayerList();
         players.broadcastAll(new ClientboundBundlePacket(List.of(
                 new ClientboundPlayerInfoRemovePacket(List.of(player.getUUID())),
                 ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(Collections.singleton(player))

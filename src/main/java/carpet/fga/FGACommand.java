@@ -54,6 +54,9 @@ public final class FGACommand {
         //#endif
         redirect(root, "inventoryAdvancementOptimization", dispatcher);
         redirect(root, "player", dispatcher);
+        //#if MC >= 1.21 && MC <= 26.2
+        redirect(root, "controlPlayer", dispatcher);
+        //#endif
         dispatcher.register(root);
     }
 
@@ -99,6 +102,11 @@ public final class FGACommand {
         line(out, "/fga playerLoadDistance help", "玩家加载距离 / per-player chunk loading distance");
         //#endif
         line(out, "/fga inventoryAdvancementOptimization help", "背包进度优化 / inventory advancement optimization");
+        //#if MC >= 1.21 && MC <= 26.2
+        if (PlayerPossessionManager.isActive()) {
+            line(out, "/fga controlPlayer list", "查看夺舍关系 / list possession relationships");
+        }
+        //#endif
         line(out, "/log playerHealth", "订阅多人列表血量 / subscribe to player-list health");
         //#if MC >= 1.20.1 && MC <= 26.2
         line(out, "/fga player <fake> bot_sort help", "假人分类操作 / fake-player sorting actions");

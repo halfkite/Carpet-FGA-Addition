@@ -16,12 +16,16 @@ public final class FGATranslations {
     private static final String LANGUAGE_ROOT = "/assets/carpet-fga-addition/lang/";
     private static final Map<String, String> ENGLISH = loadLanguage("en_us.json");
     private static final Map<String, String> CHINESE = loadLanguage("zh_cn.json");
+    private static final Map<String, String> TRADITIONAL_CHINESE = loadLanguage("zh_tw.json");
 
     private FGATranslations() {
     }
 
     public static Map<String, String> getTranslations(String lang) {
         String language = lang == null ? "" : lang.toLowerCase(Locale.ROOT);
+        if (language.equals("zh_tw") || language.equals("zh_hk") || language.equals("zh_hant")) {
+            return TRADITIONAL_CHINESE;
+        }
         return language.equals("zh_cn") || language.equals("zh_ch") ? CHINESE : ENGLISH;
     }
 

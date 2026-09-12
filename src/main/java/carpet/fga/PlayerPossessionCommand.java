@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.2
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -33,7 +33,7 @@ public final class PlayerPossessionCommand {
         return Commands.literal("possess")
                 .requires(source -> source.getPlayer() != null && (PlayerPossessionManager.isParticipant(source.getPlayer())
                         || PlayerPossessionManager.allows(FGASettings.playerPossession,
-                            source.getServer().getPlayerList().isOp(source.getPlayer().getGameProfile()), true)))
+                            PlayerPossessionManager.isOp(source.getServer(), source.getPlayer().getGameProfile()), true)))
                 .executes(PlayerPossessionCommand::start)
                 .then(Commands.literal("stop").executes(PlayerPossessionCommand::stop));
     }

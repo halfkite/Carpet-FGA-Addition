@@ -45,10 +45,20 @@ public class FGASettings {
     /** FGA 自定义分类，会出现在 /carpet 菜单中作为可点击选项 */
     public static final String FGA = "FGA";
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.2
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
             options = {"false", "true", "onlyfake", "opreal", "ops"})
     public static String playerPossession = "false";
+
+    //#if MC >= 1.21 && MC <= 26.2
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+            options = {"false", "true"})
+    public static boolean showControllerPrefix = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+            options = {"false", "true"})
+    public static boolean permissionSwapsToo = true;
+    //#endif
     //#endif
 
     //#if MC >= 1.21 && MC <= 26.2
@@ -536,6 +546,57 @@ public class FGASettings {
     //$$ )
     //#endif
     public static boolean villagerUpgradeWhileTrading = false;
+    //#endif
+
+    //#if MC >= 1.21 && MC <= 26.2
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"},
+        strict = false,
+        validators = FGASettings.VillagerMinimumTradePriceValidator.class
+    )
+    public static String villagerMinimumTradePrice = "false";
+
+    public static class VillagerMinimumTradePriceValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                               CarpetRule<String> currentRule,
+                               String newValue,
+                               String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            // Keep old worlds readable while removing the legacy option from the rule UI.
+            if ("onlynew".equals(value)) value = "true";
+            if ("false".equals(value) || "true".equals(value)) return value;
+            Messenger.m(source, "r villagerMinimumTradePrice must be false or true");
+            return null;
+        }
+    }
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "onlyvanilla", "more"},
+        strict = false,
+        validators = FGASettings.VillagerMaxEnchantmentTradesValidator.class
+    )
+    public static String villagerOnlyMaxEnchantmentBooks = "false";
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "onlyvanilla", "more"},
+        strict = false,
+        validators = FGASettings.VillagerMaxEnchantmentTradesValidator.class
+    )
+    public static String villagerOnlyMaxEnchantmentEquipment = "false";
+
+    public static class VillagerMaxEnchantmentTradesValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source,
+                               CarpetRule<String> currentRule,
+                               String newValue,
+                               String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (java.util.Set.of("false", "onlyvanilla", "more").contains(value)) return value;
+            Messenger.m(source, "r villager max enchantment trades must be false, onlyvanilla, or more");
+            return null;
+        }
+    }
     //#endif
 
     //#if MC >= 1.20.1 && MC <= 26.2
