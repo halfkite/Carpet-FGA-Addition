@@ -6,7 +6,7 @@
 [![MC Versions](https://img.shields.io/badge/For%20MC-26.2%20%7C%2026.1%20%7C%201.21-E04E14?labelColor=2D2D2D)](https://www.curseforge.com/minecraft/mc-mods/carpet-fga-addition)
 [![GitHub](https://img.shields.io/github/downloads/halfkite/Carpet-FGA-Addition/total?color=161616&label=GitHub%20downloads&logo=github)](https://github.com/halfkite/Carpet-FGA-Addition/releases)
 
-**中文** | [English](README_en.md)
+**中文** | [English](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/README_en.md)
 
 ## 依赖
 
@@ -43,19 +43,19 @@
 
 ## 文档
 
-- [简体中文规则](docs/rules_ch_cn.md)
-- [繁體中文規則](docs/rules_ch_tw.md)
-- [命令](docs/commands.md)
-- [QuickCraft 轻松放置实体服务端支持](docs/quickcraft-entity-placement-server.md)
-- [发布流程](docs/releasing.md)
+- [简体中文规则](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/rules_ch_cn.md)
+- [繁體中文規則](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/rules_ch_tw.md)
+- [命令](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/commands.md)
+- [QuickCraft 轻松放置实体服务端支持](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/quickcraft-entity-placement-server.md)
+- [发布流程](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/releasing.md)
 
 ## 许可证
 
-本项目主体使用 [MIT License](LICENSE)。
+本项目主体使用 [MIT License](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/LICENSE)。
 
 本项目包含参考、改编或移植自第三方项目的实现。相关第三方许可仍适用于对应内容：
 
 - **Yet Another Carpet Addition**：LGPL-3.0-or-later，涉及 Unicode 指令参数支持。
 - **CarpetSkyAdditions-Reborn**、**InventoryAdvancementAccelerator**、**Org Addition**、**remove-dialog-warning**、**SaveMyRecipeBook** 和 **StackSizeTweaks**：MIT，涉及对应的设计参考或适配实现。
 
-详细归属与许可证文本见 [`src/main/resources/META-INF/`](src/main/resources/META-INF/)。
+详细归属与许可证文本见 [`src/main/resources/META-INF/`](https://github.com/halfkite/Carpet-FGA-Addition/tree/main/src/main/resources/META-INF/)。
