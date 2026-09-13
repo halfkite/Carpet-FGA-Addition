@@ -6,7 +6,7 @@
 [![MC Versions](https://img.shields.io/badge/For%20MC-26.2%20%7C%2026.1%20%7C%201.21-E04E14?labelColor=2D2D2D)](https://www.curseforge.com/minecraft/mc-mods/carpet-fga-addition)
 [![GitHub](https://img.shields.io/github/downloads/halfkite/Carpet-FGA-Addition/total?color=161616&label=GitHub%20downloads&logo=github)](https://github.com/halfkite/Carpet-FGA-Addition/releases)
 
-[中文](README.md) | **English**
+[中文](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/README.md) | **English**
 
 ## Dependencies
 
@@ -43,18 +43,18 @@ Provides Carpet rule extensions and server commands, including full shulker-box 
 
 ## Documentation
 
-- [Rules (English US)](docs/rules_en_us.md)
-- [Commands](docs/commands_en.md)
-- [QuickCraft entity-placement server support (Chinese)](docs/quickcraft-entity-placement-server.md)
-- [Release process (Chinese)](docs/releasing.md)
+- [Rules (English US)](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/rules_en_us.md)
+- [Commands](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/commands_en.md)
+- [QuickCraft entity-placement server support (Chinese)](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/quickcraft-entity-placement-server.md)
+- [Release process (Chinese)](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/docs/releasing.md)
 
 ## License
 
-The main project is licensed under the [MIT License](LICENSE).
+The main project is licensed under the [MIT License](https://github.com/halfkite/Carpet-FGA-Addition/blob/main/LICENSE).
 
 This project contains implementations based on, adapted from, or ported from third-party projects. The corresponding third-party licenses continue to apply to that content:
 
 - **Yet Another Carpet Addition**: LGPL-3.0-or-later, for Unicode command argument support.
 - **CarpetSkyAdditions-Reborn**, **InventoryAdvancementAccelerator**, **Org Addition**, **remove-dialog-warning**, **SaveMyRecipeBook**, and **StackSizeTweaks**: MIT, for their respective design references or adapted implementations.
 
-See [`src/main/resources/META-INF/`](src/main/resources/META-INF/) for detailed attribution and license texts.
+See [`src/main/resources/META-INF/`](https://github.com/halfkite/Carpet-FGA-Addition/tree/main/src/main/resources/META-INF/) for detailed attribution and license texts.
