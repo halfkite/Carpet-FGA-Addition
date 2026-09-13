@@ -28,7 +28,9 @@
 //$$     @Inject(method = "addOffersFromTradeSet", at = @At("TAIL"))
 //$$     private void carpetFga$processOffers(ServerLevel level, MerchantOffers offers,
 //$$                                           ResourceKey<TradeSet> key, CallbackInfo ci) {
-//$$         Villager villager = (Villager) (Object) this;
+//$$         // AbstractVillager also owns WanderingTrader. Its lazy offer generation
+//$$         // can run during autosave, so leave non-villagers on the vanilla path.
+//$$         if (!((Object) this instanceof Villager villager)) return;
 //$$         for (int index = Math.min(this.carpetFga$offerStart, offers.size()); index < offers.size(); index++) {
 //$$             ModernVillagerTradeManager.process(villager, offers.get(index));
 //$$         }
