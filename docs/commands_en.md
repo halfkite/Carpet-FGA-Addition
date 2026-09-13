@@ -13,8 +13,10 @@ Effective versions: `1.21+`. Install FGA on the server; both participants may us
 - `/player <name> possess` follows the PlayerControl reference implementation: it swaps the live entities' game state, identity, position, view, inventory, containers and riding relationship while the controller keeps its own connection and command source.
 - `/player <target-name> possess stop` ends that session for either participant.
 - `playerPossession` defaults to `false`. `true` allows all targets; `onlyfake` restricts everyone, including OPs, to fake targets; `opreal` restricts real targets to OPs; `ops` restricts all possession to OPs. Carpet `commandPlayer` also applies.
-- Both entities and UUIDs remain in place. They continue normal world simulation, and damage, movement, experience and item changes during the session remain with the current entity state. Stopping swaps the states back without copying or writing offline player data. A real target stays connected; its input is blocked, while chat and the stop command remain available.
-- Self-possession, overlapping sessions and nested possession are rejected. Starting closes containers and stops automatic actions and range/sorting tasks; they do not resume on exit. Death, removal, disconnection or loss of permission ends the session.
+- Both entities and UUIDs remain in place. They continue normal world simulation, and damage, movement, experience and item changes during the session remain with the current entity state. Stopping swaps the states back without copying or writing offline player data.
+- Self-possession, overlapping sessions and nested possession are rejected. PlayerControl's fake-player `kill()` lifecycle releases the session; FGA handles disconnects, permission loss and rule shutdown.
+- In Minecraft 1.21.1, logout ends possession before the player is saved and removed. Each body retains its current position when ownership is restored; logout does not bring the bodies together.
+
 - While enabled, the shared `/player` name suggestions are filtered by possession permissions. Participants cannot start or continue Carpet automatic manipulation tasks, while the stop command remains available.
 - No custom payload or persistent possession configuration is added, and offline player data is not edited. See `scripts/tests/possession.md` for manual multiplayer acceptance checks.
 
@@ -63,7 +65,7 @@ Related rules: `voidWorldGeneration`, `terrainRegenerationCommandPermission`
 /regenerateTerrain list [page]
 ```
 
-Coordinates are block coordinates and expand to whole chunks. Every X/Z argument offers Tab suggestions for the player's position and targeted block, and previews show the exact chunk count and effective range. The green confirmation button executes the confirmation directly; confirmation only queues the task, and the world changes on the next server restart. Multiple confirmed tasks can run together. `regenerate` deletes and normally regenerates terrain. `clear` reads an all-air network payload into every section palette, clears block entities, non-player entities, POI, scheduled ticks, heightmaps, and lighting data, and removes adjacent fluids within eight blocks outside the effective horizontal border, covering the maximum horizontal spread of vanilla water and Nether lava; waterlogged blocks keep the block and lose only their waterlogged state. Region files touched by the clear range or its border are backed up before execution. A failed task can be retried without overwriting its original backup.
+Coordinates are block coordinates and expand to whole chunks. Every X/Z argument offers Tab suggestions for the player's position and targeted block, and previews show the exact chunk count and effective range. The green confirmation button executes the confirmation directly; confirmation only queues the task, and the world changes on the next server restart. Multiple confirmed tasks can run together. `regenerate` deletes and normally regenerates terrain. `clear` reads an all-air network payload into every section palette, clears block entities, non-player entities, POI, scheduled ticks, heightmaps, and lighting data, and removes adjacent fluids within eight blocks outside the effective horizontal border, covering the maximum horizontal spread of vanilla water and Nether lava; waterlogged blocks keep the block and lose only their waterlogged state. Region files touched by the clear range or its border are backed up before execution. A failed task can be retried without overwriting its original backup. A single task (including merged ones) cannot exceed 4096 chunks; oversized drafts cannot be confirmed, and legacy oversized tasks are marked failed on load.
 
 ## Player and fake-player range commands (player)
 
@@ -199,7 +201,8 @@ Changes apply immediately and are saved to the world configuration. In `controll
 
 ### `/fakePlayerItemSort` and `bot_sort`
 
-The sorter core is registered on Minecraft `1.21+`. Dashboard/API, disk route cache, inventory rebuild, automatic restock, and worker tuning remain `1.21.1` only.
+The sorter core is registered on Minecraft `1.21+`. Dashboard/API, disk route cache, inventory rebuild, automatic restock, and worker tuning remain `1.21.1` only.<br>
+Besides the read-only subcommands (`status`, `whitelist list`, `name list`, `format status`, `dashboard status`, `bot_sort stop`), configuration, whitelist changes, and sort start all require OP level 2 or higher.
 
 ```text
 /fakePlayerItemSort status

@@ -6,8 +6,6 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,84 +17,81 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * State swap adapted from the user-provided PlayerControl reference mod.
- * The table is server-thread confined and never writes offline playerdata.
+ * In-memory body swap copied from PlayerControl's PlayerSwapManager.
+ * The map is server-thread confined and never writes offline player data.
  */
 public final class PlayerSwapManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/possession-swap");
     private final Map<UUID, UUID> activeSwaps = new HashMap<>();
     private final Map<UUID, SwapSnapshot> originalStates = new HashMap<>();
 
     public SwapResult swap(ServerPlayer playerA, ServerPlayer playerB) {
         UUID uidA = playerA.getUUID();
         UUID uidB = playerB.getUUID();
-        if (uidA.equals(uidB)) return SwapResult.fail(Component.translatable("fga.possession.self"));
+        if (uidA.equals(uidB)) {
+            return SwapResult.fail(Component.translatable("fga.possession.self"));
+        }
         if (activeSwaps.containsKey(uidA) || activeSwaps.containsKey(uidB)) {
             return SwapResult.fail(Component.translatable("fga.possession.busy"));
         }
 
         SwapSnapshot snapA = SwapSnapshot.capture(playerA);
         SwapSnapshot snapB = SwapSnapshot.capture(playerB);
+
         activeSwaps.put(uidA, uidB);
         activeSwaps.put(uidB, uidA);
         originalStates.put(uidA, snapA);
         originalStates.put(uidB, snapB);
-        try {
-            snapB.applyTo(playerA, snapB.gameProfile());
-            snapA.applyTo(playerB, snapA.gameProfile());
-            MinecraftServer server = CarpetServer.minecraft_server;
-            server.getPlayerList().sendPlayerPermissionLevel(playerA);
-            server.getPlayerList().sendPlayerPermissionLevel(playerB);
-            return SwapResult.successResult();
-        } catch (RuntimeException failure) {
-            LOGGER.warn("Unable to swap {} with {}", playerA.getScoreboardName(), playerB.getScoreboardName(), failure);
-            activeSwaps.remove(uidA);
-            activeSwaps.remove(uidB);
-            originalStates.remove(uidA);
-            originalStates.remove(uidB);
-            try {
-                snapA.applyTo(playerA, snapA.gameProfile());
-                snapB.applyTo(playerB, snapB.gameProfile());
-            } catch (RuntimeException rollbackFailure) {
-                failure.addSuppressed(rollbackFailure);
-            }
-            return SwapResult.fail(Component.translatable("fga.possession.failed"));
-        }
+
+        snapB.applyTo(playerA, snapB.gameProfile());
+        snapA.applyTo(playerB, snapA.gameProfile());
+
+        MinecraftServer server = CarpetServer.minecraft_server;
+        server.getPlayerList().sendPlayerPermissionLevel(playerA);
+        server.getPlayerList().sendPlayerPermissionLevel(playerB);
+        return SwapResult.successResult();
     }
 
     public SwapResult release(ServerPlayer initiator, MinecraftServer server) {
         UUID uidA = initiator.getUUID();
         UUID uidB = activeSwaps.get(uidA);
-        if (uidB == null) return SwapResult.fail(Component.translatable("fga.possession.no_session"));
+        if (uidB == null) {
+            return SwapResult.fail(Component.translatable("fga.possession.no_session"));
+        }
 
+        ServerPlayer playerB = server.getPlayerList().getPlayer(uidB);
         SwapSnapshot origA = originalStates.get(uidA);
         SwapSnapshot origB = originalStates.get(uidB);
-        ServerPlayer playerB = server.getPlayerList().getPlayer(uidB);
         SwapSnapshot currentA = SwapSnapshot.capture(initiator);
         SwapSnapshot currentB = playerB == null ? null : SwapSnapshot.capture(playerB);
+
         activeSwaps.remove(uidA);
         activeSwaps.remove(uidB);
         originalStates.remove(uidA);
         originalStates.remove(uidB);
 
-        if (origA == null) return SwapResult.fail(Component.translatable("fga.possession.failed"));
-        try {
-            if (currentB != null) currentB.applyTo(initiator, origA.gameProfile());
-            else origA.applyTo(initiator, origA.gameProfile());
-            if (playerB != null) {
-                GameProfile profileForB = origB == null ? playerB.getGameProfile() : origB.gameProfile();
-                currentA.applyTo(playerB, profileForB);
-            }
-            server.getPlayerList().sendPlayerPermissionLevel(initiator);
-            if (playerB != null) server.getPlayerList().sendPlayerPermissionLevel(playerB);
-            return SwapResult.successResult();
-        } catch (RuntimeException failure) {
+        if (origA == null) {
             return SwapResult.fail(Component.translatable("fga.possession.failed"));
         }
+        if (currentB != null) {
+            currentB.applyTo(initiator, origA.gameProfile());
+        } else {
+            origA.applyTo(initiator, origA.gameProfile());
+        }
+        if (playerB != null) {
+            GameProfile profileForB = origB == null ? playerB.getGameProfile() : origB.gameProfile();
+            currentA.applyTo(playerB, profileForB);
+        }
+
+        server.getPlayerList().sendPlayerPermissionLevel(initiator);
+        if (playerB != null) server.getPlayerList().sendPlayerPermissionLevel(playerB);
+        return SwapResult.successResult();
     }
 
     public SwapResult forceRelease(UUID targetUid, MinecraftServer server) {
-        if (!activeSwaps.containsKey(targetUid)) return SwapResult.fail(Component.translatable("fga.possession.no_session"));
+        if (!activeSwaps.containsKey(targetUid)) {
+            return SwapResult.fail(Component.translatable("fga.possession.no_session"));
+        }
+
         ServerPlayer target = server.getPlayerList().getPlayer(targetUid);
         if (target != null) return release(target, server);
 
@@ -116,13 +111,24 @@ public final class PlayerSwapManager {
     }
 
     public boolean isSwapped(UUID uid) { return activeSwaps.containsKey(uid); }
-    public Optional<UUID> getSwapPartner(UUID uid) { return Optional.ofNullable(activeSwaps.get(uid)); }
+
+    public Optional<UUID> getSwapPartner(UUID uid) {
+        return Optional.ofNullable(activeSwaps.get(uid));
+    }
 
     public String originalName(UUID uid, MinecraftServer server) {
         SwapSnapshot snapshot = originalStates.get(uid);
         if (snapshot != null) return PlayerPossessionManager.profileName(snapshot.gameProfile());
         ServerPlayer player = server == null ? null : server.getPlayerList().getPlayer(uid);
         return player == null ? uid.toString() : PlayerPossessionManager.profileName(player.getGameProfile());
+    }
+
+    /** Returns the identity captured before possession for permission checks. */
+    public GameProfile originalProfile(UUID uid, MinecraftServer server) {
+        SwapSnapshot snapshot = originalStates.get(uid);
+        if (snapshot != null) return snapshot.gameProfile();
+        ServerPlayer player = server == null ? null : server.getPlayerList().getPlayer(uid);
+        return player == null ? null : player.getGameProfile();
     }
 
     public List<Map.Entry<UUID, UUID>> getAllSwapPairs() {

@@ -1033,6 +1033,7 @@ public final class FakePlayerItemSortManager {
                                              UUID sourceId, UUID initiator, OverflowContext context) {
         int moved = 0;
         for (int index = 1; index < 1000 && moved < count; index++) {
+            boolean spawnedFake = willSpawnFake(context, baseTarget, index);
             TargetInventory overflow;
             try {
                 overflow = openOverflowTarget(baseTarget, index, context);
@@ -1040,13 +1041,21 @@ public final class FakePlayerItemSortManager {
                 notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage());
                 return moved;
             }
-            if (overflow == null) continue;
+            if (overflow == null) {
+                // Summon mode: a failed spawn must not trigger a cascade of spawn attempts.
+                if (spawnedFake) break;
+                continue;
+            }
             cleanOpenedTarget(overflow, baseTarget + "_" + index, itemKey, sourceId, initiator, context, false);
             normalizeOverflowTarget(overflow, itemKey, sourceId, initiator);
             int n = fillOverflowOffhand(overflow, source, count - moved, itemKey, sourceId, initiator);
             if (n > 0) {
                 moved += n;
                 if (!overflow.save()) return moved - n;
+            } else if (spawnedFake) {
+                // A freshly spawned fake that accepted nothing means no space or no empty
+                // shulker material; spawning more fakes will not help this move.
+                break;
             }
         }
         return moved;
@@ -1057,6 +1066,7 @@ public final class FakePlayerItemSortManager {
                                                           UUID sourceId, UUID initiator, OverflowContext context) {
         int moved = 0;
         for (int index = 1; index < 1000 && moved < count; index++) {
+            boolean spawnedFake = willSpawnFake(context, baseTarget, index);
             TargetInventory overflow;
             try {
                 overflow = openOverflowTarget(baseTarget, index, context);
@@ -1064,7 +1074,10 @@ public final class FakePlayerItemSortManager {
                 notice(sourceId, initiator, "shulker overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage());
                 return moved;
             }
-            if (overflow == null) continue;
+            if (overflow == null) {
+                if (spawnedFake) break;
+                continue;
+            }
             cleanOpenedTarget(overflow, baseTarget + "_" + index, itemKey, sourceId, initiator, context, false);
             int left = count - moved;
             for (int slot = 0; slot < MAIN_SIZE && left > 0; slot++) {
@@ -1085,6 +1098,7 @@ public final class FakePlayerItemSortManager {
             }
             int added = count - moved - left;
             if (added > 0 && overflow.save()) moved += added;
+            else if (added <= 0 && spawnedFake) break;
         }
         return moved;
     }
@@ -1093,6 +1107,7 @@ public final class FakePlayerItemSortManager {
                                               UUID sourceId, UUID initiator, OverflowContext context) {
         if (isCompletedBoxFor(box, itemKey)) return moveFullBoxIntoOverflow(box, baseTarget, itemKey, context);
         for (int index = 1; index < 1000; index++) {
+            boolean spawnedFake = willSpawnFake(context, baseTarget, index);
             TargetInventory overflow;
             try {
                 overflow = openOverflowTarget(baseTarget, index, context);
@@ -1100,7 +1115,10 @@ public final class FakePlayerItemSortManager {
                 notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage());
                 return false;
             }
-            if (overflow == null) continue;
+            if (overflow == null) {
+                if (spawnedFake) break;
+                continue;
+            }
             cleanOpenedTarget(overflow, baseTarget + "_" + index, itemKey, sourceId, initiator, context, false);
             normalizeOverflowTarget(overflow, itemKey, sourceId, initiator);
             if (isUsableShulkerFor(box, itemKey) && overflow.offhand().isEmpty()) {
@@ -1108,11 +1126,25 @@ public final class FakePlayerItemSortManager {
                 return overflow.save();
             }
             int slot = firstEmptyMainSlot(overflow);
-            if (slot < 0) continue;
+            if (slot < 0) {
+                if (spawnedFake) break;
+                continue;
+            }
             overflow.setMain(slot, box.copyWithCount(1));
             return overflow.save();
         }
         return false;
+    }
+
+    /**
+     * True when summon mode would have to spawn a new fake for this overflow index. A
+     * freshly spawned target that yields no progress must terminate the loop instead of
+     * cascading into hundreds of spawn attempts within one tick.
+     */
+    private static boolean willSpawnFake(OverflowContext context, String baseTarget, int index) {
+        if (context.source() == null) return false;
+        Set<String> spawned = AUTO_SPAWNED_BY_BATCH.get(context.batch());
+        return spawned == null || !spawned.contains(baseTarget + "_" + index);
     }
 
     private static TargetInventory openOverflowTarget(String baseTarget, int index, OverflowContext context) throws IOException {
@@ -1391,19 +1423,26 @@ public final class FakePlayerItemSortManager {
     private static int moveFullBoxIntoOnlineOverflow(ItemStack box, ServerPlayer source, String baseTarget, String batch,
                                                      String itemKey) {
         for (int index = 1; index < 1000; index++) {
+            OverflowContext context = new OverflowContext(source, batch);
+            boolean spawnedFake = willSpawnFake(context, baseTarget, index);
             TargetInventory overflow;
             try {
-                overflow = openOverflowTarget(baseTarget, index, new OverflowContext(source, batch));
+                overflow = openOverflowTarget(baseTarget, index, context);
             } catch (IOException e) {
                 lastError = "overflow write failed for " + baseTarget + "_" + index + ": " + e.getMessage();
                 return 0;
             }
-            if (overflow == null) continue;
-            cleanOpenedTarget(overflow, baseTarget + "_" + index, itemKey, source.getUUID(), null,
-                    new OverflowContext(source, batch), false);
+            if (overflow == null) {
+                if (spawnedFake) break;
+                continue;
+            }
+            cleanOpenedTarget(overflow, baseTarget + "_" + index, itemKey, source.getUUID(), null, context, false);
             normalizeOverflowTarget(overflow, itemKey, source.getUUID(), null);
             int slot = firstEmptyMainSlot(overflow);
-            if (slot < 0) continue;
+            if (slot < 0) {
+                if (spawnedFake) break;
+                continue;
+            }
             overflow.setMain(slot, box.copyWithCount(1));
             return overflow.save() ? 1 : 0;
         }

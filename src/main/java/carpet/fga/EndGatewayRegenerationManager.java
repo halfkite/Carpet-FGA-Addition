@@ -61,6 +61,8 @@ public final class EndGatewayRegenerationManager {
         GatewayData data = data(level);
         for (Map.Entry<BlockPos, CompoundTag> entry : data.gateways.entrySet()) {
             BlockPos position = entry.getKey();
+            // Never force-load an unloaded end chunk from the tick; wait for it to load naturally.
+            if (!level.hasChunk(position.getX() >> 4, position.getZ() >> 4)) continue;
             if (!level.getBlockState(position).isAir()) continue;
             level.setBlock(position, Blocks.END_GATEWAY.defaultBlockState(), 3);
             //#if MC >= 1.21

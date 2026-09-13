@@ -14,6 +14,13 @@ import java.util.UUID;
 public final class TrialSpawnerMultiplier {
     private TrialSpawnerMultiplier() {}
 
+    /**
+     * Single-tick cap on reward ejection copies. The full multiplier still scales mob
+     * spawning, but rewards are capped so one matched player cannot eject thousands of
+     * item stacks in a single tick.
+     */
+    private static final int MAX_REWARD_COPIES = 64;
+
     public static int additionalPlayers(TrialSpawnerData data, int vanillaValue) {
         if (!enabled()) return vanillaValue;
         Set<UUID> players = ((TrialSpawnerDataAccessor) data).carpetFga$getDetectedPlayers();
@@ -26,6 +33,10 @@ public final class TrialSpawnerMultiplier {
 
     public static int participantWeight(UUID player) {
         return matches(player) ? FGASettings.trialSpawnerPlayerMultiplier : 1;
+    }
+
+    public static int rewardCopies(UUID player) {
+        return Math.min(MAX_REWARD_COPIES, participantWeight(player));
     }
 
     private static boolean enabled() {

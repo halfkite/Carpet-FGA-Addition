@@ -43,6 +43,12 @@ public final class NetherPortalLightManager {
     //$$ private static final Map<ServerLevel, PortalData> NEW_API_DATA = new IdentityHashMap<>();
     //#endif
     private static final Map<ServerLevel, Set<Long>> PENDING_CLIENT_REFRESHES = new ConcurrentHashMap<>();
+    /**
+     * Immutable packed-position snapshots per level, published by the main thread after every
+     * portal set change. The async light worker reads these instead of touching the (main-thread
+     * confined) saved data or the mutable portal set.
+     */
+    private static final Map<ServerLevel, Set<Long>> PORTAL_SNAPSHOTS = new ConcurrentHashMap<>();
     private static boolean clientRefreshArmed;
 
     private NetherPortalLightManager() {
@@ -55,7 +61,8 @@ public final class NetherPortalLightManager {
     public static boolean shouldSuppress(ServerLevel level, long packedPosition, BlockState state) {
         if (!isActive() || !state.is(Blocks.NETHER_PORTAL)) return false;
         if (MODE_TRUE.equals(FGASettings.netherPortalNoLight)) return true;
-        return data(level).portals.contains(key(level, BlockPos.of(packedPosition)));
+        Set<Long> snapshot = PORTAL_SNAPSHOTS.get(level);
+        return snapshot != null && snapshot.contains(packedPosition);
     }
 
     public static void onBlockStateChange(ServerLevel level, BlockPos position,
@@ -72,6 +79,7 @@ public final class NetherPortalLightManager {
         if (changed) portalData.setDirty();
         //#endif
         if (changed) {
+            publishSnapshot(level);
             level.getChunkSource().getLightEngine().checkBlock(position);
             //#if MC >= 26.1
             //$$ queueClientRefresh(level, ChunkPos.containing(position));
@@ -145,6 +153,7 @@ public final class NetherPortalLightManager {
 
     public static void clear() {
         PENDING_CLIENT_REFRESHES.clear();
+        PORTAL_SNAPSHOTS.clear();
         clientRefreshArmed = false;
         //#if MC != 1.21.1
         //$$ NEW_API_DATA.clear();
@@ -175,6 +184,22 @@ public final class NetherPortalLightManager {
             });
             if (hasPortal[0]) queueClientRefresh(level, chunk.getPos());
         }
+        publishSnapshot(level);
+    }
+
+    /** Main thread only: publishes an immutable packed-position snapshot for the light worker. */
+    private static void publishSnapshot(ServerLevel level) {
+        PortalData portalData = data(level);
+        String prefix = level.dimension().location() + "|";
+        Set<Long> packed = new HashSet<>();
+        for (String entry : portalData.portals) {
+            if (!entry.startsWith(prefix)) continue;
+            try {
+                packed.add(Long.parseLong(entry.substring(prefix.length())));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        PORTAL_SNAPSHOTS.put(level, Set.copyOf(packed));
     }
 
     private static void queueClientRefresh(ServerLevel level, ChunkPos chunkPos) {

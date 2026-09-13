@@ -5,9 +5,7 @@ import carpet.CarpetSettings;
 import carpet.CarpetServer;
 import carpet.patches.EntityPlayerMPFake;
 import carpet.utils.CommandHelper;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 //#if MC >= 1.21.10
@@ -64,18 +62,53 @@ public final class PlayerPossessionManager {
     }
 
     public static boolean canStart(ServerPlayer controller, ServerPlayer target) {
+        MinecraftServer currentServer = CarpetServer.minecraft_server;
+        boolean controllerIsOp = isParticipant(controller)
+                ? isOriginalOp(controller, currentServer)
+                : currentServer != null && isOp(currentServer, controller.getGameProfile());
         return controller != null && target != null
                 && !(controller instanceof EntityPlayerMPFake)
-                && CommandHelper.canUseCommand(
-                //#if MC == 1.21.1
-                controller.createCommandSourceStack(),
-                //#else
-                //$$ controller.createCommandSourceStackForNameResolution(controller.serverLevel()),
-                //#endif
-                CarpetSettings.commandPlayer)
+                && canUsePlayerCommand(controller, currentServer)
                 && allows(FGASettings.playerPossession,
-                isOp(CarpetServer.minecraft_server, controller.getGameProfile()),
+                controllerIsOp,
                 target instanceof EntityPlayerMPFake);
+    }
+
+    /** Keeps the commandPlayer gate tied to the login identity during possession. */
+    private static boolean canUsePlayerCommand(ServerPlayer controller, MinecraftServer currentServer) {
+        if (!isParticipant(controller)) {
+            return CommandHelper.canUseCommand(
+                    //#if MC == 1.21.1
+                    controller.createCommandSourceStack(),
+                    //#else
+                    //$$ controller.createCommandSourceStackForNameResolution(controller.serverLevel()),
+                    //#endif
+                    CarpetSettings.commandPlayer);
+        }
+        if (currentServer == null) return false;
+        String value = String.valueOf(CarpetSettings.commandPlayer);
+        if ("true".equals(value)) return true;
+        if ("false".equals(value)) return false;
+        int required = "ops".equals(value) ? 2 : parsePermissionLevel(value);
+        com.mojang.authlib.GameProfile original = SWAPS.originalProfile(controller.getUUID(), currentServer);
+        return required >= 0 && original != null
+                && PossessionPermissionContext.withOriginalPermission(
+                        //#if MC >= 1.21.11
+                        //$$ () -> currentServer.getProfilePermissions(new NameAndId(original)).level().id() >= required);
+                        //#elseif MC >= 1.21.10
+                        //$$ () -> currentServer.getProfilePermissions(new NameAndId(original)) >= required);
+                        //#else
+                        () -> currentServer.getProfilePermissions(original) >= required);
+                        //#endif
+    }
+
+    private static int parsePermissionLevel(String value) {
+        try {
+            int level = Integer.parseInt(value);
+            return level >= 0 && level <= 4 ? level : -1;
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
     }
 
     public static boolean isParticipant(ServerPlayer player) {
@@ -99,6 +132,10 @@ public final class PlayerPossessionManager {
         return player != null && CONTROLLERS.containsKey(player.getUUID());
     }
 
+    public static boolean isControllerId(UUID id) {
+        return id != null && CONTROLLERS.containsKey(id);
+    }
+
     /** A real participant whose own connection must remain a viewer during a swap. */
     public static boolean isWatchedTarget(ServerPlayer player) {
         return player != null && isParticipant(player) && !isController(player);
@@ -114,17 +151,19 @@ public final class PlayerPossessionManager {
         return SWAPS.originalName(id, currentServer);
     }
 
+    /** Permission checks must use the pre-possession identity, never the display profile. */
+    public static boolean isOriginalOp(ServerPlayer player, MinecraftServer currentServer) {
+        if (player == null || currentServer == null) return false;
+        com.mojang.authlib.GameProfile profile = SWAPS.originalProfile(player.getUUID(), currentServer);
+        return profile != null && isOp(currentServer, profile);
+    }
+
     public static Component decorateName(ServerPlayer player, Component base) {
         if (!FGASettings.showControllerPrefix || player == null || !isParticipant(player)) return base;
         UUID partnerId = SWAPS.getSwapPartner(player.getUUID()).orElse(null);
         if (partnerId == null) return base;
-        String ownName = SWAPS.originalName(player.getUUID(), CarpetServer.minecraft_server);
-        MutableComponent decorated = Component.literal(ownName);
-        if (!CONTROLLERS.containsKey(player.getUUID())) {
-            String controllerName = SWAPS.originalName(partnerId, CarpetServer.minecraft_server);
-            decorated.append(Component.literal("[" + controllerName + "]").withStyle(ChatFormatting.RED));
-        }
-        return decorated;
+        if (!isController(player)) return base;
+        return appendController(base, originalName(player.getUUID(), CarpetServer.minecraft_server));
     }
 
     public static Component decoratePlayerInfo(UUID id, Component base, String fallbackName,
@@ -132,15 +171,20 @@ public final class PlayerPossessionManager {
         if (!FGASettings.showControllerPrefix || id == null || !SWAPS.isSwapped(id)) return base;
         UUID partnerId = SWAPS.getSwapPartner(id).orElse(null);
         if (partnerId == null) return base;
-        String currentName = originalName(id, currentServer);
-        if (currentName == null || currentName.isEmpty()) currentName = fallbackName;
-        MutableComponent decorated = Component.literal(currentName);
-        if (!CONTROLLERS.containsKey(id)) {
-            String controllerName = originalName(partnerId, currentServer);
-            decorated.append(Component.literal("[" + controllerName + "]")
-                    .withStyle(ChatFormatting.RED));
-        }
-        return decorated;
+        // Profiles carry the swapped body name: the controller connection displays the target.
+        if (!isControllerId(id)) return base;
+        Component name = base == null ? Component.literal(fallbackName == null
+                ? originalName(partnerId, currentServer) : fallbackName) : base;
+        return appendController(name, originalName(id, currentServer));
+    }
+
+    private static Component appendController(Component base, String controller) {
+        // Tab-list enhancements can already include the decorated entity display name.
+        if (base.getString().contains("[" + controller + "]")) return base;
+        return base.copy()
+                .append(Component.literal("[").withStyle(net.minecraft.ChatFormatting.RED))
+                .append(Component.literal(controller).withStyle(net.minecraft.ChatFormatting.GRAY))
+                .append(Component.literal("]").withStyle(net.minecraft.ChatFormatting.RED));
     }
 
     public static Component decorateName(Player player, Component base) {
@@ -183,34 +227,18 @@ public final class PlayerPossessionManager {
 
         String controllerName = controller.getScoreboardName();
         String targetName = target.getScoreboardName();
-        stopConflictingTasks(controller);
-        stopConflictingTasks(target);
-        controller.closeContainer();
-        target.closeContainer();
-
-        CONTROLLERS.put(controller.getUUID(), target.getUUID());
         PlayerSwapManager.SwapResult result = SWAPS.swap(controller, target);
-        if (!result.success()) {
-            CONTROLLERS.remove(controller.getUUID());
-            return "failed";
-        }
+        if (!result.success()) return "failed";
         server = CarpetServer.minecraft_server;
+        CONTROLLERS.put(controller.getUUID(), target.getUUID());
+        // The swap manager sends the vanilla permission packet while the direction
+        // table is still empty. Refresh after recording the controller so the
+        // permission-swapping policy can resolve the possessed body.
+        refreshPermissions(server);
         refreshDisplayNames(server);
         controller.sendSystemMessage(text(controller, "started", targetName, targetName));
         target.sendSystemMessage(text(target, "watched", controllerName, controllerName));
         return null;
-    }
-
-    private static void stopConflictingTasks(ServerPlayer player) {
-        RangeActionManager.stop(player);
-        FakePlayerItemSortManager.stop(player);
-        FGACompat.actionPack(player).stopAll();
-        player.stopUsingItem();
-        player.setShiftKeyDown(false);
-        player.setSprinting(false);
-        player.setJumping(false);
-        player.xxa = 0;
-        player.zza = 0;
     }
 
     public static boolean stop(ServerPlayer actor, String name) {
@@ -245,7 +273,7 @@ public final class PlayerPossessionManager {
                     && (controller.isChangingDimension() || target.isChangingDimension())) continue;
             if (controller == null || target == null
                     || !allows(FGASettings.playerPossession,
-                    isOp(currentServer, controller.getGameProfile()),
+                    isOriginalOp(controller, currentServer),
                     target instanceof EntityPlayerMPFake)) {
                 if (controller != null) end(controller, currentServer);
             }
@@ -256,13 +284,9 @@ public final class PlayerPossessionManager {
         UUID partnerId = SWAPS.getSwapPartner(actor.getUUID()).orElse(null);
         if (partnerId == null) return;
         ServerPlayer other = currentServer.getPlayerList().getPlayer(partnerId);
-        PlayerSwapManager.SwapResult result;
-        try {
-            result = SWAPS.release(actor, currentServer);
-        } finally {
-            CONTROLLERS.remove(actor.getUUID());
-            CONTROLLERS.remove(partnerId);
-        }
+        CONTROLLERS.remove(actor.getUUID());
+        CONTROLLERS.remove(partnerId);
+        PlayerSwapManager.SwapResult result = SWAPS.release(actor, currentServer);
         if (!result.success()) return;
         refreshDisplayNames(currentServer);
         if (actor.isAlive() && !actor.isRemoved()) actor.sendSystemMessage(text(actor, "ended"));

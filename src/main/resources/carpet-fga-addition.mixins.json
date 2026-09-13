@@ -6,14 +6,13 @@
         //#if MC >= 1.21 && MC <= 26.2
         "PossessionTrackedEntityAccessor",
         "PossessionChunkMapAccessor",
+        "PossessionStatsCounterAccessor",
         "PossessionPlayerAccessor",
         "PossessionFakePlayerMixin",
-        "PossessionServerDisconnectMixin",
-        "PossessionDeathMixin",
-        "PossessionRemovalMixin",
-        "PossessionInputMixin",
-        "PossessionActionPackMixin",
         "PossessionPermissionMixin",
+        //#if MC >= 1.21 && MC <= 26.2
+        "PossessionLogoutMixin",
+        //#endif
         "PossessionPlayerNameMixin",
         "PossessionPlayerInfoMixin",
         //#endif
@@ -120,7 +119,8 @@
         "CarpetRuleDescriptionMixin"
         //#endif
         //#if MC >= 1.21
-        ,"StonecutterMenuFullShulkerMixin"
+        ,"StonecutterMenuFullShulkerMixin",
+        "GrassBlockAnyFlowerMixin"
         //#endif
         //#if MC == 1.21.1
         ,"ChunkMapPlayerLoadDistanceAccessor",

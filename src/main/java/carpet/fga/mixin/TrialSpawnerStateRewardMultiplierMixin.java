@@ -32,7 +32,7 @@ public abstract class TrialSpawnerStateRewardMultiplierMixin {
         TrialSpawnerData data = spawner.getData();
         Set<UUID> players = ((TrialSpawnerDataAccessor) data).carpetFga$getDetectedPlayers();
         UUID current = players.isEmpty() ? null : players.iterator().next();
-        int copies = current == null ? 1 : TrialSpawnerMultiplier.participantWeight(current);
+        int copies = current == null ? 1 : TrialSpawnerMultiplier.rewardCopies(current);
         for (int i = 0; i < copies; i++) spawner.ejectReward(level, pos, loot);
     }
 }

@@ -35,6 +35,16 @@ public final class StackLimitClientRequirement {
                 continue;
             }
             Integer remaining = HANDSHAKE_GRACE.get(player.getUUID());
+            //#if MC == 1.21.1
+            // Some integrated-server login paths do not invoke Carpet's
+            // extension callback before the first tick. Seed the same grace
+            // window lazily so the first join cannot be kicked before the
+            // client handshake packet is processed.
+            if (remaining == null) {
+                HANDSHAKE_GRACE.put(player.getUUID(), HANDSHAKE_GRACE_TICKS);
+                continue;
+            }
+            //#endif
             if (remaining != null && remaining > 0) {
                 HANDSHAKE_GRACE.put(player.getUUID(), remaining - 40);
                 continue;

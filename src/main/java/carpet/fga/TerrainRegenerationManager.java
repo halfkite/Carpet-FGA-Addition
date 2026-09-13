@@ -41,6 +41,10 @@ import java.util.*;
 /** Persistent multi-task queue for destructive terrain regeneration and fast void clearing. */
 public final class TerrainRegenerationManager {
     private static final int FLUID_BORDER = 8;
+    /** Upper bound of chunks per task; keeps startup regeneration and fluid-border clearing bounded. */
+    private static final long MAX_TASK_CHUNKS = 4096;
+    private static final String CHUNK_LIMIT_MESSAGE =
+            "task exceeds the " + MAX_TASK_CHUNKS + " chunk limit / 任务超出 " + MAX_TASK_CHUNKS + " 区块上限";
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/terrain-regeneration");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile boolean forceNormal;
@@ -129,6 +133,9 @@ public final class TerrainRegenerationManager {
         int maxChunkX = Math.floorDiv(Math.max(minX, maxX), 16);
         int minChunkZ = Math.floorDiv(Math.min(minZ, maxZ), 16);
         int maxChunkZ = Math.floorDiv(Math.max(minZ, maxZ), 16);
+        if (spanExceedsLimit(minChunkX, minChunkZ, maxChunkX, maxChunkZ)) {
+            throw new IllegalArgumentException(CHUNK_LIMIT_MESSAGE);
+        }
         Task task = new Task(UUID.randomUUID(), type, dimension.toString(), minChunkX, minChunkZ, maxChunkX, maxChunkZ,
                 Status.DRAFT, creator, System.currentTimeMillis(), List.of(), null);
         DRAFTS.put(task.id, task);
@@ -140,6 +147,10 @@ public final class TerrainRegenerationManager {
         ensureWritable();
         Task draft = DRAFTS.remove(id);
         if (draft == null) throw new IllegalArgumentException("draft not found / 未找到草稿");
+        if (draft.exceedsLimit()) {
+            DRAFTS.put(id, draft);
+            throw new IllegalArgumentException(CHUNK_LIMIT_MESSAGE);
+        }
         Task confirmed = draft.withStatus(Status.CONFIRMED, null);
         TASKS.add(confirmed);
         save();
@@ -218,6 +229,12 @@ public final class TerrainRegenerationManager {
         level.getChunkSource().save(true);
     }
 
+    private static boolean spanExceedsLimit(int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ) {
+        long spanX = (long) maxChunkX - minChunkX + 1;
+        long spanZ = (long) maxChunkZ - minChunkZ + 1;
+        return spanX <= 0 || spanZ <= 0 || spanX * spanZ > MAX_TASK_CHUNKS;
+    }
+
     private static void clearBoundaryFluids(ServerLevel level, Task task) {
         int minX = task.minBlockX();
         int maxX = task.maxBlockX();
@@ -225,11 +242,19 @@ public final class TerrainRegenerationManager {
         int maxZ = task.maxBlockZ();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int y = level.getMinBuildHeight(); y < level.getMaxBuildHeight(); y++) {
-            for (int x = minX - FLUID_BORDER; x <= maxX + FLUID_BORDER; x++) {
-                for (int z = minZ - FLUID_BORDER; z <= maxZ + FLUID_BORDER; z++) {
-                    if (x >= minX && x <= maxX && z >= minZ && z <= maxZ) continue;
-                    clearFluidAt(level, pos.set(x, y, z));
-                }
+            // Walk only the border ring: two full-width z strips plus two x strips
+            // inside the task area, instead of scanning the whole padded rectangle.
+            for (int z = minZ - FLUID_BORDER; z < minZ; z++) {
+                for (int x = minX - FLUID_BORDER; x <= maxX + FLUID_BORDER; x++) clearFluidAt(level, pos.set(x, y, z));
+            }
+            for (int z = maxZ + 1; z <= maxZ + FLUID_BORDER; z++) {
+                for (int x = minX - FLUID_BORDER; x <= maxX + FLUID_BORDER; x++) clearFluidAt(level, pos.set(x, y, z));
+            }
+            for (int x = minX - FLUID_BORDER; x < minX; x++) {
+                for (int z = minZ; z <= maxZ; z++) clearFluidAt(level, pos.set(x, y, z));
+            }
+            for (int x = maxX + 1; x <= maxX + FLUID_BORDER; x++) {
+                for (int z = minZ; z <= maxZ; z++) clearFluidAt(level, pos.set(x, y, z));
             }
         }
     }
@@ -418,6 +443,11 @@ public final class TerrainRegenerationManager {
             JsonArray entries = root.has("tasks") ? root.getAsJsonArray("tasks") : new JsonArray();
             for (JsonElement element : entries) {
                 Task task = Task.fromJson(element.getAsJsonObject());
+                if (task.exceedsLimit()) {
+                    if (task.status == Status.DRAFT) continue;
+                    task = task.withStatus(Status.FAILED, CHUNK_LIMIT_MESSAGE);
+                    LOGGER.error("Terrain task {} covers {} chunks and will not run", task.id, task.chunks());
+                }
                 if (task.status == Status.DRAFT) DRAFTS.put(task.id, task); else TASKS.add(task);
             }
         } catch (Exception exception) {
@@ -453,13 +483,19 @@ public final class TerrainRegenerationManager {
 
     public record Task(UUID id, Type type, String dimension, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ,
                        Status status, String creator, long createdAt, List<UUID> sources, String error) {
-        long chunks() { return (long)(maxChunkX-minChunkX+1) * (maxChunkZ-minChunkZ+1); }
+        long chunks() {
+            long spanX = (long) maxChunkX - minChunkX + 1;
+            long spanZ = (long) maxChunkZ - minChunkZ + 1;
+            return spanX * spanZ;
+        }
+        boolean exceedsLimit() { return spanExceedsLimit(minChunkX, minChunkZ, maxChunkX, maxChunkZ); }
         int minBlockX() { return minChunkX << 4; } int minBlockZ() { return minChunkZ << 4; }
         int maxBlockX() { return (maxChunkX << 4) + 15; } int maxBlockZ() { return (maxChunkZ << 4) + 15; }
         Task withStatus(Status value, String failure) { return new Task(id,type,dimension,minChunkX,minChunkZ,maxChunkX,maxChunkZ,value,creator,createdAt,sources,failure); }
         Task withSources(List<UUID> value) { return new Task(id,type,dimension,minChunkX,minChunkZ,maxChunkX,maxChunkZ,status,creator,createdAt,value,error); }
         boolean mergeable(Task other) {
             if(type!=other.type||!dimension.equals(other.dimension)||minChunkX>other.maxChunkX+1||maxChunkX+1<other.minChunkX||minChunkZ>other.maxChunkZ+1||maxChunkZ+1<other.minChunkZ)return false;
+            if(chunks()+other.chunks()>MAX_TASK_CHUNKS)return false;
             long overlapX=Math.max(0,Math.min(maxChunkX,other.maxChunkX)-Math.max(minChunkX,other.minChunkX)+1L);
             long overlapZ=Math.max(0,Math.min(maxChunkZ,other.maxChunkZ)-Math.max(minChunkZ,other.minChunkZ)+1L);
             long union=chunks()+other.chunks()-overlapX*overlapZ;

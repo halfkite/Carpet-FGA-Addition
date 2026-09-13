@@ -3,7 +3,7 @@ package carpet.fga;
 import carpet.CarpetExtension;
 import carpet.CarpetServer;
 //#if MC >= 1.21 && MC <= 26.2
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 //#endif
 //#if MC >= 1.19
 import carpet.utils.CommandHelper;
@@ -43,8 +43,10 @@ public class FGAExtension implements CarpetExtension {
         registerItemFrameBlockificationObserver();
         registerPlayerLoadDistanceObserver();
         //#if MC >= 1.21 && MC <= 26.2
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                PlayerPossessionManager.disconnected(handler.getPlayer(), server));
+        // Restore swapped body state before vanilla saves player data during shutdown.
+        // Waiting until onServerClosed is too late and can persist the temporary position
+        // of the possessed body as the controller's next-login position.
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> PlayerPossessionManager.clear());
         //#endif
         //#if MC >= 1.21 && MC <= 26.2
         registerNetherPortalLightObserver();

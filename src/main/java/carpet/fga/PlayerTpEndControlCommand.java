@@ -29,17 +29,67 @@ public final class PlayerTpEndControlCommand {
                 .executes(PlayerTpEndControlCommand::help)
                 .then(Commands.literal("help").executes(PlayerTpEndControlCommand::help))
                 .then(Commands.literal("status")
-                        .executes(context -> status(context, self(context)))
-                        .then(target().executes(context -> status(context, target(context)))))
+                        .executes(PlayerTpEndControlCommand::statusSelf)
+                        .then(target().executes(PlayerTpEndControlCommand::statusTarget)))
                 .then(Commands.literal("set")
                         .then(portal().then(value()))
                         .then(target().then(portal().then(value()))))
                 .then(Commands.literal("reset")
-                        .executes(context -> reset(context, self(context), null))
-                        .then(portal().executes(context -> reset(context, self(context), portal(context))))
+                        .executes(PlayerTpEndControlCommand::resetSelf)
+                        .then(portal().executes(PlayerTpEndControlCommand::resetSelfPortal))
                         .then(target()
-                                .executes(context -> reset(context, target(context), null))
-                                .then(portal().executes(context -> reset(context, target(context), portal(context))))));
+                                .executes(PlayerTpEndControlCommand::resetTarget)
+                                .then(portal().executes(PlayerTpEndControlCommand::resetTargetPortal))));
+    }
+
+    // Argument resolution throws IllegalArgumentException, which Brigadier does not translate
+    // into a chat error; every entry point must resolve arguments inside its own try block.
+    private static int statusSelf(CommandContext<CommandSourceStack> context) {
+        try {
+            return status(context, self(context));
+        } catch (Exception exception) {
+            return failure(context, exception);
+        }
+    }
+
+    private static int statusTarget(CommandContext<CommandSourceStack> context) {
+        try {
+            return status(context, target(context));
+        } catch (Exception exception) {
+            return failure(context, exception);
+        }
+    }
+
+    private static int resetSelf(CommandContext<CommandSourceStack> context) {
+        try {
+            return reset(context, self(context), null);
+        } catch (Exception exception) {
+            return failure(context, exception);
+        }
+    }
+
+    private static int resetSelfPortal(CommandContext<CommandSourceStack> context) {
+        try {
+            return reset(context, self(context), portal(context));
+        } catch (Exception exception) {
+            return failure(context, exception);
+        }
+    }
+
+    private static int resetTarget(CommandContext<CommandSourceStack> context) {
+        try {
+            return reset(context, target(context), null);
+        } catch (Exception exception) {
+            return failure(context, exception);
+        }
+    }
+
+    private static int resetTargetPortal(CommandContext<CommandSourceStack> context) {
+        try {
+            return reset(context, target(context), portal(context));
+        } catch (Exception exception) {
+            return failure(context, exception);
+        }
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, String> target() {

@@ -99,6 +99,25 @@ public final class PossessionTest implements ModInitializer {
             check(body.getInventory().getItem(0).is(Items.STONE) && fake.getInventory().getItem(0).is(Items.DIAMOND),
                     "state and inventory swapped");
             check(body.getX() > 11 && fake.getX() < 1, "positions swapped");
+            FGASettings.showControllerPrefix = true;
+            check(body.getName().getString().equals("PossessionBot[Possessor]"), "controlled body displays controller suffix");
+            check(fake.getName().getString().equals("Possessor"), "original body has no target suffix");
+            var display = PlayerPossessionManager.decoratePlayerInfo(body.getUUID(), null,
+                    body.getGameProfile().getName(), server);
+            check(display.getString().equals("PossessionBot[Possessor]"), "tab list uses controlled body direction");
+            check(PlayerPossessionManager.decoratePlayerInfo(body.getUUID(), display,
+                    body.getGameProfile().getName(), server) == display, "existing suffix is not duplicated");
+            check(display.getSiblings().get(0).getStyle().getColor().getValue() == 0xFF5555,
+                    "opening bracket is red");
+            check(display.getSiblings().get(1).getStyle().getColor().getValue() == 0xAAAAAA,
+                    "controller is light gray");
+            check(display.getSiblings().get(2).getStyle().getColor().getValue() == 0xFF5555,
+                    "closing bracket is red");
+            check(PlayerPossessionManager.decoratePlayerInfo(fake.getUUID(), null,
+                    fake.getGameProfile().getName(), server) == null, "controller tab name is undecorated");
+            FGASettings.showControllerPrefix = false;
+            check(body.getName().getString().equals("PossessionBot"), "disabling clears suffix");
+
         });
         STEPS.add(() -> {
             check(PlayerPossessionManager.stop(body, "PossessionBot"), "controller exits by swapped name");
@@ -153,9 +172,64 @@ public final class PossessionTest implements ModInitializer {
             check(PlayerPossessionManager.stop(body, "PossessionBot"), "cross-dimension session exits");
         });
         STEPS.add(() -> {
+            server.getPlayerList().op(body.getGameProfile());
+            CarpetSettings.commandPlayer = "ops";
+            FGASettings.permissionSwapsToo = false;
+            check(PlayerPossessionManager.start(body, fake) == null, "permission-swapping session starts");
+            check(server.getProfilePermissions(body.getGameProfile()) < 2,
+                    "controller receives possessed body's permission");
+            PlayerPossessionManager.tick(server);
+            check(PlayerPossessionManager.isParticipant(body),
+                    "commandPlayer gate keeps the original controller identity");
+            check(PlayerPossessionManager.stop(body, "PossessionBot"), "permission-swapping session exits");
+            server.getPlayerList().deop(body.getGameProfile());
+            CarpetSettings.commandPlayer = "true";
+        });
+        STEPS.add(() -> {
+            server.getPlayerList().op(body.getGameProfile());
+            FGASettings.permissionSwapsToo = true;
+            check(PlayerPossessionManager.start(body, fake) == null, "permission-preserving session starts");
+            check(server.getProfilePermissions(body.getGameProfile()) >= 2,
+                    "controller keeps original permission when permissionSwapsToo is true");
+            check(server.getProfilePermissions(fake.getGameProfile()) < 2,
+                    "target keeps original permission when permissionSwapsToo is true");
+            check(PlayerPossessionManager.stop(body, "PossessionBot"), "permission-preserving session exits");
+            server.getPlayerList().deop(body.getGameProfile());
+            FGASettings.permissionSwapsToo = true;
+        });
+        STEPS.add(() -> {
+            ServerPlayer leaving = add("DisconnectController");
+            ServerPlayer target = add("DisconnectTarget");
+            FGASettings.playerPossession = "true";
+            leaving.teleportTo(server.overworld(), 30, -60, 0, 0, 0);
+            target.teleportTo(server.overworld(), 90, -60, 0, 0, 0);
+            check(PlayerPossessionManager.start(leaving, target) == null, "logout regression starts");
+            // Both bodies move during possession; restoration must not use initial snapshots.
+            target.teleportTo(server.overworld(), 35, -60, 0, 0, 0);
+            leaving.teleportTo(server.overworld(), 95, -60, 0, 0, 0);
+            server.getPlayerList().remove(leaving);
+            check(!PlayerPossessionManager.isParticipant(target), "vanilla removal ends possession");
+            check(Math.abs(leaving.getX() - 35) < 0.01, "departing controller restored to current original body position");
+            check(Math.abs(target.getX() - 95) < 0.01, "target remains at current controlled body position");
+            check(leaving.distanceToSqr(target) > 3000, "logout does not bring the bodies together");
+            server.getPlayerList().remove(target);
+            // Exercise the reported fake-player case through vanilla logout, not a direct manager call.
+            ServerPlayer fakeController = add("FakeDisconnect");
+            fakeController.teleportTo(server.overworld(), 40, -60, 0, 0, 0);
+            fake.teleportTo(server.overworld(), 100, -60, 0, 0, 0);
+            check(PlayerPossessionManager.start(fakeController, fake) == null, "fake logout starts");
+            fake.teleportTo(server.overworld(), 45, -60, 0, 0, 0);
+            fakeController.teleportTo(server.overworld(), 105, -60, 0, 0, 0);
+            server.getPlayerList().remove(fakeController);
+            check(!PlayerPossessionManager.isParticipant(fake), "fake logout ends possession");
+            check(Math.abs(fakeController.getX() - 45) < 0.01, "original body keeps current position on fake logout");
+            check(Math.abs(fake.getX() - 105) < 0.01, "fake remains where it was controlled");
+            FGASettings.playerPossession = "onlyfake";
+        });
+        STEPS.add(() -> {
             check(PlayerPossessionManager.start(body, fake) == null, "death session starts");
-            fake.hurt(fake.damageSources().genericKill(), Float.MAX_VALUE);
-            check(!PlayerPossessionManager.isParticipant(body), "death releases session before drops");
+            fake.kill();
+            check(!PlayerPossessionManager.isParticipant(body), "fake kill releases session");
             FGASettings.playerPossession = "false";
         });
     }

@@ -157,7 +157,7 @@ public final class TrialSpawnerStopManager {
             ResourceKey<LootTable> loot = selected.get();
             while (!access.carpetFga$getDetectedPlayers().isEmpty()) {
                 UUID player = access.carpetFga$getDetectedPlayers().iterator().next();
-                int copies = TrialSpawnerMultiplier.participantWeight(player);
+                int copies = TrialSpawnerMultiplier.rewardCopies(player);
                 for (int i = 0; i < copies; i++) spawner.ejectReward(level, pos, loot);
                 access.carpetFga$getDetectedPlayers().remove(player);
             }
