@@ -13,8 +13,10 @@ Effective versions: `1.21+`. Install FGA on the server; both participants may us
 - `/player <name> possess` follows the PlayerControl reference implementation: it swaps the live entities' game state, identity, position, view, inventory, containers and riding relationship while the controller keeps its own connection and command source.
 - `/player <target-name> possess stop` ends that session for either participant.
 - `playerPossession` defaults to `false`. `true` allows all targets; `onlyfake` restricts everyone, including OPs, to fake targets; `opreal` restricts real targets to OPs; `ops` restricts all possession to OPs. Carpet `commandPlayer` also applies.
-- Both entities and UUIDs remain in place. They continue normal world simulation, and damage, movement, experience and item changes during the session remain with the current entity state. Stopping swaps the states back without copying or writing offline player data. A real target stays connected; its input is blocked, while chat and the stop command remain available.
-- Self-possession, overlapping sessions and nested possession are rejected. Starting closes containers and stops automatic actions and range/sorting tasks; they do not resume on exit. Death, removal, disconnection or loss of permission ends the session.
+- Both entities and UUIDs remain in place. They continue normal world simulation, and damage, movement, experience and item changes during the session remain with the current entity state. Stopping swaps the states back without copying or writing offline player data.
+- Self-possession, overlapping sessions and nested possession are rejected. PlayerControl's fake-player `kill()` lifecycle releases the session; FGA handles disconnects, permission loss and rule shutdown.
+- In Minecraft 1.21.1, logout ends possession before the player is saved and removed. Each body retains its current position when ownership is restored; logout does not bring the bodies together.
+
 - While enabled, the shared `/player` name suggestions are filtered by possession permissions. Participants cannot start or continue Carpet automatic manipulation tasks, while the stop command remains available.
 - No custom payload or persistent possession configuration is added, and offline player data is not edited. See `scripts/tests/possession.md` for manual multiplayer acceptance checks.
 

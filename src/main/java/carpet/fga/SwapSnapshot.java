@@ -2,7 +2,6 @@ package carpet.fga;
 
 //#if MC >= 1.21 && MC <= 26.2
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -11,6 +10,9 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.stats.ServerStatsCounter;
+import carpet.fga.mixin.PossessionStatsCounterAccessor;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -29,7 +31,9 @@ public final class SwapSnapshot {
     private final GameProfile profile;
     private final boolean fallFlying;
     private final boolean wonGame;
+    private final ServerStatsCounter stats;
     private final HumanoidArm mainArm;
+    private final ServerGamePacketListenerImpl connection;
     //#if MC == 1.21.1
     private final boolean noCulling;
     //#else
@@ -69,10 +73,12 @@ public final class SwapSnapshot {
     private final CompoundTag additionalData;
 
     private SwapSnapshot(ServerPlayer player) {
-        this.profile = copyProfile(player.getGameProfile());
+        this.profile = player.getGameProfile();
         this.fallFlying = player.isFallFlying();
         this.wonGame = player.wonGame;
+        this.stats = player.getStats();
         this.mainArm = player.getMainArm();
+        this.connection = player.connection;
         //#if MC == 1.21.1
         this.noCulling = player.noCulling;
         //#endif
@@ -150,7 +156,6 @@ public final class SwapSnapshot {
 
     public void applyTo(ServerPlayer player, GameProfile profileToApply) {
         PlayerSkinRefresher.applyProfileAndRefresh(player, profileToApply);
-        clearRiding(player);
         //#if MC >= 1.21.5
         //$$ copyItemsInto(player.getInventory().getNonEquipmentItems(), mainInventory);
         //$$ player.setItemSlot(EquipmentSlot.FEET, armorInventory.get(0).copy());
@@ -167,7 +172,7 @@ public final class SwapSnapshot {
         //#if MC < 1.21.8
         player.getAttributes().load(attributes.copy());
         //#endif
-        player.setHealth(Math.min(health, player.getMaxHealth()));
+        player.setHealth(health);
         FoodData food = player.getFoodData();
         food.setFoodLevel(foodLevel);
         food.setSaturation(saturationLevel);
@@ -213,6 +218,12 @@ public final class SwapSnapshot {
         if (chatSession != null) player.setChatSession(chatSession);
         abilities.applyTo(player.getAbilities());
         player.onUpdateAbilities();
+
+        for (var entry : ((PossessionStatsCounterAccessor) stats).fga$stats().object2IntEntrySet()) {
+            player.getStats().setValue(player, entry.getKey(), entry.getIntValue());
+        }
+        player.getStats().sendStats(player);
+        player.getStats().markAllDirty();
     }
 
     private void applyRiding(ServerPlayer player) {
@@ -234,10 +245,6 @@ public final class SwapSnapshot {
         }
     }
 
-    private static void clearRiding(ServerPlayer player) {
-        player.stopRiding();
-        for (Entity passenger : List.copyOf(player.getPassengers())) passenger.stopRiding();
-    }
 
     private void copyEnderChest(ServerPlayer player) {
         for (int i = 0; i < Math.min(player.getEnderChestInventory().getContainerSize(), enderChest.size()); i++) {
@@ -253,16 +260,6 @@ public final class SwapSnapshot {
         for (int i = 0; i < target.size(); i++) {
             target.set(i, i < source.size() ? source.get(i).copy() : ItemStack.EMPTY);
         }
-    }
-
-    private static GameProfile copyProfile(GameProfile source) {
-        //#if MC >= 1.21.10
-        //$$ return new GameProfile(source.id(), source.name(), source.properties());
-        //#else
-        GameProfile copy = new GameProfile(source.getId(), source.getName());
-        copy.getProperties().putAll(source.getProperties());
-        return copy;
-        //#endif
     }
 
     private record AbilitiesState(boolean invulnerable, boolean flying, boolean mayfly, boolean instabuild,

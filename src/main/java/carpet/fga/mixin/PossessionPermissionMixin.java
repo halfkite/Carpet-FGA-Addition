@@ -3,6 +3,7 @@ package carpet.fga.mixin;
 //#if MC >= 1.21 && MC <= 26.2
 import carpet.fga.FGASettings;
 import carpet.fga.PlayerPossessionManager;
+import carpet.fga.PossessionPermissionContext;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,18 +23,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.UUID;
 
 /**
- * Applies the requested permission policy while the live player bodies are swapped.
- * Only the controlling side adopts the possessed body's permission level. The watched
- * target's own connection always keeps its original permission level, so a possession
- * session can never hand the target's permissions back to the target's connection
- * (previously an operator possessing a real player let that player run commands with
- * the operator's permission level).
+ * Applies the possession permission policy while live player bodies are swapped.
+ * When enabled, the controller keeps the controller permission; when disabled, the
+ * controller uses the possessed target permission. The target connection keeps its
+ * own permission level.
  */
 @Mixin(MinecraftServer.class)
 public abstract class PossessionPermissionMixin {
     private static final ThreadLocal<Boolean> FGA_PERMISSION_REENTRY =
             ThreadLocal.withInitial(() -> false);
-
     @Shadow
     public abstract PlayerList getPlayerList();
 
@@ -41,7 +39,8 @@ public abstract class PossessionPermissionMixin {
     //$$ @Inject(method = "getProfilePermissions", at = @At("RETURN"), cancellable = true)
     //$$ private void fga$permissionForPossession(NameAndId profile,
     //$$         CallbackInfoReturnable<LevelBasedPermissionSet> callback) {
-    //$$     if (!FGASettings.permissionSwapsToo || FGA_PERMISSION_REENTRY.get()) return;
+    //$$     if (FGASettings.permissionSwapsToo || FGA_PERMISSION_REENTRY.get()
+    //$$             || PossessionPermissionContext.useOriginalPermission()) return;
     //$$     UUID id = profile.id();
     //$$     if (id == null || !PlayerPossessionManager.isControllerId(id)) return;
     //$$     UUID partnerId = PlayerPossessionManager.swapPartner(id);
@@ -58,7 +57,8 @@ public abstract class PossessionPermissionMixin {
     //#elseif MC >= 1.21.10
     //$$ @Inject(method = "getProfilePermissions", at = @At("RETURN"), cancellable = true)
     //$$ private void fga$permissionForPossession(NameAndId profile, CallbackInfoReturnable<Integer> callback) {
-    //$$     if (!FGASettings.permissionSwapsToo || FGA_PERMISSION_REENTRY.get()) return;
+    //$$     if (FGASettings.permissionSwapsToo || FGA_PERMISSION_REENTRY.get()
+    //$$             || PossessionPermissionContext.useOriginalPermission()) return;
     //$$     UUID id = profile.id();
     //$$     if (id == null || !PlayerPossessionManager.isControllerId(id)) return;
     //$$     UUID partnerId = PlayerPossessionManager.swapPartner(id);
@@ -75,7 +75,8 @@ public abstract class PossessionPermissionMixin {
     //#else
     @Inject(method = "getProfilePermissions", at = @At("RETURN"), cancellable = true)
     private void fga$permissionForPossession(GameProfile profile, CallbackInfoReturnable<Integer> callback) {
-        if (!FGASettings.permissionSwapsToo || FGA_PERMISSION_REENTRY.get()) return;
+        if (FGASettings.permissionSwapsToo || FGA_PERMISSION_REENTRY.get()
+                || PossessionPermissionContext.useOriginalPermission()) return;
         UUID id = profile.getId();
         if (id == null || !PlayerPossessionManager.isControllerId(id)) return;
         UUID partnerId = PlayerPossessionManager.swapPartner(id);

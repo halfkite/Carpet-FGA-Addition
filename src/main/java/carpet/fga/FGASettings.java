@@ -1283,6 +1283,26 @@ public class FGASettings {
     }
     //#endif
 
+    //#if MC >= 1.21
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true", "all"},
+        strict = false,
+        validators = FGASettings.GrassBonemealAnyFlowerValidator.class
+    )
+    public static String grassBonemealAnyFlower = "false";
+
+    public static class GrassBonemealAnyFlowerValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (Set.of("false", "true", "all").contains(value)) return value;
+            Messenger.m(source, "r grassBonemealAnyFlower must be false, true, or all");
+            return null;
+        }
+    }
+    //#endif
+
 
 
     //#if MC >= 1.19
