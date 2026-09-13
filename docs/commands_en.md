@@ -1,6 +1,6 @@
 # Carpet FGA Addition Commands
 
-> Documentation version: `1.5.8`
+> Documentation version: `1.5.9`
 
 ## Player and fake-player commands (player)
 
