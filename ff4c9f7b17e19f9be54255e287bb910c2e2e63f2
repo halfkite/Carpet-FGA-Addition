@@ -1,0 +1,16 @@
+{
+  "curseforge_project_id": "1660840",
+  "files": [
+    {
+      "build_project": "1.21.1",
+      "curseforge_file_id": "8893732",
+      "github_asset_id": 567495997,
+      "jar_name": "carpet-fga-addition-1.5.11-mc1.21-1.21.1.jar",
+      "sha256": "3f7e7271da69253ba143e1c939a476cfbc56febc4bbc983d05a72859fff6d96a"
+    }
+  ],
+  "release_commit": "ff4c9f7b17e19f9be54255e287bb910c2e2e63f2",
+  "repository": "halfkite/Carpet-FGA-Addition",
+  "schema": 1,
+  "tag": "1.5.11"
+}
