@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga;
 
 import com.yiyihehe.quickcraft.litematica.QuickLitematicaEntityPlacementPayloads;
@@ -646,7 +646,7 @@ public final class QuickCraftEntityPlacementServer {
         int count = countEntities(root, "copper_golem");
         for (int index = 0; index < count; index++) {
             ItemStack stack = new ItemStack(copperChest);
-            if (!FGACompat.inventory(player).add(stack) && !stack.isEmpty()) player.drop(stack, false);
+            if (!FGACompat.inventory(player).add(stack) && !stack.isEmpty()) FGACompat.drop(player, stack);
         }
     }
 

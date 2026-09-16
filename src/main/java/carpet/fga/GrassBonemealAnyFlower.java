@@ -8,6 +8,9 @@ import net.minecraft.data.worldgen.placement.VegetationPlacements;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.BonemealableBlock;
+//#if MC >= 26.3
+//$$ import net.minecraft.world.level.block.BonemealSource;
+//#endif
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoublePlantBlock;
@@ -88,13 +91,17 @@ public final class GrassBonemealAnyFlower {
 
             BlockState targetState = level.getBlockState(target);
             if (targetState.is(Blocks.SHORT_GRASS) && random.nextInt(10) == 0) {
-                //#if MC >= 1.21.2
+                //#if MC < 26.3
+                if (((BonemealableBlock) Blocks.SHORT_GRASS)
+                        .isValidBonemealTarget(level, target, targetState)) {
+                    ((BonemealableBlock) Blocks.SHORT_GRASS)
+                            .performBonemeal(level, random, target, targetState);
+                }
+                //#else
                 //$$ if (((BonemealableBlock) Blocks.SHORT_GRASS)
-                //$$         .isValidBonemealTarget(level, target, targetState)) {
-                //#endif
-                ((BonemealableBlock) Blocks.SHORT_GRASS)
-                        .performBonemeal(level, random, target, targetState);
-                //#if MC >= 1.21.2
+                //$$         .isValidBonemealTarget(level, target, targetState, BonemealSource.INTERACTION)) {
+                //$$     ((BonemealableBlock) Blocks.SHORT_GRASS)
+                //$$             .performBonemeal(level, random, target, targetState, BonemealSource.INTERACTION);
                 //$$ }
                 //#endif
             }

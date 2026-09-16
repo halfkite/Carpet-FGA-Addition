@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -202,7 +202,11 @@ public final class SwapSnapshot {
         //#endif
         applyRiding(player);
         if (sleepingPos != null) {
+            //#if MC < 26.3
             player.startSleepInBed(sleepingPos);
+            //#else
+            //$$ player.startSleeping(sleepingPos);
+            //#endif
         } else {
             player.clearSleepingPos();
             player.stopSleepInBed(true, true);

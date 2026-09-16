@@ -28,6 +28,9 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 //#if MC >= 1.19
@@ -45,12 +48,12 @@ public class FGASettings {
     /** FGA 自定义分类，会出现在 /carpet 菜单中作为可点击选项 */
     public static final String FGA = "FGA";
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
             options = {"false", "true", "onlyfake", "opreal", "ops"})
     public static String playerPossession = "false";
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
             options = {"false", "true"})
     public static boolean showControllerPrefix = false;
@@ -61,7 +64,7 @@ public class FGASettings {
     //#endif
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
@@ -102,6 +105,92 @@ public class FGASettings {
     //$$ )
     //#endif
     public static int fakePlayerNameLength = -1;
+
+    //#if MC >= 1.21
+    //#if MC >= 1.19
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "[]", "[bot_,hsds]"},
+        strict = false,
+        validators = FGASettings.FakePlayerNamePresetsValidator.class,
+        conditions = FGASettings.Minecraft1_21_1OrNewerCondition.class
+    )
+    //#else
+    //$$ @Rule(
+        //$$ desc = "Customizes the fake-player name suggestions shown by /player",
+        //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "[]", "[bot_,hsds]"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.FakePlayerNamePresetsValidator.class,
+        //$$ condition = FGASettings.Minecraft1_21_1OrNewerCondition.class
+    //$$ )
+    //#endif
+    public static String fakePlayerNamePresets = "false";
+
+    public static class FakePlayerNamePresetsValidator extends
+            //#if MC >= 1.19
+            Validator<String> {
+            //#else
+            //$$ Validator<String> {
+            //#endif
+        @Override
+        public String validate(CommandSourceStack source,
+                               //#if MC >= 1.19
+                               CarpetRule<String> currentRule,
+                               //#else
+                               //$$ ParsedRule<String> currentRule,
+                               //#endif
+                               String newValue, String userInput) {
+            try {
+                return normalizeFakePlayerNamePresets(newValue);
+            } catch (IllegalArgumentException exception) {
+                Messenger.m(source, "r " + exception.getMessage());
+                return null;
+            }
+        }
+    }
+
+    public static List<String> fakePlayerNamePresetValues() {
+        return parseFakePlayerNamePresets(fakePlayerNamePresets);
+    }
+
+    private static String normalizeFakePlayerNamePresets(String raw) {
+        String value = raw == null ? "" : raw.trim();
+        if (value.equalsIgnoreCase("false")) return "false";
+        if (value.length() < 2 || value.charAt(0) != '[' || value.charAt(value.length() - 1) != ']') {
+            throw new IllegalArgumentException("fakePlayerNamePresets must be false or [name,name]");
+        }
+        String body = value.substring(1, value.length() - 1).trim();
+        if (body.isEmpty()) return "[]";
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        for (String rawName : body.split(",", -1)) {
+            String name = rawName.trim();
+            if (name.isEmpty()) throw new IllegalArgumentException("fake-player preset names cannot be empty");
+            if (name.length() > 128) throw new IllegalArgumentException("fake-player preset names cannot exceed 128 characters");
+            for (int i = 0; i < name.length(); i++) {
+                char c = name.charAt(i);
+                if (Character.isWhitespace(c) || c == '[' || c == ']' || c == ',') {
+                    throw new IllegalArgumentException("fake-player preset names cannot contain whitespace, commas, or brackets");
+                }
+            }
+            names.add(name);
+        }
+        return "[" + String.join(",", names) + "]";
+    }
+
+    private static List<String> parseFakePlayerNamePresets(String raw) {
+        String normalized;
+        try {
+            normalized = normalizeFakePlayerNamePresets(raw);
+        } catch (IllegalArgumentException ignored) {
+            return List.of();
+        }
+        if (normalized.equalsIgnoreCase("false") || normalized.equals("[]")) return List.of();
+        String body = normalized.substring(1, normalized.length() - 1);
+        List<String> names = new ArrayList<>();
+        for (String name : body.split(",", -1)) names.add(name);
+        return List.copyOf(names);
+    }
+    //#endif
 
     public static class Minecraft1_18OrNewerCondition implements
             //#if MC >= 1.19
@@ -279,7 +368,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC >= 1.21 && MC <= 26.2
+            //#if MC >= 1.21 && MC <= 26.3
             return true;
             //#else
             //$$ return false;
@@ -300,7 +389,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC >= 1.20.1 && MC <= 26.2
+            //#if MC >= 1.20.1 && MC <= 26.3
             return true;
             //#else
             //$$ return false;
@@ -321,7 +410,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC >= 1.21 && MC <= 26.2
+            //#if MC >= 1.21 && MC <= 26.3
             return true;
             //#else
             //$$ return false;
@@ -344,7 +433,7 @@ public class FGASettings {
     //#endif
     public static boolean deepslateStonecuttingRecipes = false;
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
@@ -361,7 +450,7 @@ public class FGASettings {
     public static boolean anvilNoPriorWorkPenalty = false;
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "0", "1"},
@@ -414,7 +503,7 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     public static final String EXPERIENCE_LEVEL_COST_29_30 = "29-30";
     public static final String EXPERIENCE_LEVEL_COST_0_1 = "0-1";
     private static final String LEGACY_EXPERIENCE_LEVEL_COST_29_30 = "30级后每级升级消耗经验与29到30一样";
@@ -503,7 +592,7 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.20.1 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
@@ -520,7 +609,7 @@ public class FGASettings {
     public static boolean woodStonecuttingRecipes = false;
     //#endif
 
-    //#if MC >= 1.20.1 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"}
@@ -548,7 +637,7 @@ public class FGASettings {
     public static boolean villagerUpgradeWhileTrading = false;
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
         strict = false,
@@ -599,7 +688,7 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.20.1 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
@@ -636,7 +725,7 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"1", "10", "50", "100", "1000", "10000"},
@@ -770,7 +859,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC >= 1.20.1 && MC <= 26.2
+            //#if MC >= 1.20.1 && MC <= 26.3
             return true;
             //#else
             //$$ return false;
@@ -808,7 +897,7 @@ public class FGASettings {
         }
     }
 
-    //#if MC >= 1.20.1 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "[]"},
@@ -929,7 +1018,7 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
@@ -1031,6 +1120,13 @@ public class FGASettings {
     //$$ )
     //#endif
     public static boolean recipeBookAlwaysUnlocked = false;
+
+    //#if MC >= 1.21 && MC <= 26.3
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean enchantedGoldenCarrot = false;
+    //#endif
 
     // Kept for binary/source compatibility with the disabled progress optimizer; it is not a Carpet rule.
     public static String inventoryAdvancementOptimization = "false";
@@ -1134,7 +1230,7 @@ public class FGASettings {
     //#endif
     public static boolean voidWorldGeneration = false;
 
-    //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
+    //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
@@ -1202,7 +1298,7 @@ public class FGASettings {
     //$$ public static boolean fullShulkerBoxCrafting = false;
     //#endif
 
-    //#if MC >= 1.20.1 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FAKE_PLAYER_ITEM_SORT},
             options = {"false", "true"}, strict = false, conditions = Minecraft1_20_1OrNewerCondition.class)
@@ -1218,7 +1314,7 @@ public class FGASettings {
     //#endif
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
@@ -1263,7 +1359,7 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "onlynew"},
         strict = false,
@@ -1551,7 +1647,7 @@ public class FGASettings {
 
     private static volatile Set<ResourceLocation> preStackMobTypes = Set.of();
 
-    //#if MC >= 1.20.1 && MC <= 26.2
+    //#if MC >= 1.20.1 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"},
@@ -1637,7 +1733,7 @@ public class FGASettings {
 
     public static Double preStackEntityRange(Entity entity) {
         ResourceLocation id = preStackEntityId(entity);
-        //#if MC >= 1.20.1 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.3
         if (preStackDroppedItems) {
             Double containerConfigured = DropPreStackConfig.containerEntityRange(id);
             if (containerConfigured != null) return containerConfigured;
@@ -1721,7 +1817,7 @@ public class FGASettings {
             try {
                 Set<ResourceLocation> parsed = parsePreStackMobTypes(newValue, source);
                 preStackMobTypes = parsed;
-                //#if MC <= 26.2
+                //#if MC <= 26.3
                 DeathDropPreStackManager.clear();
                 //#endif
                 if (source != null && !parsed.isEmpty()) {
@@ -1745,7 +1841,7 @@ public class FGASettings {
                                //#endif
                                Double newValue, String userInput) {
             if (newValue != null && Double.isFinite(newValue) && newValue >= 0.0D && newValue <= 16.0D) {
-                //#if MC <= 26.2
+                //#if MC <= 26.3
                 DeathDropPreStackManager.clear();
                 //#endif
                 if (source != null) {
@@ -1759,7 +1855,7 @@ public class FGASettings {
     }
 
     public static int effectiveDroppedItemStackLimit(ItemStack stack) {
-        //#if MC <= 26.2
+        //#if MC <= 26.3
         //$$ return DroppedItemStackLimitConfig.effectiveLimit(stack);
         //#elseif MC >= 1.21.4
         //$$ return stack.getMaxStackSize();
@@ -1793,7 +1889,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC <= 26.2
+            //#if MC <= 26.3
             //$$ return true;
             //#elseif MC >= 1.21.4
             //$$ return false;
@@ -1858,7 +1954,7 @@ public class FGASettings {
                 //#else
                 //$$ isTrue() {
                 //#endif
-            //#if MC <= 26.2
+            //#if MC <= 26.3
             //$$ return true;
             //#elseif MC >= 1.21.4
             //$$ return false;
@@ -1929,7 +2025,7 @@ public class FGASettings {
                 || zombifiedPiglinDropReduction.equals("all");
     }
 
-    //#if MC >= 1.21 && MC <= 26.2
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
@@ -1949,20 +2045,28 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC >= 1.19
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
-        options = {"false", "[ironBoots]", "[potions]", "[ironBoots,potions]"},
+        options = {"false", "true"},
         strict = false,
         validators = FGASettings.PiglinBarterExclusionsValidator.class
     )
+    //#else
+    //#if MC >= 1.19
+    //$$ @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        //$$ options = {"false", "[ironBoots]", "[potions]", "[ironBoots,potions]"},
+        //$$ strict = false,
+        //$$ validators = FGASettings.PiglinBarterExclusionsValidator.class
+    //$$ )
     //#else
     //$$ @Rule(
         //$$ desc = "自定义去除猪灵交易返回的指定物品",
         //$$ category = {FGA, FEATURE},
         //$$ options = {"false", "[ironBoots]", "[potions]", "[ironBoots,potions]"},
         //$$ strict = false,
-        //$$ validate = FGASettings.PiglinBarterExclusionsValidator.class
+    //$$ validate = FGASettings.PiglinBarterExclusionsValidator.class
     //$$ )
+    //#endif
     //#endif
     public static String piglinBarterItemExclusions = "false";
 
@@ -1974,8 +2078,11 @@ public class FGASettings {
         }
     }
 
-    private static Set<ResourceLocation> parsePiglinBarterItemExclusions(String value) {
+    static Set<ResourceLocation> parsePiglinBarterItemExclusions(String value) {
         if (value.equalsIgnoreCase("false")) {
+            return Set.of();
+        }
+        if (value.equalsIgnoreCase("true")) {
             return Set.of();
         }
         if (value.length() < 3 || value.charAt(0) != '[' || value.charAt(value.length() - 1) != ']') {
@@ -2028,6 +2135,9 @@ public class FGASettings {
                                //#endif
                                String newValue, String userInput) {
             try {
+                if ("true".equalsIgnoreCase(newValue) || "false".equalsIgnoreCase(newValue)) {
+                    return newValue.toLowerCase(java.util.Locale.ROOT);
+                }
                 Set<ResourceLocation> exclusions = parsePiglinBarterItemExclusions(newValue);
                 if (exclusions.containsAll(VANILLA_PIGLIN_BARTER_ITEMS)) {
                     Messenger.m(source, "r 不能排除全部原版猪灵交易物品");

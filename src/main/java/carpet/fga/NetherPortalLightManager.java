@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga;
 
 import carpet.fga.mixin.ChunkMapLoadedChunksAccessor;
@@ -44,9 +44,9 @@ public final class NetherPortalLightManager {
     //#endif
     private static final Map<ServerLevel, Set<Long>> PENDING_CLIENT_REFRESHES = new ConcurrentHashMap<>();
     /**
-     * Immutable packed-position snapshots per level, published by the main thread after every
-     * portal set change. The async light worker reads these instead of touching the (main-thread
-     * confined) saved data or the mutable portal set.
+     * Concurrent packed-position snapshots per level. The main thread updates the set in place
+     * for each portal transition, while the async light worker only performs contains lookups.
+     * This avoids rebuilding and parsing the complete saved-data set during large pastes.
      */
     private static final Map<ServerLevel, Set<Long>> PORTAL_SNAPSHOTS = new ConcurrentHashMap<>();
     private static boolean clientRefreshArmed;
@@ -79,7 +79,7 @@ public final class NetherPortalLightManager {
         if (changed) portalData.setDirty();
         //#endif
         if (changed) {
-            publishSnapshot(level);
+            updateSnapshot(level, position, isPortal);
             level.getChunkSource().getLightEngine().checkBlock(position);
             //#if MC >= 26.1
             //$$ queueClientRefresh(level, ChunkPos.containing(position));
@@ -187,11 +187,13 @@ public final class NetherPortalLightManager {
         publishSnapshot(level);
     }
 
-    /** Main thread only: publishes an immutable packed-position snapshot for the light worker. */
+    /** Rebuilds a level snapshot once, such as during startup or rule activation. */
     private static void publishSnapshot(ServerLevel level) {
         PortalData portalData = data(level);
         String prefix = level.dimension().location() + "|";
-        Set<Long> packed = new HashSet<>();
+        Set<Long> packed = PORTAL_SNAPSHOTS.computeIfAbsent(level,
+                ignored -> ConcurrentHashMap.newKeySet());
+        packed.clear();
         for (String entry : portalData.portals) {
             if (!entry.startsWith(prefix)) continue;
             try {
@@ -199,7 +201,15 @@ public final class NetherPortalLightManager {
             } catch (NumberFormatException ignored) {
             }
         }
-        PORTAL_SNAPSHOTS.put(level, Set.copyOf(packed));
+    }
+
+    /** Updates one position without scanning or parsing the complete saved-data set. */
+    private static void updateSnapshot(ServerLevel level, BlockPos position, boolean isPortal) {
+        Set<Long> snapshot = PORTAL_SNAPSHOTS.computeIfAbsent(level,
+                ignored -> ConcurrentHashMap.newKeySet());
+        long packedPosition = position.asLong();
+        if (isPortal) snapshot.add(packedPosition);
+        else snapshot.remove(packedPosition);
     }
 
     private static void queueClientRefresh(ServerLevel level, ChunkPos chunkPos) {

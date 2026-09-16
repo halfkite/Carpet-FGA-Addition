@@ -1,4 +1,4 @@
-//#if MC <= 26.2
+//#if MC <= 26.3
 package carpet.fga;
 
 import com.google.gson.Gson;
@@ -171,7 +171,7 @@ public final class DroppedItemStackLimitConfig {
 
     private static int scopedLimit(int configured, ItemStack stack) {
         int vanilla = stack.getMaxStackSize();
-        //#if MC >= 1.21.1 && MC <= 26.2
+        //#if MC >= 1.21.1 && MC <= 26.3
         if (!FGASettings.isDroppedItemStackLimitEnabled() || loadFailed) {
             return vanilla;
         }

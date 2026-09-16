@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;

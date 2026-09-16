@@ -67,6 +67,16 @@ Vanilla player names are limited to 16 characters. This rule changes the limit t
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
 
+### Custom Fake Player Presets(fakePlayerNamePresets)
+
+Customizes the fake-player name suggestions after `/player`; `false` keeps Carpet''s default Steve and Alex, while `[name,name]` replaces those presets and retains online-player and possession-target suggestions. This only changes suggestions and does not restrict manually entered names
+
+- Type: `String`
+- Default: `false`
+- Options: `false`, `[]`, `[bot_,hsds]`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21+`
+
 ### Fake Player Range Control(fakePlayerRangeControl) · [Related command](commands_en.md#cmd-player-range)
 
 Enables area placement, right-click block interaction, area breaking, and related fake-player range features (incomplete and not recommended for general use)
@@ -126,6 +136,19 @@ Automatically grants every registered recipe when a player joins, with a one-min
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
+
+### Enchanted Golden Carrot(enchantedGoldenCarrot)
+
+Adds two shapeless recipes: 8 gold ingots plus 1 carrot, or 7 gold ingots plus 1 normal golden carrot<br>
+The result uses the vanilla golden carrot with an enchantment glint, can be eaten at full hunger, and restores hunger and saturation to 20<br>
+false: disables the recipes and makes existing enchanted golden carrots use normal golden carrot eating conditions and food restoration<br>
+true: enables the recipes
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21-26.3`
 
 ### Inventory Advancement Optimization(inventoryAdvancementOptimization)
 
@@ -245,7 +268,7 @@ Controls Nether portal light emission<br>`false`: keeps vanilla behavior<br>`tru
 - Default: `false`
 - Options: `false`, `true`, `onlynew`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1-26.2`
+- Effective versions: `1.21.1-26.3`
 
 ### Any Flower Bone Meal(grassBonemealAnyFlower)
 
@@ -449,7 +472,7 @@ Uses the minimum vanilla random input price when an unemployed villager gains a 
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Survival`
-- Effective versions: `1.21.1-26.2`
+- Effective versions: `1.21.1-26.3`
 
 ### Villagers Only Sell Max-Level Enchanted Books(villagerOnlyMaxEnchantmentBooks)
 
@@ -459,7 +482,7 @@ Newly generated enchanted books promote their rolled enchantments directly to th
 - Default: `false`
 - Options: `false`, `onlyvanilla`, `more`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1-26.2`
+- Effective versions: `1.21.1-26.3`
 
 ### Villagers Only Sell Max-Level Enchanted Weapons and Equipment(villagerOnlyMaxEnchantmentEquipment)
 
@@ -469,7 +492,7 @@ Newly generated enchanted weapons and equipment promote their rolled enchantment
 - Default: `false`
 - Options: `false`, `onlyvanilla`, `more`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1-26.2`
+- Effective versions: `1.21.1-26.3`
 
 ### Villager Performance Optimization(villagerPerformanceOptimization) · [Related command](commands_en.md#cmd-villager-performance)
 
@@ -551,15 +574,20 @@ Configures death drops to remove per entity<br>`false`: disables the command<br>
 - Categories: `FGA`, `Survival`, `Command`
 - Effective versions: `1.21+`
 
-### Piglin Barter Item Exclusions(piglinBarterItemExclusions)
+### Piglin Barter Item Customization(piglinBarterItemExclusions) · [Related command](commands_en.md#cmd-piglin-barter-customization)
 
-Customizes removal of selected piglin barter results<br>`false`: keeps vanilla bartering<br>`[ironBoots]`: removes iron boots<br>`[potions]`: removes regular, splash, and lingering potions<br>`[ironBoots,potions]`: removes both iron boots and potions<br>Item ID list: custom items to remove; the `minecraft` namespace may be omitted
+When enabled, use /fga piglinBarterItemExclusions list to view and edit the current piglin barter loot table<br>
+false: disables customization and keeps vanilla bartering<br>
+true: enables custom enabled state, probability, and quantity for barter entries<br>
+The list shows concrete loot variants with the client language name and English ID, with editable probability, quantity range, disable or enable, and reset actions on each row<br>
+If enabled probabilities total less than 100%, the remainder produces an empty barter; totals above 100% are normalized proportionally<br>
+Legacy `[ironBoots]`, `[potions]`, and item ID lists are migrated to the world configuration on first load
 
-- Type: `List`
+- Type: `Boolean`
 - Default: `false`
-- Options: `false`, `ironBoots`, `potions`, `item ID list`
-- Categories: `FGA`, `Survival`
-- Effective versions: `1.16.5+`
+- Options: `false`, `true`
+- Categories: `FGA`, `Survival`, `Command`
+- Effective versions: `1.21-26.3`
 
 ## Deepslate stonecutting and player loading
 

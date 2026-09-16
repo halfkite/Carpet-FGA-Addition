@@ -67,6 +67,16 @@ true 使用操控者自己的命令权限，false 使用被操控者的命令权
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21+`
 
+### 自定义假人预设名(fakePlayerNamePresets)
+
+自定义 `/player` 名称参数的假人预设补全；`false` 保留 Carpet 默认的 Steve 和 Alex，填写 `[名称,名称]` 后替换这两个预设并保留在线玩家与夺舍目标补全，仅影响提示，不限制手动输入
+
+- 类型：`字符串`
+- 默认值：`false`
+- 参考选项：`false`、`[]`、`[bot_,hsds]`
+- 分类：`FGA`、`特性`
+- 生效版本：`1.21+`
+
 ### 假人范围控制(fakePlayerRangeControl) · [相关指令](commands.md#cmd-player-range)
 
 启用假人的区域放置、方块右键、区域破坏等功能(功能未完善，不建议使用)
@@ -132,6 +142,19 @@ adaptive：第一次召唤保持原行为；30 秒内第二次召唤开启 2 分
 - 参考选项：`false`、`true`
 - 分类：`FGA`，`特性`
 - 生效版本：`1.21+`
+
+### 附魔金胡萝卜(enchantedGoldenCarrot)
+
+开启后提供两种无序配方：8 个金锭加 1 个胡萝卜，或 7 个金锭加 1 个普通金胡萝卜<br>
+产物使用原版金胡萝卜并带有附魔外观，可在饱食度满时食用，食用后饱食度与饱和度均恢复到 20<br>
+false：关闭配方，已有附魔金胡萝卜按普通金胡萝卜的进食条件和恢复效果处理<br>
+true：启用配方
+
+- 类型：`布尔`
+- 默认值：`false`
+- 参考选项：`false`、`true`
+- 分类：`FGA`，`特性`
+- 生效版本：`1.21-26.3`
 
 ### 背包进度触发优化(inventoryAdvancementOptimization)
 
@@ -278,7 +301,7 @@ onlynew：仅规则启用新生成的地狱门无光照<br>
 - 默认值：`false`
 - 参考选项：`false`、`true`、`onlynew`
 - 分类：`FGA`，`特性`
-- 生效版本：`1.21.1-26.2`
+- 生效版本：`1.21.1-26.3`
 
 ### 骨粉催任意花(grassBonemealAnyFlower)
 
@@ -512,7 +535,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`，`生存`
-- 生效版本：`1.21.1-26.2`
+- 生效版本：`1.21.1-26.3`
 
 ### 村民只售最高级附魔书(villagerOnlyMaxEnchantmentBooks)
 
@@ -522,7 +545,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 - 默认值：`false`
 - 参考选项：`false`、`onlyvanilla`、`more`
 - 分类：`FGA`，`特性`
-- 生效版本：`1.21.1-26.2`
+- 生效版本：`1.21.1-26.3`
 
 ### 村民只售最高级附魔武器装备(villagerOnlyMaxEnchantmentEquipment)
 
@@ -532,7 +555,7 @@ false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29�
 - 默认值：`false`
 - 参考选项：`false`、`onlyvanilla`、`more`
 - 分类：`FGA`，`特性`
-- 生效版本：`1.21.1-26.2`
+- 生效版本：`1.21.1-26.3`
 
 ### 村民性能优化(villagerPerformanceOptimization) · [相关指令](commands.md#cmd-villager-performance)
 
@@ -635,22 +658,20 @@ ops：需要 OP 2 及以上<br>
 - 分类：`FGA`，`生存`，`命令`
 - 生效版本：`1.21+`
 
-### 猪灵交易物品自定义去除(piglinBarterItemExclusions)
+### 猪灵交易物品自定义(piglinBarterItemExclusions) · [相关指令](commands.md#cmd-piglin-barter-customization)
 
-自定义去除猪灵交易返回的指定物品<br>
-false：保持原版交易<br>
-`[ironBoots]`：去除铁靴子<br>
-`[potions]`：去除普通、喷溅和滞留药水<br>
-`[ironBoots,potions]`：同时去除铁靴子和药水<br>
-物品 ID 列表：自定义去除物品，可省略 `minecraft` 命名空间
+开启后通过 /fga piglinBarterItemExclusions list 查看并编辑当前猪灵交易战利品表<br>
+false：关闭自定义，完全使用原版交易<br>
+true：启用交易物品的启用状态、交易概率和交易数量自定义<br>
+列表按具体战利品变体显示客户端语言名称和英文 ID，每行提供概率、数量范围、删除或添加和重置操作<br>
+概率总和不足 100% 时剩余部分为空交易，超过 100% 时按比例归一化<br>
+旧版 `[ironBoots]`、`[potions]` 或物品 ID 列表会在首次加载时迁移到世界配置
 
-- 类型：`列表`
+- 类型：`布尔值`
 - 默认值：`false`
-- 参考选项：`false`、`ironBoots`、`potions`、物品 ID 列表`
-- 分类：`FGA`，`生存`
-- 生效版本：`1.16.5+`
-
-
+- 参考选项：`false`、`true`
+- 分类：`FGA`，`生存`，`命令`
+- 生效版本：`1.21-26.3`
 
 ## 深板岩切石与玩家加载距离
 
@@ -732,7 +753,7 @@ ops：需要 OP 2 及以上<br>
 
 ## 1.21+ 假人全物品分类
 
-以下规则在 Minecraft `1.21-26.2` 注册：
+以下规则在 Minecraft `1.21-26.3` 注册：
 
 ### 假人物品分类(fakePlayerItemSort) · [相关指令](commands.md#cmd-fake-player-item-sort)
 

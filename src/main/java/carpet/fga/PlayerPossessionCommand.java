@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -16,17 +16,30 @@ public final class PlayerPossessionCommand {
     public static Collection<String> suggestNames(CommandSourceStack source, Collection<String> original) {
         ServerPlayer actor = source.getPlayer();
         var names = new LinkedHashSet<String>();
+        names.addAll(original);
+        var customPresets = FGASettings.fakePlayerNamePresetValues();
+        if (!customPresets.isEmpty() || !"false".equalsIgnoreCase(FGASettings.fakePlayerNamePresets)) {
+            // Carpet's built-in suggestions are only fake-player presets. Keep online
+            // players intact, then replace the built-in names with the configured list.
+            if (source.getServer().getPlayerList().getPlayerByName("Steve") == null) names.remove("Steve");
+            if (source.getServer().getPlayerList().getPlayerByName("Alex") == null) names.remove("Alex");
+            names.addAll(customPresets);
+        }
+        boolean customConfigured = !"false".equalsIgnoreCase(FGASettings.fakePlayerNamePresets);
         if (actor == null || "false".equals(FGASettings.playerPossession) && !PlayerPossessionManager.isParticipant(actor)) {
-            return original;
-        } else {
-            for (ServerPlayer target : source.getServer().getPlayerList().getPlayers()) {
-                if (PlayerPossessionManager.isSessionTarget(actor, target)
-                        || actor != target && !PlayerPossessionManager.isParticipant(target) && PlayerPossessionManager.canStart(actor, target)) {
-                    names.add(target.getScoreboardName());
-                }
+            return names;
+        }
+        // Keep the current possession target filtering, while retaining configured
+        // fake-player presets so /player <preset> remains discoverable.
+        var possessionNames = new LinkedHashSet<String>();
+        if (customConfigured) possessionNames.addAll(customPresets);
+        for (ServerPlayer target : source.getServer().getPlayerList().getPlayers()) {
+            if (PlayerPossessionManager.isSessionTarget(actor, target)
+                    || actor != target && !PlayerPossessionManager.isParticipant(target) && PlayerPossessionManager.canStart(actor, target)) {
+                possessionNames.add(target.getScoreboardName());
             }
         }
-        return names;
+        return possessionNames;
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> node() {

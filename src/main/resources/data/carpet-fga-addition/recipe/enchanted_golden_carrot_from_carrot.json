@@ -1,0 +1,34 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "enchanted_golden_carrot",
+  "ingredients": [
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:carrot" }
+  ],
+  "result": {
+    "count": 1,
+    "id": "minecraft:golden_carrot",
+    "components": {
+      "minecraft:custom_name": "{\"text\":\"附魔金胡萝卜\",\"italic\":false}",
+      "minecraft:enchantment_glint_override": true,
+      "minecraft:custom_data": {
+        "carpet_fga_addition": {
+          "enchanted_golden_carrot": true
+        }
+      },
+      "minecraft:food": {
+        "nutrition": 20,
+        "saturation": 20.0,
+        "can_always_eat": true
+      }
+    }
+  }
+}

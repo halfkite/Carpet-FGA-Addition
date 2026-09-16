@@ -1,4 +1,4 @@
-//#if MC <= 26.2
+//#if MC <= 26.3
 package carpet.fga;
 
 //#if MC < 1.20.1

@@ -1,4 +1,4 @@
-//#if MC >= 1.16.5 && MC <= 26.2
+//#if MC >= 1.16.5 && MC <= 26.3
 package carpet.fga.mixin;
 
 import carpet.fga.FullShulkerBoxCraftingManager;
@@ -19,6 +19,10 @@ public abstract class MinecraftServerFullShulkerReloadMixin {
         MinecraftServer server = (MinecraftServer) (Object) this;
         cir.getReturnValue().thenRun(() -> server.execute(
                 () -> FullShulkerBoxCraftingManager.refresh(server)));
+        //#if MC >= 1.21 && MC <= 26.3
+        cir.getReturnValue().thenRun(() -> server.execute(
+                () -> carpet.fga.PiglinBarterCustomizationManager.onResourcesReloaded(server)));
+        //#endif
     }
 }
 //#endif

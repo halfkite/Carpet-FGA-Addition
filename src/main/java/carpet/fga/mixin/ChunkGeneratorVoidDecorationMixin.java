@@ -1,7 +1,7 @@
 package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 import carpet.fga.TerrainRegenerationManager;
 //#endif
 //#if MC >= 1.18
@@ -27,7 +27,7 @@ public abstract class ChunkGeneratorVoidDecorationMixin {
     //#else
     //$$ private void fga$skipFeatures(WorldGenRegion level,StructureFeatureManager structures,CallbackInfo ci){
     //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         if(FGASettings.voidWorldGeneration&&!TerrainRegenerationManager.forceNormalGeneration())ci.cancel();
         //#else
         //$$ if(FGASettings.voidWorldGeneration)ci.cancel();

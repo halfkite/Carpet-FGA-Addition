@@ -65,37 +65,41 @@ public abstract class PiglinAiMixin {
                                          LootParams lootParams
                                          //#else
                                          //$$ LootContext lootParams
-                                         //#endif
+            //#endif
     ) {
-        Set<ResourceLocation> exclusions = FGASettings.getPiglinBarterItemExclusions();
-        if (exclusions.isEmpty()) {
-            return lootTable.getRandomItems(lootParams);
-        }
-
-        for (int attempt = 0; attempt < MAX_REROLLS; attempt++) {
+        //#if MC >= 1.21 && MC <= 26.3
+        return carpet.fga.PiglinBarterCustomizationManager.customize(lootTable, lootParams);
+        //#else
+        //$$ Set<ResourceLocation> exclusions = FGASettings.getPiglinBarterItemExclusions();
+        //$$ if (exclusions.isEmpty()) {
+        //$$     return lootTable.getRandomItems(lootParams);
+        //$$ }
+        //$$
+        //$$ for (int attempt = 0; attempt < MAX_REROLLS; attempt++) {
             //#if MC >= 1.19
-            ObjectArrayList<ItemStack> result = lootTable.getRandomItems(lootParams);
+            //$$ ObjectArrayList<ItemStack> result = lootTable.getRandomItems(lootParams);
             //#else
             //$$ java.util.List<ItemStack> result = lootTable.getRandomItems(lootParams);
             //#endif
-            boolean allowed = result.stream().allMatch(stack ->
-                    !exclusions.contains(
+        //$$     boolean allowed = result.stream().allMatch(stack ->
+        //$$             !exclusions.contains(
                             //#if MC >= 1.19.3
-                            BuiltInRegistries.ITEM.getKey(stack.getItem())
+                            //$$                     BuiltInRegistries.ITEM.getKey(stack.getItem())
                             //#else
                             //$$ Registry.ITEM.getKey(stack.getItem())
                             //#endif
-                    ));
-            if (allowed) {
-                return result;
-            }
-        }
+        //$$             ));
+        //$$     if (allowed) {
+        //$$         return result;
+        //$$     }
+        //$$ }
 
-        LOGGER.warn("猪灵交易连续 {} 次未抽到允许物品，请检查交易战利品表和排除规则", MAX_REROLLS);
+        //$$ LOGGER.warn("猪灵交易连续 {} 次未抽到允许物品，请检查交易战利品表和排除规则", MAX_REROLLS);
         //#if MC >= 1.19
-        return new ObjectArrayList<>();
+        //$$ return new ObjectArrayList<>();
         //#else
         //$$ return java.util.List.of();
+        //#endif
         //#endif
     }
 }

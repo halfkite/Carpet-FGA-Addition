@@ -3,14 +3,14 @@
     "package": "carpet.fga.mixin",
     "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
     "mixins": [
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         "PossessionTrackedEntityAccessor",
         "PossessionChunkMapAccessor",
         "PossessionStatsCounterAccessor",
         "PossessionPlayerAccessor",
         "PossessionFakePlayerMixin",
         "PossessionPermissionMixin",
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         "PossessionLogoutMixin",
         //#endif
         "PossessionPlayerNameMixin",
@@ -44,10 +44,13 @@
         "StringReaderUnicodeSupportMixin",
         "EntityTypeDimensionsMixin",
         "VillagerBreedingMixin"
-        //#if MC >= 1.16.5
+        //#if MC >= 1.16.5 && MC <= 26.2
         ,"VehicleStopDismountMixin",
         "NoiseBasedChunkGeneratorVoidMixin",
         "ChunkGeneratorVoidDecorationMixin"
+        //#endif
+        //#if MC >= 26.3
+        //$$ ,"NoiseBasedChunkGeneratorVoidMixin"
         //#endif
         //#if MC >= 1.20.1
         ,"VillagerTradeOnlyMixin",
@@ -70,47 +73,47 @@
         "WorkAtComposterNoBreadMixin",
         "VillagerUpgradeWhileTradingMixin"
         //#endif
-        //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.2
+        //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.3
         ,"AbstractContainerMenuFullShulkerMixin",
         "MinecraftServerTerrainRegenerationMixin"
         //#endif
-        //#if MC >= 1.20.1 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.3
         ,"ChunkMapLoadedChunksAccessor"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"TrialSpawnerDataAccessor",
         "TrialSpawnerDataMultiplierMixin",
         "TrialSpawnerStateRewardMultiplierMixin",
         "TrialSpawnerStateStopRefreshMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"AnvilMenuNoPriorWorkPenaltyMixin",
         "PlayerExperienceLevelCostMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"EnchantmentMaxLevelMixin",
         "AnvilMenuEnchantmentAdditionMixin",
         "ItemCombinerMenuAccessor"
         //#endif
-        //#if MC >= 1.20.1 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.3
         ,"ResilientPlantBlockStateMixin",
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         "ComparatorBlockThroughBlocksMixin",
         "LevelComparatorThroughBlocksMixin",
         "ShulkerBedrockRespawnMixin",
         "ShulkerAttackArmorStandMixin",
         "ShulkerBedrockLootingMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"EndPortalPlayerTpControlMixin",
         "EndGatewayPlayerTpControlMixin"
         //#endif
-        //#if MC >= 1.20.1 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.3
         ,"StonecutterMenuWoodInputMixin",
         "StonecutterResultSlotWoodMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"ClientboundUpdateRecipesDeepslateMixin",
         "StonecutterMenuDeepslateMixin"
         //#endif
@@ -129,11 +132,11 @@
         "ServerGamePacketListenerPlayerLoadDistanceMixin",
         "EntityPlayerMPFakeMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"EntityDropRemovalLootMixin",
         "EntityDropRemovalEquipmentMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"ResilientBlockStateMixin"
         //#endif
         //#if MC == 1.20.1
@@ -154,16 +157,32 @@
         "MinecartChainInteractionMixin",
         "ServerLevelEntityTickListAccessor"
         //#endif
-        //#if MC >= 1.16.5 && MC <= 26.2
+        //#if MC >= 1.16.5 && MC <= 26.3
         ,"MinecraftServerFullShulkerReloadMixin",
         "CraftingMenuFullShulkerMixin",
         "ResultSlotCraftingAccessor",
         "ResultSlotFullShulkerMixin",
         "SlotFullShulkerMixin"
         //#endif
-        //#if MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
+        //#if MC == 1.21.1
+        ,"CraftingMenuEnchantedGoldenCarrotMixin",
+        "ItemEnchantedGoldenCarrotMixin",
+        "PlayerEnchantedGoldenCarrotMixin",
+        "ClientboundUpdateRecipesEnchantedGoldenCarrotMixin",
+        "RecipeManagerEnchantedGoldenCarrotMixin",
+        "ResultSlotEnchantedGoldenCarrotMixin"
+        //#else
+        //$$ ,"CraftingMenuEnchantedGoldenCarrotMixin",
+        //$$ "ItemEnchantedGoldenCarrotMixin",
+        //$$ "FoodPropertiesEnchantedGoldenCarrotMixin",
+        //$$ "RecipeManagerEnchantedGoldenCarrotMixin",
+        //$$ "ResultSlotEnchantedGoldenCarrotMixin"
+        //#endif
+        //#endif
+        //#if MC <= 26.3
         ,"InventoryStackLimitSlotMixin",
-        //#if MC < 1.21.1 || MC > 26.2
+        //#if MC < 1.21.1 || MC > 26.3
         //$$ "InventoryStackLimitInventoryMixin",
         //#endif
         "ContainerStackLimitMixin"
@@ -171,7 +190,7 @@
         //#if MC >= 1.20.5 && MC < 26.0
         ,"ItemStackCountCodecMixin"
         //#endif
-        //#if MC >= 26.0 && MC <= 26.2
+        //#if MC >= 26.0 && MC <= 26.3
         //$$ ,"ItemStackCountCodec26Mixin"
         //#endif
         //#if MC < 1.20.5
@@ -181,31 +200,31 @@
         ,"RecipeBookMixin",
         "ServerPlaceRecipeMixin"
         //#endif
-        //#if MC >= 1.20.1 && MC <= 26.2
+        //#if MC >= 1.20.1 && MC <= 26.3
         ,"BlockDropPreStackMixin",
         "AbstractMinecartContainerMixin"
         //#endif
-        //#if MC >= 1.20.5 && MC <= 26.2
+        //#if MC >= 1.20.5 && MC <= 26.3
         ,"VehicleEntityMixin"
         //#endif
         //#if MC == 1.20.1
         //$$ ,"LegacyMinecartPreStackMixin",
         //$$ "LegacyBoatPreStackMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"EndDragonFightGatewayMixin",
         "WanderingTraderNoDespawnMixin"
         //#endif
         //#if MC < 1.18
         //$$ ,"ChunkMapCompatMixin"
         //#endif
-        //#if MC <= 26.2
+        //#if MC <= 26.3
         ,"ItemEntityMixin",
         "ItemEntityAccessor",
         "HopperBlockEntityMixin",
         "ServerLevelMixin"
         //#endif
-        //#if MC <= 26.2
+        //#if MC <= 26.3
         //#if MC >= 1.19.4
         ,"FillCommandLimitMixin"
         ,"FillBiomeCommandLimitMixin"
@@ -222,7 +241,7 @@
         //#if MC == 1.20.1 || MC >= 1.21.1 && MC <= 1.21.5
         ,"ClientDimensionIdPacketMixin"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"NetherPortalStateMixin",
         "LightEngineAccessor",
         "NetherPortalLightEngineMixin",
@@ -231,7 +250,7 @@
         //#if MC == 1.20.1
         //$$ ,"ClientboundRespawnPacketAccessor"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"TeleportCommandMixin",
         "ServerPlayerSpectatorTeleportMixin",
         "EntitySelectorParserSpectatorTeleportMixin",
@@ -242,6 +261,9 @@
         //#if MC >= 1.20.5
         "FriendlyByteBufMixin",
         "ClientPacketListenerMixin"
+        //#if MC >= 1.21 && MC <= 26.3
+        ,"ClientPacketListenerEnchantedGoldenCarrotMixin"
+        //#endif
         //#elseif MC >= 1.20.2
         //$$ "ClientPacketListenerMixin"
         //#else

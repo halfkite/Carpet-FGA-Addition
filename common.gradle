@@ -31,7 +31,7 @@ dependencies {
     } else {
         modImplementation carpet
     }
-    if (mcVersion >= 1_21_00 && mcVersion <= 26_02_00) {
+    if (mcVersion >= 1_21_00 && mcVersion <= 26_03_00) {
         def fabricApi = "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
         if (unobfuscated) {
             implementation fabricApi
@@ -87,7 +87,7 @@ processResources {
             version: project.version,
             minecraft_dependency: project.minecraft_dependency,
             carpet_dependency: project.carpet_dependency,
-            fabric_api_dependency: mcVersion >= 1_21_00 && mcVersion <= 26_02_00
+            fabric_api_dependency: mcVersion >= 1_21_00 && mcVersion <= 26_03_00
                     ? '*' : '__FGA_NO_FABRIC_API__',
             java_level: javaVersion == JavaVersion.VERSION_25 ? 25 : (javaVersion == JavaVersion.VERSION_21 ? 21 : 16),
             compatibility_level: javaVersion == JavaVersion.VERSION_25 ? 'JAVA_25' : (javaVersion == JavaVersion.VERSION_21 ? 'JAVA_21' : 'JAVA_16')
@@ -98,12 +98,42 @@ processResources {
         filter { line -> line.replace('{{COMPATIBILITY_LEVEL}}', properties.compatibility_level) }
     }
     doLast {
-        if (mcVersion < 1_21_00 || mcVersion > 26_02_00) {
+        if (mcVersion < 1_21_00 || mcVersion > 26_03_00) {
             def descriptor = destinationDir.toPath().resolve('fabric.mod.json')
             if (java.nio.file.Files.isRegularFile(descriptor)) {
                 def text = java.nio.file.Files.readString(descriptor)
                 text = text.replaceFirst(/(?m)^\s*"fabric-api": "__FGA_NO_FABRIC_API__",\r?\n/, '')
                 java.nio.file.Files.writeString(descriptor, text)
+            }
+        }
+    }
+    doLast {
+        def carrotRecipeNames = [
+                'enchanted_golden_carrot_from_carrot.json',
+                'enchanted_golden_carrot_from_golden_carrot.json'
+        ]
+        def recipeDirectories = [
+                destinationDir.toPath().resolve('data/carpet-fga-addition/recipe'),
+                destinationDir.toPath().resolve('data/carpet-fga-addition/recipes')
+        ]
+        if (mcVersion < 1_21_00) {
+            recipeDirectories.each { directory ->
+                carrotRecipeNames.each { name ->
+                    java.nio.file.Files.deleteIfExists(directory.resolve(name))
+                }
+            }
+        } else if (mcVersion >= 1_21_02) {
+            // Minecraft 1.21.2 changed Ingredient JSON from {"item":"..."} to a string ID
+            def directory = recipeDirectories[0]
+            carrotRecipeNames.each { name ->
+                def path = directory.resolve(name)
+                if (!java.nio.file.Files.isRegularFile(path)) return
+                def recipe = new groovy.json.JsonSlurper().parse(path.toFile())
+                recipe.ingredients = recipe.ingredients.collect { ingredient ->
+                    ingredient instanceof Map && ingredient.item != null ? ingredient.item : ingredient
+                }
+                java.nio.file.Files.writeString(path,
+                        groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(recipe)) + System.lineSeparator())
             }
         }
     }
@@ -148,7 +178,7 @@ processResources {
             }
         }
 
-        if (mcVersion >= 1_20_01 && mcVersion <= 26_02_00) {
+        if (mcVersion >= 1_20_01 && mcVersion <= 26_03_00) {
             def woodFamilies = [
                     oak: [inputs: ['oak_log', 'oak_wood', 'stripped_oak_log', 'stripped_oak_wood'], planks: 'oak_planks', button: 'oak_button', stairs: 'oak_stairs', slab: 'oak_slab', pressure: 'oak_pressure_plate', sign: 'oak_sign', trapdoor: 'oak_trapdoor', door: 'oak_door', fence: 'oak_fence', gate: 'oak_fence_gate', boat: 'oak_boat'],
                     spruce: [inputs: ['spruce_log', 'spruce_wood', 'stripped_spruce_log', 'stripped_spruce_wood'], planks: 'spruce_planks', button: 'spruce_button', stairs: 'spruce_stairs', slab: 'spruce_slab', pressure: 'spruce_pressure_plate', sign: 'spruce_sign', trapdoor: 'spruce_trapdoor', door: 'spruce_door', fence: 'spruce_fence', gate: 'spruce_fence_gate', boat: 'spruce_boat'],

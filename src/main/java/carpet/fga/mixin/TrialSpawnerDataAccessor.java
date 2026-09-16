@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga.mixin;
 
 import net.minecraft.resources.ResourceKey;

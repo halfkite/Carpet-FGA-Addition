@@ -22,7 +22,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-//#if MC >= 26.2
+//#if MC >= 26.3
+//$$ import net.minecraft.advancements.triggers.CriterionTrigger;
+//$$ import net.minecraft.advancements.triggers.InventoryChangeTrigger;
+//$$ import net.minecraft.advancements.triggers.SimpleCriterionTrigger;
+//$$ import net.minecraft.core.Holder;
+//$$ import net.minecraft.advancements.predicates.entity.EntityPredicate;
+//$$ import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
+//#elseif MC >= 26.2
 //$$ import net.minecraft.advancements.predicates.ContextAwarePredicate;
 //$$ import net.minecraft.advancements.predicates.entity.EntityPredicate;
 //$$ import net.minecraft.advancements.triggers.CriterionTrigger;
@@ -31,12 +38,16 @@ import net.minecraft.advancements.CriterionTrigger;
 import net.minecraft.advancements.critereon.ContextAwarePredicate;
 import net.minecraft.advancements.critereon.EntityPredicate;
 //#endif
-//#if MC >= 26.2
+//#if MC >= 26.3
+// 26.3 stores the player condition as a holder of a loot condition
+//#elseif MC >= 26.2
 //$$ import net.minecraft.advancements.triggers.InventoryChangeTrigger;
 //#else
 import net.minecraft.advancements.critereon.InventoryChangeTrigger;
 //#endif
-//#if MC >= 26.2
+//#if MC >= 26.3
+// The 26.3 trigger classes were imported above
+//#elseif MC >= 26.2
 //$$ import net.minecraft.advancements.triggers.SimpleCriterionTrigger;
 //#else
 import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
@@ -327,8 +338,13 @@ public final class InventoryAdvancementRuntime {
             Inventory inventory, ItemStack changedStack, int full, int empty, int occupied, LazyMatchContext context) {
         InventoryChangeTrigger.TriggerInstance trigger = listener.trigger();
         if (!trigger.matches(inventory, changedStack, full, empty, occupied)) return false;
+        //#if MC < 26.3
         Optional<ContextAwarePredicate> playerPredicate = trigger.player();
         return playerPredicate.isEmpty() || playerPredicate.get().matches(context.get());
+        //#else
+        //$$ Optional<Holder<LootItemCondition>> playerPredicate = trigger.player();
+        //$$ return playerPredicate.isEmpty() || playerPredicate.get().value().test(context.get());
+        //#endif
     }
 
     private void onMismatch(PlayerIndex index, ServerPlayer player, ItemStack stack, PlayerIndex.Selection selection, Verification result) {

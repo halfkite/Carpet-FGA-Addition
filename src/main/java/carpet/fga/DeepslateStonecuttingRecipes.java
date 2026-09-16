@@ -1,4 +1,4 @@
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga;
 
 import net.minecraft.resources.ResourceLocation;
@@ -22,7 +22,7 @@ public final class DeepslateStonecuttingRecipes {
                 && (id.getPath().endsWith("_from_deepslate_stonecutting")
                     //#if MC >= 1.20.1 && MC <= 1.21.1
                     || WoodStonecuttingRecipes.isWoodRecipe(id)
-                    //#elseif MC >= 1.21.4 && MC <= 26.2
+                    //#elseif MC >= 1.21.4 && MC <= 26.3
                     || WoodStonecuttingRecipes.isWoodRecipe(id)
                     //#endif
                 );
@@ -49,7 +49,7 @@ public final class DeepslateStonecuttingRecipes {
         if (WoodStonecuttingRecipes.isWoodRecipe(id)) {
             return !FGASettings.woodStonecuttingRecipes;
         }
-        //#elseif MC >= 1.21.4 && MC <= 26.2
+        //#elseif MC >= 1.21.4 && MC <= 26.3
         if (WoodStonecuttingRecipes.isWoodRecipe(id)) {
             return !FGASettings.woodStonecuttingRecipes;
         }

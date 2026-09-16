@@ -2,7 +2,7 @@ package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
 import carpet.fga.FGACompat;
-//#if MC <= 26.2
+//#if MC <= 26.3
 import carpet.fga.DeathDropPreStackManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
-    //#if MC <= 26.2
+    //#if MC <= 26.3
     @Shadow
     protected abstract void dropAllDeathLoot(
             //#if MC >= 1.21

@@ -21,6 +21,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -199,6 +200,22 @@ public final class FGACompat {
         //#else
         //$$ target.yRot = source.yRot;
         //$$ target.xRot = source.xRot;
+        //#endif
+    }
+
+    public static void drop(Player player, ItemStack stack) {
+        //#if MC < 26.3
+        player.drop(stack, false);
+        //#else
+        //$$ player.drop(stack, false, net.minecraft.util.Prediction.SERVER_ONLY);
+        //#endif
+    }
+
+    public static void swing(Player player, InteractionHand hand) {
+        //#if MC < 26.3
+        player.swing(hand);
+        //#else
+        //$$ player.swing(hand, net.minecraft.world.item.component.SwingAnimation.DEFAULT, true);
         //#endif
     }
 }

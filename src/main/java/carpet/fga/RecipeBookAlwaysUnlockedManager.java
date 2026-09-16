@@ -1,6 +1,6 @@
 package carpet.fga;
 
-//#if MC >= 1.16.5 && MC <= 26.2
+//#if MC >= 1.16.5 && MC <= 26.3
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.HashMap;

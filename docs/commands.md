@@ -2,6 +2,17 @@
 
 > 文档版本：`1.5.9`
 
+## 玩家状态指令 (food)
+
+### `/food clear [玩家]` 与 `/fga food clear [玩家]`
+
+生效版本：`1.21.1`
+
+- `/food clear`：清空执行者的饱食度和饱和度
+- `/food clear <玩家>`：清空指定在线玩家的饱食度和饱和度，可一次指定多个玩家
+- `/fga food clear [玩家]`：与 `/food clear [玩家]` 相同
+- 入口权限沿用 Carpet `commandPlayer`
+
 ## 玩家与假人指令 (player)
 
 <a id="cmd-player-possession"></a>
@@ -120,7 +131,7 @@
 
 `list` 按页显示中文名称、完整物品 ID 和数量；列表中的删除按钮可点击执行对应命令。配置损坏时保持原版安全限制并拒绝写入。
 
-在当前九个构建版本（`1.21.1` 至 `26.2`），`inventoryLimit` / `containerLimit` 的保存值与是否生效分开：主规则关闭（含重启后）时不应用，重新开启后恢复；关闭操作不会清空配置。
+在当前十个构建版本（`1.21.1` 至 `26.3`），`inventoryLimit` / `containerLimit` 的保存值与是否生效分开：主规则关闭（含重启后）时不应用，重新开启后恢复；关闭操作不会清空配置。
 
 <a id="cmd-entity-drop-removal"></a>
 
@@ -138,6 +149,25 @@
 ```
 
 规则值为 `false` 时命令不可用；`true`、`ops` 或 `0-4` 按规则值控制权限。生物 ID 和物品 ID 支持完整命名空间、省略 `minecraft:` 和 Tab 补全。`set` 会在原配置上增加项目，`remove` 只删除指定项目，`allEquipment` 表示头盔、胸甲、护腿、靴子、主手和副手六个装备槽。`list` 显示已配置生物与去除项，红色减号可点击删除；`list <生物ID>` 显示默认战利品表和当前可识别的掉落配置。配置保存于 `world/config/carpetfgaaddition/entity-drop-removal.json`，使用原子替换；损坏文件会保留并拒绝本次运行的写入。
+
+<a id="cmd-piglin-barter-customization"></a>
+
+### `/piglinBarterItemExclusions` 与 `/fga piglinBarterItemExclusions`
+
+相关规则：`piglinBarterItemExclusions`
+
+生效版本：`1.21.1`
+
+```text
+/piglinBarterItemExclusions list
+/piglinBarterItemExclusions add <交易条目>
+/piglinBarterItemExclusions enable <交易条目>
+/piglinBarterItemExclusions disable <交易条目>
+/piglinBarterItemExclusions set <交易条目> <概率> <最小数量>-<最大数量>
+/piglinBarterItemExclusions reset <交易条目>
+```
+
+`/fga piglinBarterItemExclusions ...` 与直接命令相同，规则关闭时命令不会出现在玩家命令树。`list` 显示当前战利品表中的具体变体、客户端语言名称、英文 ID、概率和数量范围；概率和数量可点击填入编辑命令，红色 `[-]` 禁用条目，绿色 `[+]` 重新启用条目，最后一行 `[+]` 打开带 Tab 补全的添加命令。当前战利品表已移除的默认条目仍显示在已删除区域。重置只恢复默认概率和数量，不改变启用状态。配置保存于 `world/config/carpetfgaaddition/piglin-barter-customization.json`。
 
 <a id="cmd-drop-pre-stack"></a>
 

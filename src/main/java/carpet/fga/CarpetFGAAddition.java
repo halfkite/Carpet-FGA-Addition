@@ -1,11 +1,11 @@
 package carpet.fga;
 
 import carpet.CarpetServer;
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 import com.yiyihehe.quickcraft.litematica.QuickLitematicaEntityPlacementPayloads;
 //#endif
 import net.fabricmc.api.ModInitializer;
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 //#endif
@@ -18,7 +18,7 @@ public class CarpetFGAAddition implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         //#if MC >= 26.1.2
         //$$ PayloadTypeRegistry.serverboundPlay().register(
         //#else

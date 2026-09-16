@@ -1,6 +1,6 @@
 package carpet.fga.mixin;
 
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 import carpet.fga.PlayerPossessionManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;

@@ -1,6 +1,6 @@
 package carpet.fga.mixin;
 
-//#if MC >= 1.21 && MC <= 26.2
+//#if MC >= 1.21 && MC <= 26.3
 import carpet.fga.EntityDropRemovalConfig;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;

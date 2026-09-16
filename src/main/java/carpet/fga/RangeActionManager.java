@@ -270,7 +270,7 @@ public final class RangeActionManager {
             if (!hasLineOfSight(player, target, hitPosition)) {
                 return false;
             }
-            player.swing(InteractionHand.MAIN_HAND);
+            FGACompat.swing(player, InteractionHand.MAIN_HAND);
             player.resetLastActionTime();
             if (player.gameMode.getGameModeForPlayer().isCreative()) {
                 player.gameMode.destroyBlock(target);
@@ -331,7 +331,7 @@ public final class RangeActionManager {
                 InteractionResult result = player.gameMode.useItemOn(player, FGACompat.serverLevel(player), stack,
                         blockHand, hit);
                 if (result.consumesAction()) {
-                    player.swing(blockHand);
+                    FGACompat.swing(player, blockHand);
                     player.resetLastActionTime();
                     return !FGACompat.serverLevel(player).getBlockState(target).isAir();
                 }
@@ -341,7 +341,7 @@ public final class RangeActionManager {
                 InteractionResult result = ((BlockItem) stack.getItem()).place(
                         new BlockPlaceContext(player, blockHand, stack, hit));
                 if (result.consumesAction()) {
-                    player.swing(blockHand);
+                    FGACompat.swing(player, blockHand);
                     player.resetLastActionTime();
                     return !FGACompat.serverLevel(player).getBlockState(target).isAir();
                 }
@@ -401,7 +401,7 @@ public final class RangeActionManager {
                         player.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
                 attempted = true;
                 if (result.consumesAction()) {
-                    player.swing(InteractionHand.MAIN_HAND);
+                    FGACompat.swing(player, InteractionHand.MAIN_HAND);
                     player.resetLastActionTime();
                 }
             }

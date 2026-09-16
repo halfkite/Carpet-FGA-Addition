@@ -2,6 +2,17 @@
 
 > Documentation version: `1.5.9`
 
+## Player status commands (food)
+
+### `/food clear [player]` and `/fga food clear [player]`
+
+Available in Minecraft `1.21.1`
+
+- `/food clear`: clears the executor's food and saturation
+- `/food clear <player>`: clears the food and saturation of one or more online players
+- `/fga food clear [player]`: same as `/food clear [player]`
+- Uses Carpet `commandPlayer` entry permission
+
 ## Player and fake-player commands (player)
 
 <a id="cmd-player-possession"></a>
@@ -120,7 +131,7 @@ Options can be combined: `pathfinding`, `reach <0.1-64>`, `airPlace`, `ignoreObs
 
 `list` is paged and shows the display name, full item ID, and count. List entries provide clickable removal commands. Invalid configuration keeps vanilla-safe limits and rejects writes.
 
-On all nine current build versions (`1.21.1` through `26.2`), saved `inventoryLimit` / `containerLimit` values are separate from activation: disabling the main rule, including across a restart, stops applying them without clearing them; re-enabling restores them.
+On all ten current build versions (`1.21.1` through `26.3`), saved `inventoryLimit` / `containerLimit` values are separate from activation: disabling the main rule, including across a restart, stops applying them without clearing them; re-enabling restores them.
 
 <a id="cmd-entity-drop-removal"></a>
 
@@ -138,6 +149,25 @@ Related rule: `entityDropRemoval`
 ```
 
 The command is unavailable when the rule is `false`; `true`, `ops`, and `0-4` control access according to the rule value. Entity and item IDs support full namespaces, omitted `minecraft:`, and Tab completion. `set` adds to existing entries, while `remove` deletes only one entry. `allEquipment` covers the helmet, chestplate, leggings, boots, main-hand, and off-hand slots. `list` shows configured entities and removal entries with clickable red minus buttons; `list <entity id>` shows the default loot-table ID and currently identifiable drop configuration. The file is `world/config/carpetfgaaddition/entity-drop-removal.json`, written with atomic replacement; corrupt files are preserved and writes are rejected for the current run.
+
+<a id="cmd-piglin-barter-customization"></a>
+
+### `/piglinBarterItemExclusions` and `/fga piglinBarterItemExclusions`
+
+Related rule: `piglinBarterItemExclusions`
+
+Available in Minecraft `1.21.1`
+
+```text
+/piglinBarterItemExclusions list
+/piglinBarterItemExclusions add <entry>
+/piglinBarterItemExclusions enable <entry>
+/piglinBarterItemExclusions disable <entry>
+/piglinBarterItemExclusions set <entry> <probability> <min>-<max>
+/piglinBarterItemExclusions reset <entry>
+```
+
+`/fga piglinBarterItemExclusions ...` is equivalent to the direct command, and the command is hidden from player command trees while the rule is disabled. `list` shows concrete variants from the current loot table, the client-language name, English ID, probability, and quantity range. Default entries removed by the current loot table remain in the disabled section. Click probability or quantity to suggest an edit command, use the red `[-]` to disable an entry, the green `[+]` to enable it, and the final `[+]` to open an add command with Tab completion. Reset restores only the default probability and quantity and preserves the enabled state. Configuration is saved at `world/config/carpetfgaaddition/piglin-barter-customization.json`.
 
 <a id="cmd-drop-pre-stack"></a>
 
