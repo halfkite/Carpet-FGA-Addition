@@ -32,6 +32,7 @@
 - 尚未适配版本：无
 - 客户端/服务端要求：服务端可用，客户端不需要安装 FGA
 - 资源格式：`1.21.1` 使用对象原料，`1.21.2+` 使用字符串原料，避免现代版本配方解析失败
+- 工作台 Mixin 参数：`1.21.1-1.21.5` 使用 `Level`，`1.21.6+` 使用 `ServerLevel`，避免 `1.21.8` 客户端启动时的描述符崩溃
 - 尚未完成验证：真实客户端配方书在规则动态切换后的显示
 
 ### 自定义假人预设名（`fakePlayerNamePresets`）
@@ -52,6 +53,6 @@
 - 客户端/服务端要求：服务端功能，客户端不需要安装 FGA
 - 配置文件：`world/config/carpetfgaaddition/piglin-barter-customization.json`
 - 尚未完成验证：真实客户端语言显示、数据包修改战利品表、概率轮空和多人连续交易
-- 构建归档：`mod-builds/20260916-142918` 至 `mod-builds/20260916-142920-4`，每个目录包含对应 JAR 与 `build-manifest.json`
+- 构建归档：`mod-builds/20260916-142918` 至 `mod-builds/20260916-142920-4`，以及本次修复的 `mod-builds/20260916-153100` 至 `mod-builds/20260916-153109`，每个目录包含对应 JAR 与 `build-manifest.json`
 
 本次只把上述三项功能同步到 26.3；项目中原有的单版本功能仍遵循各自源码门控，例如 `playerLoadDistance`、旧版矿车与展示框功能、`fullShulkerBoxCrafting` 和 `villagerUpgradeWhileTrading`，不应按本次三项功能的 26.3 适配范围理解
