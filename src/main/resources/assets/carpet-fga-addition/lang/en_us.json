@@ -280,6 +280,7 @@
     "carpet.fga.map_load.hint.pause": "Click to pause this map load",
     "carpet.fga.map_load.hint.resume": "Click to resume this map load",
     "carpet.fga.map_load.hint.stop": "Click to stop this map load",
+    "carpet.fga.terrain_regeneration.skipped_loaded": "%s chunks were still loaded and got skipped; run it again after leaving the area",
     "carpet.fga.terrain_regeneration.started": "Terrain task %s started",
     "carpet.fga.terrain_regeneration.progress": "Terrain task %s: %s/%s chunks (%s%%), %s min %s s elapsed",
     "carpet.fga.terrain_regeneration.complete": "Terrain task %s finished: %s chunks in %s min %s s",

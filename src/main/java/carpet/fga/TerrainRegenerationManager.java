@@ -181,8 +181,10 @@ public final class TerrainRegenerationManager {
             long key = iterator.next();
             ChunkPos pos = unpackChunk(key);
             if (level.getChunkSource().getChunkNow(pos.x, pos.z) != null) {
-                // In memory: deleting its data now would be undone when the chunk unloads, so wait.
+                // Still in memory: deleting its data now would be undone when the chunk saves on
+                // unload, so skip it and report instead of waiting for the player to walk away.
                 state.loadedNow++;
+                iterator.remove();
                 continue;
             }
             prepareChunkData(state, pos);
@@ -361,6 +363,10 @@ public final class TerrainRegenerationManager {
             state.bossBar.setProgress(1.0F);
             state.bossBar.removeAllPlayers();
             state.bossBar = null;
+        }
+        if (state.owner != null && !state.owner.isRemoved() && state.loadedNow > 0) {
+            state.owner.sendSystemMessage(FGAText.text("carpet.fga.terrain_regeneration.skipped_loaded",
+                    state.loadedNow));
         }
         if (state.owner != null && !state.owner.isRemoved()) {
             state.owner.sendSystemMessage(FGAText.text(
