@@ -3,6 +3,8 @@ package carpet.fga;
 
 //#if MC == 1.21.1
 import carpet.fga.mixin.StonecutterMenuAccessor;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.FabricLoader;
 //#endif
 import net.minecraft.core.NonNullList;
 //#if MC < 1.20.5
@@ -99,11 +101,22 @@ public final class FullShulkerBoxCraftingManager {
     //#endif
 
     //#if MC >= 1.21
+    /**
+     * The client never receives Carpet rule values, so it assumes the most permissive mode and lets
+     * the server refuse a take it does not allow. Reading the local value instead would hide the whole
+     * feature from every client whose own config still says false.
+     */
+    private static boolean clientSide() {
+        return FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT;
+    }
+
     private static boolean ruleEnabled() {
+        if (clientSide()) return true;
         return !"false".equals(FGASettings.fullShulkerBoxCrafting);
     }
 
     private static boolean only64Mode() {
+        if (clientSide()) return false;
         return "only64".equals(FGASettings.fullShulkerBoxCrafting);
     }
     //#endif
