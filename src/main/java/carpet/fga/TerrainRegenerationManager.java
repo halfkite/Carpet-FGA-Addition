@@ -11,6 +11,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import carpet.CarpetServer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
@@ -70,73 +72,14 @@ public final class TerrainRegenerationManager {
 
     public static boolean forceNormalGeneration() { return forceNormal; }
 
+    /** Tasks only live for the current run: a restart starts with an empty list. */
     public static synchronized void beforeWorldLoad(MinecraftServer server) {
         clearMemory();
         worldRoot = server.getWorldPath(LevelResource.ROOT);
-        configPath = worldRoot.resolve("config/carpetfgaaddition/terrain-regeneration.json");
-        load();
-        if (invalid) return;
-        // Only tasks that were already prepared (older configs) still apply at startup; a confirmed
-        // task now waits for /regenerateTerrain run.
-        List<Task> pending = TASKS.stream()
-                .filter(t -> t.status == Status.PREPARED).toList();
-        if (pending.isEmpty()) return;
-        try {
-            List<Task> confirmed = pending.stream().filter(t -> t.status == Status.CONFIRMED).toList();
-            if (!confirmed.isEmpty()) {
-                Path backupRoot = worldRoot.resolve("config/carpetfgaaddition/terrain-regeneration-backups")
-                        .resolve(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
-                Files.createDirectories(backupRoot);
-                for (Task task : confirmed) {
-                    prepareStorage(task, backupRoot.resolve(task.id.toString()));
-                    markSources(List.of(task.id), Status.PREPARED, null);
-                    save();
-                }
-            }
-            STARTUP_TASKS.addAll(mergedConfirmedTasks());
-            // Spawn chunks can be generated before loadLevel reaches TAIL. Keep normal generation
-            // active throughout startup when a regeneration task may include those chunks.
-            forceNormal = STARTUP_TASKS.stream().anyMatch(task -> task.type == Type.REGENERATE);
-        } catch (Exception exception) {
-            forceNormal = false;
-            invalid = true;
-            LOGGER.error("Failed to prepare terrain regeneration; no further tasks will run", exception);
-        }
     }
 
     public static synchronized void onServerLoaded(MinecraftServer server) {
-        if (configPath == null) {
-            worldRoot = server.getWorldPath(LevelResource.ROOT);
-            configPath = FGAWorldConfigPaths.current(server, "terrain-regeneration.json");
-            load();
-        }
-        if (invalid || STARTUP_TASKS.isEmpty()) {
-            forceNormal = false;
-            return;
-        }
-        try {
-            Map<String, Set<Long>> processed = new HashMap<>();
-            for (Task task : List.copyOf(STARTUP_TASKS)) {
-                ServerLevel level = level(server, task.dimension);
-                if (level == null) {
-                    markSources(task.sources, Status.FAILED, "dimension is not loaded");
-                    continue;
-                }
-                try {
-                    Set<Long> seen = processed.computeIfAbsent(task.type + "@" + task.dimension, ignored -> new HashSet<>());
-                    if (task.type == Type.REGENERATE) regenerate(level, task, seen);
-                    else clear(level, task, seen);
-                    markSources(task.sources, Status.COMPLETE, null);
-                } catch (Exception exception) {
-                    markSources(task.sources, Status.FAILED, exception.toString());
-                    LOGGER.error("Terrain task {} failed", task.id, exception);
-                }
-            }
-            try { save(); } catch (IOException exception) { LOGGER.error("Failed to save terrain task results", exception); }
-        } finally {
-            STARTUP_TASKS.clear();
-            forceNormal = false;
-        }
+        // Nothing to resume: tasks are not persisted and no longer wait for a restart.
     }
 
     private static final class LiveState {
@@ -150,6 +93,11 @@ public final class TerrainRegenerationManager {
         int loadedNow;
         /** Region files already copied into the backup folder. */
         final Set<String> copied = new HashSet<>();
+        /** Progress bar shown to the player who started the task. */
+        net.minecraft.server.level.ServerBossEvent bossBar;
+        ServerPlayer owner;
+        final long startedAtNanos = System.nanoTime();
+        int ticksSinceReport;
 
         LiveState(Task task, Path backup) {
             this.task = task;
@@ -182,6 +130,14 @@ public final class TerrainRegenerationManager {
             forEachChunk(task, pos -> state.remaining.add(chunkKey(pos)));
         }
         LIVE.put(id, state);
+        state.owner = onlineCreator(CarpetServer.minecraft_server, task.creator);
+        state.bossBar = new net.minecraft.server.level.ServerBossEvent(
+                Component.literal(bossTitle(task)), net.minecraft.world.BossEvent.BossBarColor.GREEN,
+                net.minecraft.world.BossEvent.BossBarOverlay.PROGRESS);
+        if (state.owner != null) {
+            state.bossBar.addPlayer(state.owner);
+            state.owner.sendSystemMessage(FGAText.text("carpet.fga.terrain_regeneration.started", shortId(task.id)));
+        }
         replace(task.withStatus(Status.RUNNING, null));
         save();
         return task;
@@ -200,6 +156,7 @@ public final class TerrainRegenerationManager {
                 continue;
             }
             try {
+                updateBossBar(state);
                 boolean done = state.task.type == Type.CLEAR ? tickClear(level, state) : tickRegenerate(level, state);
                 if (done) {
                     finishLive(server, state, Status.COMPLETE, null);
@@ -350,6 +307,43 @@ public final class TerrainRegenerationManager {
         }
     }
 
+    private static MinecraftServer serverOrNull() {
+        return CarpetServer.minecraft_server;
+    }
+
+    private static String shortId(UUID id) {
+        return id.toString().substring(0, 8);
+    }
+
+    private static String bossTitle(Task task) {
+        return "地形任务 " + shortId(task.id) + " / terrain task";
+    }
+
+    /** The player who created the task, when they are still online. */
+    private static ServerPlayer onlineCreator(MinecraftServer server, String name) {
+        if (server == null || name == null) return null;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (player.getGameProfile().getName().equalsIgnoreCase(name)) return player;
+        }
+        return null;
+    }
+
+    /** Progress bar plus a chat line every five seconds, so the executor can follow the task. */
+    private static void updateBossBar(LiveState state) {
+        int total = (int) state.task.chunks();
+        int done = total - state.remaining.size() - state.ticketed.size();
+        int percent = total <= 0 ? 100 : done * 100 / total;
+        if (state.bossBar != null) {
+            state.bossBar.setProgress(total <= 0 ? 1.0F : Math.min(1.0F, (float) done / total));
+            state.bossBar.setName(Component.literal(bossTitle(state.task) + "  " + done + "/" + total + " (" + percent + "%)"));
+        }
+        if (state.owner == null || state.owner.isRemoved()) return;
+        if (state.ticksSinceReport++ % 100 != 0) return;
+        long seconds = Math.max(1L, (System.nanoTime() - state.startedAtNanos) / 1_000_000_000L);
+        state.owner.sendSystemMessage(FGAText.text("carpet.fga.terrain_regeneration.progress",
+                shortId(state.task.id), done, total, percent, seconds / 60L, seconds % 60L));
+    }
+
     private static void finishLive(MinecraftServer server, LiveState state, Status status, String error) {
         ServerLevel level = level(server, state.task.dimension);
         if (level != null) {
@@ -359,6 +353,19 @@ public final class TerrainRegenerationManager {
             }
         }
         state.ticketed.clear();
+        long seconds = Math.max(1L, (System.nanoTime() - state.startedAtNanos) / 1_000_000_000L);
+        if (state.bossBar != null) {
+            state.bossBar.setProgress(1.0F);
+            state.bossBar.removeAllPlayers();
+            state.bossBar = null;
+        }
+        if (state.owner != null && !state.owner.isRemoved()) {
+            state.owner.sendSystemMessage(FGAText.text(
+                    status == Status.COMPLETE
+                            ? "carpet.fga.terrain_regeneration.complete"
+                            : "carpet.fga.terrain_regeneration.failed_done",
+                    shortId(state.task.id), state.task.chunks(), seconds / 60L, seconds % 60L));
+        }
         replace(state.task.withStatus(status, error));
         markSources(state.task.sources, status, error);
         try { save(); } catch (IOException exception) { LOGGER.error("Failed to save terrain task result", exception); }
@@ -731,21 +738,12 @@ public final class TerrainRegenerationManager {
         }
     }
 
+    /** Tasks are not persisted any more: a restart starts with an empty list. */
     private static void save() throws IOException {
-        ensureWritable();
-        Files.createDirectories(configPath.getParent());
-        JsonObject root = new JsonObject(); root.addProperty("version", 1);
-        JsonArray array = new JsonArray(); DRAFTS.values().forEach(t -> array.add(t.toJson())); TASKS.forEach(t -> array.add(t.toJson()));
-        root.add("tasks", array);
-        Path temp = configPath.resolveSibling(configPath.getFileName() + ".tmp");
-        Files.writeString(temp, GSON.toJson(root) + System.lineSeparator(), StandardCharsets.UTF_8);
-        try { Files.move(temp, configPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); }
-        catch (AtomicMoveNotSupportedException exception) { Files.move(temp, configPath, StandardCopyOption.REPLACE_EXISTING); }
     }
 
+    /** Tasks are not persisted any more, so there is no configuration file to check. */
     private static void ensureWritable() throws IOException {
-        if (invalid) throw new IOException("configuration is invalid / 配置文件损坏");
-        if (configPath == null) throw new IOException("configuration is not loaded / 配置尚未加载");
     }
 
     private static void clearMemory() {
