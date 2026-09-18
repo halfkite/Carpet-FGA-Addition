@@ -338,7 +338,7 @@ public final class TerrainRegenerationManager {
             if (!Files.isDirectory(folder)) continue;
             Path region = regionFile(folder, pos);
             if (!Files.isRegularFile(region)) continue;
-            copyRegionFile(folder, type, pos, state.backup, new HashSet<>());
+            copyRegionFile(folder, type, pos, state.backup, state.copied);
             try (net.minecraft.world.level.chunk.storage.RegionFile file =
                          new net.minecraft.world.level.chunk.storage.RegionFile(
                                  //#if MC >= 1.21
