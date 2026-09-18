@@ -119,7 +119,7 @@ public final class TerrainRegenerationCommand {
 
     private static int confirm(CommandContext<CommandSourceStack> context) {
         try {
-            var task=TerrainRegenerationManager.confirm(UUID.fromString(StringArgumentType.getString(context,"task")));
+            var task=TerrainRegenerationManager.confirm(taskId(context));
             context.getSource().sendSuccess(() -> Component.literal("Confirmed, use run to apply now / 已确认，可用 run 立即执行\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
             return 1;
         } catch(Exception e){return fail(context,e);}
@@ -127,16 +127,35 @@ public final class TerrainRegenerationCommand {
 
     private static int run(CommandContext<CommandSourceStack> context) {
         try {
-            UUID id=UUID.fromString(StringArgumentType.getString(context,"task"));
+            UUID id=taskId(context);
             var task = TerrainRegenerationManager.run(id);
             context.getSource().sendSuccess(() -> Component.literal("Running now / 开始执行\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
             return 1;
         } catch(Exception e){return fail(context,e);}
     }
 
+    /** First eight characters of a task id, enough to recognise and to type. */
+    private static String shortId(UUID id) { return id.toString().substring(0, 8); }
+
+    /** Accepts a full task id or any unambiguous prefix, so the short id from the list works. */
+    private static UUID taskId(CommandContext<CommandSourceStack> context) {
+        String raw = StringArgumentType.getString(context, "task").trim().toLowerCase(java.util.Locale.ROOT);
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException ignored) {
+        }
+        List<UUID> matches = new java.util.ArrayList<>();
+        for (TerrainRegenerationManager.Task task : TerrainRegenerationManager.tasks()) {
+            if (task.id().toString().startsWith(raw)) matches.add(task.id());
+        }
+        if (matches.size() == 1) return matches.get(0);
+        if (matches.isEmpty()) throw new IllegalArgumentException("task not found / 任务不存在");
+        throw new IllegalArgumentException("task id is ambiguous / 任务编号不唯一");
+    }
+
     private static int cancel(CommandContext<CommandSourceStack> context) {
         try {
-            UUID id=UUID.fromString(StringArgumentType.getString(context,"task"));
+            UUID id=taskId(context);
             if(!TerrainRegenerationManager.cancel(id)){context.getSource().sendFailure(Component.literal("Task not found or already executed / 任务不存在或已执行"));return 0;}
             context.getSource().sendSuccess(() -> Component.literal("Task cancelled / 已取消任务").withStyle(ChatFormatting.GREEN),true);
             return 1;
@@ -145,7 +164,7 @@ public final class TerrainRegenerationCommand {
 
     private static int retry(CommandContext<CommandSourceStack> context) {
         try {
-            var task = TerrainRegenerationManager.retry(UUID.fromString(StringArgumentType.getString(context,"task")));
+            var task = TerrainRegenerationManager.retry(taskId(context));
             context.getSource().sendSuccess(() -> Component.literal("Task queued for retry / 任务已加入重试队列\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
             return 1;
         } catch(Exception e){return fail(context,e);}
@@ -219,7 +238,7 @@ public final class TerrainRegenerationCommand {
         return Component.literal("  ").append(FGAText.text(key)).withStyle(color);
     }
 
-    private static String describe(TerrainRegenerationManager.Task t){return t.id()+" "+t.type()+" "+t.dimension()+" chunks ["+t.minChunkX()+","+t.minChunkZ()+"]..["+t.maxChunkX()+","+t.maxChunkZ()+"] blocks ["+t.minBlockX()+","+t.minBlockZ()+"]..["+t.maxBlockX()+","+t.maxBlockZ()+"] count="+t.chunks()+" status="+t.status();}
+    private static String describe(TerrainRegenerationManager.Task t){return shortId(t.id())+" "+t.type()+" "+t.dimension()+" chunks ["+t.minChunkX()+","+t.minChunkZ()+"]..["+t.maxChunkX()+","+t.maxChunkZ()+"] x"+t.chunks()+" "+t.status();}
     private static void line(MutableComponent out,String command,String note){out.append(Component.literal(command).withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withClickEvent(FgaClickEvents.suggestCommand(command)))).append(Component.literal("  # "+note+"\n").withStyle(ChatFormatting.GOLD));}
     private static void action(MutableComponent out, String label, String command, String hover) {
         out.append(Component.literal(label).withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN)
