@@ -48,6 +48,11 @@ public final class DeepslateStonecuttingRecipes {
 
     public static boolean isDisabledFgaRecipe(Object recipe) {
         if (!isFgaRecipe(recipe)) return false;
+        // The client never receives Carpet rule values, so it must never hide one of our recipes from
+        // its own menu: reading the local default here removed every wood, deepslate and light recipe
+        // from the stonecutter of any client whose config still says false. The server filters its own
+        // menu and decides authoritatively, so the client can safely show all of them.
+        if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) return false;
         ResourceLocation id = recipeId(recipe);
         if (id.getPath().endsWith("_from_deepslate_stonecutting")) {
             return !FGASettings.deepslateStonecuttingRecipes;
@@ -63,10 +68,6 @@ public final class DeepslateStonecuttingRecipes {
         //#endif
         //#if MC == 1.21.1
         if (LightSourceStonecuttingRecipes.isRecipe(id)) {
-            // The server packet is already filtered authoritatively.  The
-            // client does not receive Carpet rule values, so never remove a
-            // light recipe from its local menu based on the client default.
-            if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) return false;
             return !FGASettings.lightSourceStonecuttingRecipes;
         }
         //#endif
