@@ -130,6 +130,9 @@ public final class TerrainRegenerationManager {
             forEachChunk(task, pos -> state.remaining.add(chunkKey(pos)));
         }
         LIVE.put(id, state);
+        // Regeneration must not be voided by the void world generator; this used to be set by the
+        // startup path only, which is gone now that tasks run live.
+        if (task.type == Type.REGENERATE) forceNormal = true;
         state.owner = onlineCreator(CarpetServer.minecraft_server, task.creator);
         state.bossBar = new net.minecraft.server.level.ServerBossEvent(
                 Component.literal(bossTitle(task)), net.minecraft.world.BossEvent.BossBarColor.GREEN,
@@ -366,6 +369,7 @@ public final class TerrainRegenerationManager {
                             : "carpet.fga.terrain_regeneration.failed_done",
                     shortId(state.task.id), state.task.chunks(), seconds / 60L, seconds % 60L));
         }
+        forceNormal = LIVE.values().stream().anyMatch(other -> other.task.type == Type.REGENERATE);
         replace(state.task.withStatus(status, error));
         markSources(state.task.sources, status, error);
         try { save(); } catch (IOException exception) { LOGGER.error("Failed to save terrain task result", exception); }
