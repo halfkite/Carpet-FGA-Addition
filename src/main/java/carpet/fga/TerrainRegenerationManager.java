@@ -148,6 +148,8 @@ public final class TerrainRegenerationManager {
         final Set<Long> ticketed = new LinkedHashSet<>();
         /** Chunks that are still in memory right now, so they cannot be regenerated yet. */
         int loadedNow;
+        /** Region files already copied into the backup folder. */
+        final Set<String> copied = new HashSet<>();
 
         LiveState(Task task, Path backup) {
             this.task = task;
@@ -233,7 +235,7 @@ public final class TerrainRegenerationManager {
         return state.remaining.isEmpty() && state.ticketed.isEmpty();
     }
 
-    private static boolean tickClear(ServerLevel level, LiveState state) {
+    private static boolean tickClear(ServerLevel level, LiveState state) throws IOException {
         state.loadedNow = 0;
         int cleared = 0;
         int budget = Math.min(LIVE_TICKETS_PER_TICK, LIVE_IN_FLIGHT - state.ticketed.size());
@@ -253,7 +255,9 @@ public final class TerrainRegenerationManager {
             LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
             if (chunk == null) continue;
             if (isTaskChunk(state.task, pos)) {
+                backupChunkFiles(state, pos);
                 clearEntireChunk(chunk, level);
+                clearChunkPoi(level, pos);
                 removeEntities(level, pos);
                 cleared++;
             }
@@ -290,6 +294,34 @@ public final class TerrainRegenerationManager {
         for (var entity : level.getEntities((net.minecraft.world.entity.Entity) null, box, e -> true)) {
             if (!(entity instanceof net.minecraft.server.level.ServerPlayer)) entity.discard();
         }
+    }
+
+    /** Copies the stored data of one chunk into the live run's backup folder, without deleting it. */
+    private static void backupChunkFiles(LiveState state, ChunkPos pos) throws IOException {
+        ResourceKey<Level> key = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
+                //#if MC >= 1.21
+                ResourceLocation.parse(state.task.dimension));
+                //#else
+                //$$ new ResourceLocation(state.task.dimension));
+                //#endif
+        Path dimensionPath = DimensionType.getStorageFolder(key, worldRoot);
+        for (String type : List.of("region", "entities", "poi")) {
+            Path folder = dimensionPath.resolve(type);
+            if (!Files.isDirectory(folder)) continue;
+            Path region = regionFile(folder, pos);
+            if (!Files.isRegularFile(region)) continue;
+            copyRegionFile(folder, type, pos, state.backup, state.copied);
+        }
+    }
+
+    /** Drops every point of interest of one chunk, so a cleared area keeps no stale village data. */
+    private static void clearChunkPoi(ServerLevel level, ChunkPos pos) {
+        var poiManager = level.getPoiManager();
+        List<BlockPos> points = poiManager
+                .getInChunk(type -> true, pos, net.minecraft.world.entity.ai.village.poi.PoiManager.Occupancy.ANY)
+                .map(net.minecraft.world.entity.ai.village.poi.PoiRecord::getPos)
+                .toList();
+        for (BlockPos point : points) poiManager.remove(point);
     }
 
     /** Backs up and clears the stored data of one chunk so the next load regenerates it. */
