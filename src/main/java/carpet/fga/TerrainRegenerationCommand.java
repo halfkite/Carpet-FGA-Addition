@@ -173,8 +173,8 @@ public final class TerrainRegenerationCommand {
                 case RUNNING -> {
                     int[] progress = TerrainRegenerationManager.liveProgress(t.id());
                     out.append(Component.literal(progress == null ? "" :
-                            "progress " + progress[0] + "/" + progress[1] + " chunks, in flight " + progress[1]
-                                    + ", still loaded " + progress[2] + "\n").withStyle(ChatFormatting.YELLOW));
+                            "progress " + progress[0] + "/" + progress[1] + " chunks, in flight " + progress[2]
+                                    + ", still loaded " + progress[3] + "\n").withStyle(ChatFormatting.YELLOW));
                     action(out, "[点击取消执行中的任务] / [CLICK TO CANCEL]",
                             "/regenerateTerrain cancel " + t.id(),
                             "点击后停止本次在线执行 / Click to stop this live run");
@@ -216,10 +216,10 @@ public final class TerrainRegenerationCommand {
     }
 
     private static MutableComponent note(String key, ChatFormatting color) {
-        return Component.literal("  ").append(Component.translatable(key)).withStyle(color);
+        return Component.literal("  ").append(FGAText.text(key)).withStyle(color);
     }
 
-    private static String describe(TerrainRegenerationManager.Task t){return t.type()+" "+t.dimension()+" chunks ["+t.minChunkX()+","+t.minChunkZ()+"]..["+t.maxChunkX()+","+t.maxChunkZ()+"] blocks ["+t.minBlockX()+","+t.minBlockZ()+"]..["+t.maxBlockX()+","+t.maxBlockZ()+"] count="+t.chunks()+" status="+t.status();}
+    private static String describe(TerrainRegenerationManager.Task t){return t.id()+" "+t.type()+" "+t.dimension()+" chunks ["+t.minChunkX()+","+t.minChunkZ()+"]..["+t.maxChunkX()+","+t.maxChunkZ()+"] blocks ["+t.minBlockX()+","+t.minBlockZ()+"]..["+t.maxBlockX()+","+t.maxBlockZ()+"] count="+t.chunks()+" status="+t.status();}
     private static void line(MutableComponent out,String command,String note){out.append(Component.literal(command).withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withClickEvent(FgaClickEvents.suggestCommand(command)))).append(Component.literal("  # "+note+"\n").withStyle(ChatFormatting.GOLD));}
     private static void action(MutableComponent out, String label, String command, String hover) {
         out.append(Component.literal(label).withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN)

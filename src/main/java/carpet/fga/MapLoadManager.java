@@ -218,9 +218,9 @@ public final class MapLoadManager {
         return lines;
     }
 
-    /** Server side translation, see MESSAGES. */
+    /** Client language when the client has this mod, server language text otherwise. */
     static Component text(String key, Object... args) {
-        return Component.literal(raw(key, args));
+        return FGAText.text(key, args);
     }
 
     /** The same translation as plain text, for messages embedded into another literal. */

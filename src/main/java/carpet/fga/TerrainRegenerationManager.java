@@ -419,7 +419,8 @@ public final class TerrainRegenerationManager {
         LiveState state = LIVE.get(id);
         if (state == null) return null;
         int total = (int) state.task.chunks();
-        return new int[]{total - state.remaining.size() - state.ticketed.size(), state.ticketed.size(), state.loadedNow};
+        return new int[]{total - state.remaining.size() - state.ticketed.size(), total,
+                state.ticketed.size(), state.loadedNow};
     }
 
     public static synchronized List<Task> tasks() {
