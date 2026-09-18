@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.9`
+> Documentation version: `1.5.11`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default
 
@@ -36,7 +36,8 @@ Shows [controller] only after the controlled player's name, with red brackets an
 
 ### Swap Permissions During Possession(permissionSwapsToo) · [Related command](commands_en.md#cmd-control-player)
 
-true uses the controller's own command permissions, false uses the controlled player's command permissions<br>
+true uses the controller's own command permissions<br>
+false uses the controlled player's command permissions<br>
 This only changes command permissions and does not change possession entry permissions, save ownership, or offline player data
 
 - Type: `Boolean`
@@ -69,7 +70,10 @@ Vanilla player names are limited to 16 characters. This rule changes the limit t
 
 ### Custom Fake Player Presets(fakePlayerNamePresets)
 
-Customizes the fake-player name suggestions after `/player`; `false` keeps Carpet''s default Steve and Alex, while `[name,name]` replaces those presets and retains online-player and possession-target suggestions. This only changes suggestions and does not restrict manually entered names
+Customizes the fake-player name suggestions for `/player`<br>
+false: keeps Carpet's default Steve and Alex presets<br>
+`[name,name]`: replaces the default presets while keeping online players and possession targets in suggestions<br>
+Only suggestions are affected; manually entered names are not restricted
 
 - Type: `String`
 - Default: `false`
@@ -139,10 +143,8 @@ Automatically grants every registered recipe when a player joins, with a one-min
 
 ### Enchanted Golden Carrot(enchantedGoldenCarrot)
 
-Adds two shapeless recipes: 8 gold ingots plus 1 carrot, or 7 gold ingots plus 1 normal golden carrot<br>
-The result uses the vanilla golden carrot with an enchantment glint, can be eaten at full hunger, and restores hunger and saturation to 20<br>
-false: disables the recipes and makes existing enchanted golden carrots use normal golden carrot eating conditions and food restoration<br>
-true: enables the recipes
+Adds two shapeless recipes: 8 gold ingots with 1 carrot, or 7 gold ingots with 1 regular golden carrot<br>
+The result is an enchanted-looking golden carrot that can be eaten at full hunger and restores hunger and saturation to 20
 
 - Type: `Boolean`
 - Default: `false`
@@ -281,6 +283,29 @@ Lets bone meal grow any flower on grass blocks in any biome; flowers still need 
 - Effective versions: `1.21+`
 - Client requirements: `None (server-side only)`
 - Relations to other rules: `None`
+
+### Maximum Bone Meal Efficiency(boneMealMaxEfficiency)
+
+Fully grows saplings, bamboo, sea pickles, and other plants that can grow through multiple stages from one bone meal
+
+- Type: `Boolean`
+- Default value: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`
+- Client requirements: `None (server-side only)`
+- Relations to other rules: independent of `grassBonemealAnyFlower`
+
+### Named Ender Pearl Player Teleport(namedEnderPearlTeleport)
+
+Named ender pearls teleport the online player with the matching custom name; when no matching player is online, vanilla pearl teleportation is unchanged
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`
+- Client requirements: None (server-side only)
 
 ### Player End Portal Teleport Control(PlayerTpEndControl) · [Related command](commands_en.md#cmd-playertpend)
 
@@ -434,6 +459,39 @@ When an anvil combines matching enchantments, adds their levels directly, so 2+2
 - Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
+### Fire Aspect Tool Smelting(fireAspectOnTools)
+
+Mining tools can receive Fire Aspect; Fire Aspect I smelts drops once and Fire Aspect II smelts them twice; tools cannot receive Fire Aspect from an enchanting table
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`
+- Client requirements: None (server-side only)
+
+### Soul Speed No Durability Cost(soulSpeedNoDurability)
+
+Soul Speed no longer damages boots while moving on soul sand, soul soil, or other compatible blocks
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`
+- Client requirements: None (server-side only)
+
+### Thorns No Durability Cost(thornsNoDurability)
+
+Thorns no longer damages armor when its retaliation effect triggers
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`
+- Client requirements: None (server-side only)
+
 ### Flat Experience Level Costs(experienceLevelCost)
 
 `false` uses the vanilla experience curve; `29-30` makes every level after 30 cost the same as levels 29 to 30; `0-1` makes every level cost the same as levels 0 to 1
@@ -476,7 +534,10 @@ Uses the minimum vanilla random input price when an unemployed villager gains a 
 
 ### Villagers Only Sell Max-Level Enchanted Books(villagerOnlyMaxEnchantmentBooks)
 
-Newly generated enchanted books promote their rolled enchantments directly to the highest vanilla book-trade level; `false` disables the rule, `onlyvanilla` uses the vanilla maximum for enchanted-book trades, and `more` allows the level configured by `enchantmentLevelLimitIncrease`. The rule only affects trades generated when a villager gains a profession or levels up
+Newly generated villager enchanted books raise the rolled enchantment directly to the target level<br>
+onlyvanilla: raises it to the highest level reachable by vanilla book trades<br>
+more: allows the level configured by `enchantmentLevelLimitIncrease`<br>
+Only affects trades newly generated when a villager gains a profession or levels up
 
 - Type: `Enum`
 - Default: `false`
@@ -486,7 +547,10 @@ Newly generated enchanted books promote their rolled enchantments directly to th
 
 ### Villagers Only Sell Max-Level Enchanted Weapons and Equipment(villagerOnlyMaxEnchantmentEquipment)
 
-Newly generated enchanted weapons and equipment promote their rolled enchantments directly to the highest level reachable by vanilla equipment trades, calculated from the vanilla 5-19 enchanting power range and the item's enchantability; this means Efficiency, Sharpness, and similar enchantments are not promoted to level V when vanilla equipment trades cannot reach V. `false` disables the rule, `onlyvanilla` uses that vanilla equipment cap, and `more` allows the level configured by `enchantmentLevelLimitIncrease`. Unenchanted equipment and other trades are unchanged, and the rule only affects trades generated when a villager gains a profession or levels up
+Newly generated villager enchanted weapons and equipment raise rolled enchantments directly to the target level<br>
+onlyvanilla: calculates the highest level from vanilla equipment-trade enchantment strength 5 to 19 and item enchantability, so Efficiency, Sharpness, and similar enchantments are not raised to level V when vanilla equipment trades cannot reach it<br>
+more: allows the level configured by `enchantmentLevelLimitIncrease`<br>
+Unenchanted equipment and other trades are unchanged; only newly generated trades are affected
 
 - Type: `Enum`
 - Default: `false`
@@ -576,12 +640,8 @@ Configures death drops to remove per entity<br>`false`: disables the command<br>
 
 ### Piglin Barter Item Customization(piglinBarterItemExclusions) · [Related command](commands_en.md#cmd-piglin-barter-customization)
 
-When enabled, use /fga piglinBarterItemExclusions list to view and edit the current piglin barter loot table<br>
-false: disables customization and keeps vanilla bartering<br>
-true: enables custom enabled state, probability, and quantity for barter entries<br>
-The list shows concrete loot variants with the client language name and English ID, with editable probability, quantity range, disable or enable, and reset actions on each row<br>
-If enabled probabilities total less than 100%, the remainder produces an empty barter; totals above 100% are normalized proportionally<br>
-Legacy `[ironBoots]`, `[potions]`, and item ID lists are migrated to the world configuration on first load
+Use `/fga piglinBarterItemExclusions list` to view and edit the current piglin barter loot table<br>
+Entries can be edited by clicking the list; totals below 100% leave the remainder as empty trades, while totals above 100% are normalized proportionally
 
 - Type: `Boolean`
 - Default: `false`
@@ -611,12 +671,44 @@ Allows wood products to be crafted in the stonecutter
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
 
+### Light Source Stonecutting Recipes(lightSourceStonecuttingRecipes)
+
+Allows beacons, glowstone, jack-o-lanterns, sea lanterns, frog lights, end rods, torches, candles, and other light-emitting blocks to be placed in the stonecutter and cut into `minecraft:light` blocks with light levels 1 through 15, producing 4 each time<br>
+`minecraft:light` blocks of any light level can also be converted between each other at a one-to-one rate
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`
+
+### Breakable Light Blocks(lightBlockBreakable)
+
+Survival players holding a light block can break light blocks<br>
+The client must have FGA installed to start survival breaking
+
+- Type: `Enum`
+- Default: `false`
+- Options: `false`, `true`, `onlyholding`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`
+
 ### Player Load Distance(playerLoadDistance) · [Related command](commands_en.md#cmd-player-load-distance)
 
 Controls per-player chunk sending and tracking distance without changing simulation distance<br>`false`: disables the related commands<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum command permission level<br>Use `/playerLoadDistance help` for command help; append `persistent` to save across restarts<br>A non-op player's setting only affects their own chunk loading and no longer raises the server-wide view distance; raising the global view distance requires an operator<br>`-1` weakly loads only the center chunk, `0` strongly loads the center and keeps a 3x3 weak-loading area, `1-32` sets the chunk radius, and `none` removes the player loading view
 
 - Type: `Permission string`
 - Default: `false`
+- Options: `false`, `true`, `ops`, `0-4`
+- Categories: `FGA`, `Feature`, `Command`
+- Effective versions: `1.21.1`
+
+### Map Load Command Permission(mapLoadCommandPermission) · [Related command](commands_en.md#cmd-map-load)
+
+Controls access to `/mapLoad` and `/fga mapLoad`<br>`false`: disables the commands<br>`true`: allows every player to use them<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum command permission level
+
+- Type: `Permission string`
+- Default: `ops`
 - Options: `false`, `true`, `ops`, `0-4`
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21.1`

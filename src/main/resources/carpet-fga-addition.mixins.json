@@ -119,11 +119,26 @@
         //#endif
         //#if MC == 1.21.1
         ,"StonecutterMenuAccessor",
-        "CarpetRuleDescriptionMixin"
+        "CarpetRuleDescriptionMixin",
+        "LightBlockBreakMixin",
+        "NamedEnderPearlTeleportMixin",
+        "EnchantmentFireAspectToolMixin",
+        "EnchantmentDurabilityMixin",
+        "DamageItemSoulSpeedMixin",
+        "BlockFireAspectSmeltingMixin"
         //#endif
         //#if MC >= 1.21
         ,"StonecutterMenuFullShulkerMixin",
         "GrassBlockAnyFlowerMixin"
+        //#endif
+        //#if MC == 1.21.1
+        ,"CropBlockBoneMealMaxMixin",
+        "StemBlockBoneMealMaxMixin",
+        "BambooStalkBlockBoneMealMaxMixin",
+        "SeaPickleBoneMealMaxMixin",
+        "GrowingPlantHeadBoneMealMaxMixin",
+        "SaplingBlockBoneMealMaxMixin",
+        "AzaleaBlockBoneMealMaxMixin"
         //#endif
         //#if MC == 1.21.1
         ,"ChunkMapPlayerLoadDistanceAccessor",

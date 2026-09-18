@@ -3,6 +3,9 @@ package carpet.fga.mixin;
 
 import carpet.fga.FGASettings;
 import carpet.fga.DeepslateStonecuttingRecipes;
+//#if MC == 1.21.1
+import carpet.fga.LightSourceStonecuttingRecipes;
+//#endif
 import net.minecraft.world.inventory.StonecutterMenu;
 //#if MC >= 1.21.3
 //$$ import net.minecraft.world.item.crafting.SelectableRecipe;
@@ -31,6 +34,9 @@ public abstract class StonecutterMenuDeepslateMixin {
         //$$ recipesForInput = DeepslateStonecuttingRecipes.filter(recipesForInput);
         //#else
         recipes.removeIf(DeepslateStonecuttingRecipes::isDisabledFgaRecipe);
+        //#if MC == 1.21.1
+        recipes.sort(java.util.Comparator.comparingInt(LightSourceStonecuttingRecipes::menuSortOrder));
+        //#endif
         //#endif
     }
 }

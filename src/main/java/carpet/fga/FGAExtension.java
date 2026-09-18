@@ -167,6 +167,9 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         PlayerLoadDistanceCommand.register(dispatcher);
+        //#if MC == 1.21.1
+        MapLoadCommand.register(dispatcher);
+        //#endif
         //#endif
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
@@ -195,6 +198,9 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         PlayerLoadDistanceCompat.tick(server);
+        //#if MC == 1.21.1
+        MapLoadManager.tick(server);
+        //#endif
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         MinecartFeatureManager.tick(server);
@@ -251,6 +257,7 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC == 1.21.1
         PiglinBarterCustomizationManager.clear();
+        MapLoadManager.clear();
         //#endif
         //#if MC >= 1.21 && MC <= 26.3
         NetherPortalLightManager.clear();
@@ -367,6 +374,9 @@ public class FGAExtension implements CarpetExtension {
                     && !"villagerPerformanceOptimization".equals(rule.name())
                     && !"minecartFeatureCommandPermission".equals(rule.name())
                     && !"terrainRegenerationCommandPermission".equals(rule.name())
+                    //#if MC == 1.21.1
+                    && !"mapLoadCommandPermission".equals(rule.name())
+                    //#endif
                     && !"trialStopCommandPermission".equals(rule.name())
                     && !"entityDropRemoval".equals(rule.name())
                     //#if MC >= 1.21 && MC <= 26.3
@@ -438,8 +448,12 @@ public class FGAExtension implements CarpetExtension {
             if (("deepslateStonecuttingRecipes".equals(rule.name())
                     //#if MC >= 1.20.1 && MC <= 26.3
                     || "woodStonecuttingRecipes".equals(rule.name())
+                    //#if MC == 1.21.1
+                    || "lightSourceStonecuttingRecipes".equals(rule.name())
+                    //#endif
                     //#endif
                     ) && server != null) {
+                boolean lightRecipesChanged = "lightSourceStonecuttingRecipes".equals(rule.name());
                 net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket packet =
                         new net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket(
                                 //#if MC >= 1.21.3
@@ -448,7 +462,18 @@ public class FGAExtension implements CarpetExtension {
                                 //#else
                                 server.getRecipeManager().getRecipes());
                                 //#endif
-                server.getPlayerList().getPlayers().forEach(player -> player.connection.send(packet));
+                server.getPlayerList().getPlayers().forEach(player -> {
+                    player.connection.send(packet);
+                    //#if MC == 1.21.1
+                    // A stonecutter already open while the rule changes keeps its
+                    // previous recipe list until the next input update. Close it so
+                    // the client immediately rebuilds the list from the new packet.
+                    if (lightRecipesChanged && player.containerMenu
+                            instanceof net.minecraft.world.inventory.StonecutterMenu) {
+                        player.closeContainer();
+                    }
+                    //#endif
+                });
             }
         });
         //#endif

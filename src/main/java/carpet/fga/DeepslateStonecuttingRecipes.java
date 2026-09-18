@@ -2,6 +2,10 @@
 package carpet.fga;
 
 import net.minecraft.resources.ResourceLocation;
+//#if MC == 1.21.1
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.FabricLoader;
+//#endif
 //#if MC >= 1.20.2
 import net.minecraft.world.item.crafting.RecipeHolder;
 //#else
@@ -24,6 +28,9 @@ public final class DeepslateStonecuttingRecipes {
                     || WoodStonecuttingRecipes.isWoodRecipe(id)
                     //#elseif MC >= 1.21.4 && MC <= 26.3
                     || WoodStonecuttingRecipes.isWoodRecipe(id)
+                    //#endif
+                    //#if MC == 1.21.1
+                    || LightSourceStonecuttingRecipes.isRecipe(id)
                     //#endif
                 );
     }
@@ -52,6 +59,15 @@ public final class DeepslateStonecuttingRecipes {
         //#elseif MC >= 1.21.4 && MC <= 26.3
         if (WoodStonecuttingRecipes.isWoodRecipe(id)) {
             return !FGASettings.woodStonecuttingRecipes;
+        }
+        //#endif
+        //#if MC == 1.21.1
+        if (LightSourceStonecuttingRecipes.isRecipe(id)) {
+            // The server packet is already filtered authoritatively.  The
+            // client does not receive Carpet rule values, so never remove a
+            // light recipe from its local menu based on the client default.
+            if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) return false;
+            return !FGASettings.lightSourceStonecuttingRecipes;
         }
         //#endif
         return false;
