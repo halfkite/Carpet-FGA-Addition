@@ -282,6 +282,21 @@ public final class FullShulkerBoxCraftingManager {
         //#endif
     }
 
+    /** How many content items one craft of this recipe consumes, taken from the recipe itself. */
+    private static int requiredCraftingInput(CraftingRecipe recipe, ItemStack content) {
+        int required = 0;
+        for (var ingredient : recipe.getIngredients()) {
+            if (ingredient.isEmpty()) continue;
+            for (ItemStack stack : ingredient.getItems()) {
+                if (FGACompat.isSameItemSameTags(content, stack)) {
+                    required += Math.max(1, stack.getCount());
+                    break;
+                }
+            }
+        }
+        return required;
+    }
+
     private static Analysis analyze(CraftingContainer crafting, Player player) {
         int shulkerSize = shulkerSize();
         List<Integer> sourceSlots = new ArrayList<>();
@@ -377,10 +392,23 @@ public final class FullShulkerBoxCraftingManager {
         //$$ int outputStackLimit = FGASettings.effectiveContainerStackLimit(recipeOutput);
         //#endif
         long outputCapacity = (long) outputStackLimit * shulkerSize;
+        // How many content items one craft consumes: nine for nine quartz into a block, one for a log.
+        // Reading it from the recipe keeps mod and datapack recipes with any ratio working.
+        int requiredPerCraft = requiredCraftingInput(recipe, ingredients.isEmpty() ? ItemStack.EMPTY : ingredients.get(0));
+        if (requiredPerCraft <= 0) return Analysis.NONE;
         //#if MC >= 1.21
-        long totalOutputItems = expectedCrafts * recipeOutput.getCount();
+        long totalContentItems = expectedCrafts * sourceBoxes.size();
         //#else
-        //$$ long totalOutputItems = craftsPerBox * recipeOutput.getCount();
+        //$$ long totalContentItems = craftsPerBox * sourceBoxes.size();
+        //#endif
+        if (totalContentItems <= 0 || totalContentItems % requiredPerCraft != 0) {
+            return Analysis.failure(Failure.CONTENT_NOT_DIVISIBLE);
+        }
+        long crafts = totalContentItems / requiredPerCraft;
+        //#if MC >= 1.21
+        long totalOutputItems = crafts * recipeOutput.getCount();
+        //#else
+        //$$ long totalOutputItems = crafts * recipeOutput.getCount();
         //#endif
         if (outputCapacity <= 0 || (!allowPartial && totalOutputItems % outputCapacity != 0)) {
             return Analysis.failure(Failure.NON_WHOLE_OUTPUT);
@@ -404,9 +432,9 @@ public final class FullShulkerBoxCraftingManager {
                     .filter(candidate -> FGACompat.isSameItemSameTags(candidate.item(), remainder))
                     .findFirst().orElse(null);
             //#if MC >= 1.21
-            long amount = expectedCrafts * remainder.getCount();
+            long amount = crafts * remainder.getCount();
             //#else
-            //$$ long amount = craftsPerBox * remainder.getCount();
+            //$$ long amount = crafts * remainder.getCount();
             //#endif
             if (total == null) remainderTotals.add(new RemainderTotal(FGACompat.copyWithCount(remainder, 1), amount));
             else total.add(amount);
@@ -1290,6 +1318,7 @@ public final class FullShulkerBoxCraftingManager {
         INPUT_CAPACITY_MISMATCH("inputCapacityMismatch"),
         //#if MC >= 1.21
         CONTENT_COUNT_MISMATCH("contentCountMismatch"),
+        CONTENT_NOT_DIVISIBLE("contentNotDivisible"),
         //#endif
         UNSTACKABLE_OUTPUT("unstackableOutput"),
         NON_WHOLE_OUTPUT("nonWholeOutput"),

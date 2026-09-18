@@ -148,6 +148,7 @@
     "carpet-fga-addition.fullShulkerBoxCrafting.unstackableInput": "不可堆疊物品不能參與滿潛影盒合成",
     "carpet-fga-addition.fullShulkerBoxCrafting.inputCapacityMismatch": "輸入物品的每盒容量不同，無法在不保留餘料的情況下整盒合成",
     "carpet-fga-addition.fullShulkerBoxCrafting.contentCountMismatch": "各輸入潛影盒內的物品數量必須相同",
+    "carpet-fga-addition.fullShulkerBoxCrafting.contentNotDivisible":  "盒內物品數量必須能整除該配方每次合成消耗的數量",
     "carpet-fga-addition.fullShulkerBoxCrafting.unstackableOutput": "配方結果不可堆疊，不能裝成滿潛影盒",
     "carpet-fga-addition.fullShulkerBoxCrafting.nonWholeOutput": "配方結果無法恰好組成整數個滿潛影盒",
     "carpet-fga-addition.fullShulkerBoxCrafting.unstackableRemainder": "配方包含不可堆疊的返還物",

@@ -60,10 +60,26 @@ public final class WoodStonecuttingRecipes {
         return menu == null ? 1 : requiredInputCount(menu);
     }
 
+    /** Input item count declared by a recipe's ingredient; 1 for almost every recipe. */
+    private static int ingredientCount(Object recipe) {
+        Object value = recipe;
+        if (value instanceof net.minecraft.world.item.crafting.RecipeHolder<?> holder) value = holder.value();
+        if (value instanceof net.minecraft.world.item.crafting.StonecutterRecipe stonecutter) {
+            var ingredients = stonecutter.getIngredients();
+            if (!ingredients.isEmpty()) {
+                var items = ingredients.get(0).getItems();
+                if (items.length > 0 && items[0].getCount() > 0) return items[0].getCount();
+            }
+        }
+        return 1;
+    }
+
     public static int requiredInputCount(Object recipe) {
         ResourceLocation id = recipeId(recipe);
         if (id == null) return 1;
-        if (!isWoodRecipe(id)) return 1;
+        // Anything that is not one of our own generated recipes takes its input count from the recipe
+        // itself, so vanilla, mod and datapack recipes with any input ratio are honoured.
+        if (!isWoodRecipe(id)) return ingredientCount(recipe);
         String path = id.getPath();
         if (path.startsWith("bamboo_to_")) return 9;
         boolean bambooBlockInput = path.startsWith("bamboo_block_to_")

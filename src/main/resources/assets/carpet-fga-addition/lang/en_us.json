@@ -150,6 +150,7 @@
     "carpet-fga-addition.fullShulkerBoxCrafting.unstackableInput":  "Unstackable items cannot be used in full shulker box crafting",
     "carpet-fga-addition.fullShulkerBoxCrafting.inputCapacityMismatch":  "Input box capacities differ and cannot be fully consumed without leftovers",
     "carpet-fga-addition.fullShulkerBoxCrafting.contentCountMismatch":  "Input boxes must contain the same number of items",
+    "carpet-fga-addition.fullShulkerBoxCrafting.contentNotDivisible":  "The box content count must divide evenly by what one craft of this recipe consumes",
     "carpet-fga-addition.fullShulkerBoxCrafting.unstackableOutput":  "The recipe output is unstackable and cannot fill a shulker box",
     "carpet-fga-addition.fullShulkerBoxCrafting.nonWholeOutput":  "The recipe output does not form a whole number of full shulker boxes",
     "carpet-fga-addition.fullShulkerBoxCrafting.unstackableRemainder":  "The recipe has an unstackable remaining item",
