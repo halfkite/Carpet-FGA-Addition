@@ -278,5 +278,17 @@
     "carpet.fga.map_load.button.stop": "[Stop]",
     "carpet.fga.map_load.hint.pause": "Click to pause this map load",
     "carpet.fga.map_load.hint.resume": "Click to resume this map load",
-    "carpet.fga.map_load.hint.stop": "Click to stop this map load"
+    "carpet.fga.map_load.hint.stop": "Click to stop this map load",
+    "carpet.fga.terrain_regeneration.help.title": "Terrain regeneration and clearing",
+    "carpet.fga.terrain_regeneration.help.regenerate_box": "regenerate terrain in a box",
+    "carpet.fga.terrain_regeneration.help.regenerate_radius": "regenerate terrain around a point",
+    "carpet.fga.terrain_regeneration.help.clear_box": "clear a box to air",
+    "carpet.fga.terrain_regeneration.help.clear_radius": "clear around a point to air",
+    "carpet.fga.terrain_regeneration.help.dimension": "pick a dimension, required from console",
+    "carpet.fga.terrain_regeneration.help.list": "list drafts, queued, running, complete and failed tasks",
+    "carpet.fga.terrain_regeneration.help.confirm": "confirm a draft so it can be run",
+    "carpet.fga.terrain_regeneration.help.run": "run a confirmed task now, no server restart needed",
+    "carpet.fga.terrain_regeneration.help.cancel": "cancel a draft, queued or running task",
+    "carpet.fga.terrain_regeneration.help.retry": "retry a failed task from its existing backup",
+    "carpet.fga.terrain_regeneration.help.note": "Coordinates suggest your position or targeted block; chunk coordinates round outward; clearing also handles an 8-block fluid border"
 }

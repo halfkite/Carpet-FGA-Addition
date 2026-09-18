@@ -10,7 +10,9 @@ import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import carpet.CarpetServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -51,6 +53,15 @@ public final class TerrainRegenerationManager {
     private static final List<Task> TASKS = new ArrayList<>();
     private static final Map<UUID, Task> DRAFTS = new LinkedHashMap<>();
     private static final List<Task> STARTUP_TASKS = new ArrayList<>();
+    /** Live runs: confirmed tasks being applied right now, no restart needed. */
+    private static final Map<UUID, LiveState> LIVE = new LinkedHashMap<>();
+    /** Chunks asked for per tick and chunks generating at once, so a live run stays smooth. */
+    private static final int LIVE_TICKETS_PER_TICK = 8;
+    private static final int LIVE_IN_FLIGHT = 64;
+    /** Chunks cleared per tick; clearing one chunk writes a lot of blocks. */
+    private static final int LIVE_CLEAR_PER_TICK = 4;
+    private static final TicketType<ChunkPos> LIVE_TICKET =
+            TicketType.create("carpet_fga_terrain_regeneration", Comparator.comparingLong(ChunkPos::toLong));
     private static Path configPath;
     private static Path worldRoot;
     private static boolean invalid;
@@ -65,8 +76,10 @@ public final class TerrainRegenerationManager {
         configPath = worldRoot.resolve("config/carpetfgaaddition/terrain-regeneration.json");
         load();
         if (invalid) return;
+        // Only tasks that were already prepared (older configs) still apply at startup; a confirmed
+        // task now waits for /regenerateTerrain run.
         List<Task> pending = TASKS.stream()
-                .filter(t -> t.status == Status.CONFIRMED || t.status == Status.PREPARED).toList();
+                .filter(t -> t.status == Status.PREPARED).toList();
         if (pending.isEmpty()) return;
         try {
             List<Task> confirmed = pending.stream().filter(t -> t.status == Status.CONFIRMED).toList();
@@ -126,6 +139,222 @@ public final class TerrainRegenerationManager {
         }
     }
 
+    private static final class LiveState {
+        final Task task;
+        final Path backup;
+        /** Chunks not handed to the chunk pipeline yet. */
+        final Set<Long> remaining = new HashSet<>();
+        /** Chunks currently ticketed and still generating or loading. */
+        final Set<Long> ticketed = new LinkedHashSet<>();
+        /** Chunks that are still in memory right now, so they cannot be regenerated yet. */
+        int loadedNow;
+
+        LiveState(Task task, Path backup) {
+            this.task = task;
+            this.backup = backup;
+        }
+    }
+
+    /**
+     * Applies a confirmed task right away instead of at the next restart. Regeneration needs the
+     * stored chunk data gone before the chunk is loaded again, so chunks that are in memory right now
+     * are waited for and reported instead of being force unloaded.
+     */
+    public static synchronized Task run(UUID id) throws IOException {
+        ensureWritable();
+        Task task = TASKS.stream().filter(t -> t.id.equals(id)).findFirst().orElse(null);
+        if (task == null) throw new IllegalArgumentException("task not found / 任务不存在");
+        if (LIVE.containsKey(id)) throw new IllegalArgumentException("task is already running / 任务正在执行");
+        if (task.status != Status.CONFIRMED) {
+            throw new IllegalArgumentException("only a confirmed task can run / 只有已确认的任务可以执行");
+        }
+        Path backup = worldRoot.resolve("config/carpetfgaaddition/terrain-regeneration-backups")
+                .resolve(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")))
+                .resolve(task.id.toString());
+        Files.createDirectories(backup);
+        LiveState state = new LiveState(task, backup);
+        if (task.type == Type.CLEAR) {
+            // Clearing also touches the fluid border just outside the box, so those chunks load too.
+            forEachClearAffectedChunk(task, pos -> state.remaining.add(chunkKey(pos)));
+        } else {
+            forEachChunk(task, pos -> state.remaining.add(chunkKey(pos)));
+        }
+        LIVE.put(id, state);
+        replace(task.withStatus(Status.RUNNING, null));
+        save();
+        return task;
+    }
+
+    /** Advances every live run; called from the server tick. */
+    public static synchronized void tick(MinecraftServer server) {
+        if (LIVE.isEmpty()) return;
+        Iterator<Map.Entry<UUID, LiveState>> iterator = LIVE.entrySet().iterator();
+        while (iterator.hasNext()) {
+            LiveState state = iterator.next().getValue();
+            ServerLevel level = level(server, state.task.dimension);
+            if (level == null) {
+                finishLive(server, state, Status.FAILED, "dimension is not loaded");
+                iterator.remove();
+                continue;
+            }
+            try {
+                boolean done = state.task.type == Type.CLEAR ? tickClear(level, state) : tickRegenerate(level, state);
+                if (done) {
+                    finishLive(server, state, Status.COMPLETE, null);
+                    iterator.remove();
+                }
+            } catch (Exception exception) {
+                LOGGER.error("Terrain task {} failed while running live", state.task.id, exception);
+                finishLive(server, state, Status.FAILED, exception.toString());
+                iterator.remove();
+            }
+        }
+    }
+
+    private static boolean tickRegenerate(ServerLevel level, LiveState state) throws IOException {
+        state.loadedNow = 0;
+        int budget = Math.min(LIVE_TICKETS_PER_TICK, LIVE_IN_FLIGHT - state.ticketed.size());
+        Iterator<Long> iterator = state.remaining.iterator();
+        while (iterator.hasNext() && budget > 0) {
+            long key = iterator.next();
+            ChunkPos pos = unpackChunk(key);
+            if (level.getChunkSource().getChunkNow(pos.x, pos.z) != null) {
+                // In memory: deleting its data now would be undone when the chunk unloads, so wait.
+                state.loadedNow++;
+                continue;
+            }
+            prepareChunkData(state, pos);
+            level.getChunkSource().addRegionTicket(LIVE_TICKET, pos, 0, pos);
+            state.ticketed.add(key);
+            iterator.remove();
+            budget--;
+        }
+        releaseGenerated(level, state);
+        return state.remaining.isEmpty() && state.ticketed.isEmpty();
+    }
+
+    private static boolean tickClear(ServerLevel level, LiveState state) {
+        state.loadedNow = 0;
+        int cleared = 0;
+        int budget = Math.min(LIVE_TICKETS_PER_TICK, LIVE_IN_FLIGHT - state.ticketed.size());
+        Iterator<Long> iterator = state.remaining.iterator();
+        while (iterator.hasNext() && budget > 0) {
+            long key = iterator.next();
+            ChunkPos pos = unpackChunk(key);
+            level.getChunkSource().addRegionTicket(LIVE_TICKET, pos, 0, pos);
+            state.ticketed.add(key);
+            iterator.remove();
+            budget--;
+        }
+        Iterator<Long> tickets = state.ticketed.iterator();
+        while (tickets.hasNext() && cleared < LIVE_CLEAR_PER_TICK) {
+            long key = tickets.next();
+            ChunkPos pos = unpackChunk(key);
+            LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+            if (chunk == null) continue;
+            if (isTaskChunk(state.task, pos)) {
+                clearEntireChunk(chunk, level);
+                removeEntities(level, pos);
+                cleared++;
+            }
+            level.getChunkSource().removeRegionTicket(LIVE_TICKET, pos, 0, pos);
+            tickets.remove();
+        }
+        if (state.remaining.isEmpty() && state.ticketed.isEmpty()) {
+            clearBoundaryFluids(level, state.task);
+            level.getChunkSource().save(true);
+            return true;
+        }
+        return false;
+    }
+
+    private static void releaseGenerated(ServerLevel level, LiveState state) {
+        Iterator<Long> tickets = state.ticketed.iterator();
+        while (tickets.hasNext()) {
+            long key = tickets.next();
+            ChunkPos pos = unpackChunk(key);
+            if (level.getChunkSource().getChunkNow(pos.x, pos.z) == null) continue;
+            level.getChunkSource().removeRegionTicket(LIVE_TICKET, pos, 0, pos);
+            tickets.remove();
+        }
+    }
+
+    private static boolean isTaskChunk(Task task, ChunkPos pos) {
+        return pos.x >= task.minChunkX && pos.x <= task.maxChunkX && pos.z >= task.minChunkZ && pos.z <= task.maxChunkZ;
+    }
+
+    private static void removeEntities(ServerLevel level, ChunkPos pos) {
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(
+                pos.getMinBlockX(), level.getMinBuildHeight(), pos.getMinBlockZ(),
+                pos.getMaxBlockX() + 1.0D, level.getMaxBuildHeight(), pos.getMaxBlockZ() + 1.0D);
+        for (var entity : level.getEntities((net.minecraft.world.entity.Entity) null, box, e -> true)) {
+            if (!(entity instanceof net.minecraft.server.level.ServerPlayer)) entity.discard();
+        }
+    }
+
+    /** Backs up and clears the stored data of one chunk so the next load regenerates it. */
+    private static void prepareChunkData(LiveState state, ChunkPos pos) throws IOException {
+        ResourceKey<Level> key = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
+                //#if MC >= 1.21
+                ResourceLocation.parse(state.task.dimension));
+                //#else
+                //$$ new ResourceLocation(state.task.dimension));
+                //#endif
+        Path dimensionPath = DimensionType.getStorageFolder(key, worldRoot);
+        for (String type : List.of("region", "entities", "poi")) {
+            Path folder = dimensionPath.resolve(type);
+            if (!Files.isDirectory(folder)) continue;
+            Path region = regionFile(folder, pos);
+            if (!Files.isRegularFile(region)) continue;
+            copyRegionFile(folder, type, pos, state.backup, new HashSet<>());
+            try (net.minecraft.world.level.chunk.storage.RegionFile file =
+                         new net.minecraft.world.level.chunk.storage.RegionFile(
+                                 //#if MC >= 1.21
+                                 new net.minecraft.world.level.chunk.storage.RegionStorageInfo("fga", key, type),
+                                 //#endif
+                                 region, folder, false)) {
+                file.clear(pos);
+            }
+        }
+    }
+
+    private static void finishLive(MinecraftServer server, LiveState state, Status status, String error) {
+        ServerLevel level = level(server, state.task.dimension);
+        if (level != null) {
+            for (long key : state.ticketed) {
+                ChunkPos pos = unpackChunk(key);
+                level.getChunkSource().removeRegionTicket(LIVE_TICKET, pos, 0, pos);
+            }
+        }
+        state.ticketed.clear();
+        replace(state.task.withStatus(status, error));
+        markSources(state.task.sources, status, error);
+        try { save(); } catch (IOException exception) { LOGGER.error("Failed to save terrain task result", exception); }
+    }
+
+    private static void replace(Task task) {
+        for (int i = 0; i < TASKS.size(); i++) {
+            if (TASKS.get(i).id.equals(task.id)) { TASKS.set(i, task); return; }
+        }
+        TASKS.add(task);
+    }
+
+    private static long chunkKey(ChunkPos pos) {
+        //#if MC >= 26.1.2
+        //$$ return pos.pack();
+        //#else
+        return pos.toLong();
+        //#endif
+    }
+
+    private static ChunkPos unpackChunk(long key) {
+        //#if MC >= 26.1.2
+        //$$ return new ChunkPos(ChunkPos.getX(key), ChunkPos.getZ(key));
+        //#else
+        return new ChunkPos(key);
+        //#endif
+    }
+
     public static synchronized Task draft(Type type, ResourceLocation dimension, int minX, int minZ, int maxX, int maxZ,
                                           String creator) throws IOException {
         ensureWritable();
@@ -158,6 +387,11 @@ public final class TerrainRegenerationManager {
     }
 
     public static synchronized boolean cancel(UUID id) throws IOException {
+        LiveState live = LIVE.remove(id);
+        if (live != null) {
+            MinecraftServer server = CarpetServer.minecraft_server;
+            if (server != null) finishLive(server, live, Status.CANCELLED, null);
+        }
         ensureWritable();
         boolean removed = DRAFTS.remove(id) != null;
         removed |= TASKS.removeIf(task -> task.id.equals(id)
@@ -178,6 +412,14 @@ public final class TerrainRegenerationManager {
             }
         }
         throw new IllegalArgumentException("failed task not found / 未找到失败任务");
+    }
+
+    /** Progress of a live run: cleared/generated chunks, chunks in flight, chunks still in memory. */
+    public static synchronized int[] liveProgress(UUID id) {
+        LiveState state = LIVE.get(id);
+        if (state == null) return null;
+        int total = (int) state.task.chunks();
+        return new int[]{total - state.remaining.size() - state.ticketed.size(), state.ticketed.size(), state.loadedNow};
     }
 
     public static synchronized List<Task> tasks() {
@@ -479,7 +721,7 @@ public final class TerrainRegenerationManager {
     }
 
     public enum Type { REGENERATE, CLEAR }
-    public enum Status { DRAFT, CONFIRMED, PREPARED, COMPLETE, FAILED }
+    public enum Status { DRAFT, CONFIRMED, PREPARED, RUNNING, COMPLETE, FAILED, CANCELLED }
 
     public record Task(UUID id, Type type, String dimension, int minChunkX, int minChunkZ, int maxChunkX, int maxChunkZ,
                        Status status, String creator, long createdAt, List<UUID> sources, String error) {

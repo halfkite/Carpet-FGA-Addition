@@ -42,6 +42,9 @@ public final class TerrainRegenerationCommand {
                         .executes(TerrainRegenerationCommand::confirm)))
                 .then(Commands.literal("cancel").then(Commands.argument("task", StringArgumentType.word())
                         .suggests((c,b) -> suggestTasks(b, null)).executes(TerrainRegenerationCommand::cancel)))
+                .then(Commands.literal("run").then(Commands.argument("task", StringArgumentType.word())
+                        .suggests((c,b) -> suggestTasks(b, TerrainRegenerationManager.Status.CONFIRMED))
+                        .executes(TerrainRegenerationCommand::run)))
                 .then(Commands.literal("retry").then(Commands.argument("task", StringArgumentType.word())
                         .suggests((c,b) -> suggestTasks(b, TerrainRegenerationManager.Status.FAILED))
                         .executes(TerrainRegenerationCommand::retry))));
@@ -117,7 +120,16 @@ public final class TerrainRegenerationCommand {
     private static int confirm(CommandContext<CommandSourceStack> context) {
         try {
             var task=TerrainRegenerationManager.confirm(UUID.fromString(StringArgumentType.getString(context,"task")));
-            context.getSource().sendSuccess(() -> Component.literal("Queued for next restart / 已加入下次重启队列\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
+            context.getSource().sendSuccess(() -> Component.literal("Confirmed, use run to apply now / 已确认，可用 run 立即执行\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
+            return 1;
+        } catch(Exception e){return fail(context,e);}
+    }
+
+    private static int run(CommandContext<CommandSourceStack> context) {
+        try {
+            UUID id=UUID.fromString(StringArgumentType.getString(context,"task"));
+            var task = TerrainRegenerationManager.run(id);
+            context.getSource().sendSuccess(() -> Component.literal("Running now / 开始执行\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
             return 1;
         } catch(Exception e){return fail(context,e);}
     }
@@ -150,9 +162,23 @@ public final class TerrainRegenerationCommand {
                 case DRAFT -> action(out, "[点击确认并加入重启队列] / [CLICK TO CONFIRM]",
                         "/regenerateTerrain confirm " + t.id(),
                         "点击后立即确认任务，服务器下次重启执行 / Click to confirm now; runs on next server restart");
-                case CONFIRMED -> action(out, "[点击取消待执行任务] / [CLICK TO CANCEL]",
-                        "/regenerateTerrain cancel " + t.id(),
-                        "点击后立即从重启队列取消 / Click to remove this task from the restart queue");
+                case CONFIRMED -> {
+                    action(out, "[点击立即执行] / [CLICK TO RUN NOW]",
+                            "/regenerateTerrain run " + t.id(),
+                            "立即在线执行，不需要重启服务器 / Apply right now, no restart needed");
+                    action(out, "[点击取消] / [CLICK TO CANCEL]",
+                            "/regenerateTerrain cancel " + t.id(),
+                            "点击后取消该任务 / Click to cancel this task");
+                }
+                case RUNNING -> {
+                    int[] progress = TerrainRegenerationManager.liveProgress(t.id());
+                    out.append(Component.literal(progress == null ? "" :
+                            "progress " + progress[0] + "/" + progress[1] + " chunks, in flight " + progress[1]
+                                    + ", still loaded " + progress[2] + "\n").withStyle(ChatFormatting.YELLOW));
+                    action(out, "[点击取消执行中的任务] / [CLICK TO CANCEL]",
+                            "/regenerateTerrain cancel " + t.id(),
+                            "点击后停止本次在线执行 / Click to stop this live run");
+                }
                 case FAILED -> action(out, "[点击重新加入重试队列] / [CLICK TO RETRY]",
                         "/regenerateTerrain retry " + t.id(),
                         "点击后使用已有备份在下次重启重试 / Click to retry from the existing backup on next restart");
@@ -164,16 +190,33 @@ public final class TerrainRegenerationCommand {
     }
 
     private static int help(CommandContext<CommandSourceStack> context) {
-        MutableComponent out=Component.literal("地形重生成与清空 / Terrain regeneration and clearing\n").withStyle(ChatFormatting.GOLD);
-        line(out,"/regenerateTerrain regenerate box ","框选正常地形重生成，坐标按完整区块向外取整 / normal terrain regeneration box");
-        line(out,"/regenerateTerrain clear radius ","按半径清空为空气，并移除水平外沿 8 格流体 / clear to air and remove an 8-block fluid border");
-        line(out,"/regenerateTerrain regenerate dimension minecraft:the_nether box ","指定维度，控制台必须使用此形式 / select dimension; required from console");
-        line(out,"/regenerateTerrain list","查看草稿、待执行、完成和失败任务 / list drafts, queued, complete, and failed tasks");
-        line(out,"/regenerateTerrain retry ","使用已有备份重试失败任务 / retry a failed task with its existing backup");
-        out.append(Component.literal("坐标参数可按 Tab 补全自身位置或视线指向方块，预览后点击确认，下次重启才会修改世界\n"
-                + "Coordinate arguments suggest your position and targeted block; preview, click confirm, then restart to apply")
-                .withStyle(ChatFormatting.YELLOW));
-        context.getSource().sendSuccess(() -> out,false); return 1;
+        MutableComponent out = Component.empty();
+        out.append(note("carpet.fga.terrain_regeneration.help.title", ChatFormatting.GOLD)).append("\n\n");
+        helpLine(out, "/regenerateTerrain regenerate box <x1> <z1> <x2> <z2>", "help.regenerate_box");
+        helpLine(out, "/regenerateTerrain regenerate radius <x> <z> <radius>", "help.regenerate_radius");
+        helpLine(out, "/regenerateTerrain clear box <x1> <z1> <x2> <z2>", "help.clear_box");
+        helpLine(out, "/regenerateTerrain clear radius <x> <z> <radius>", "help.clear_radius");
+        helpLine(out, "/regenerateTerrain <regenerate|clear> dimension <dimension> <box|radius> ...", "help.dimension");
+        out.append("\n");
+        helpLine(out, "/regenerateTerrain list [page]", "help.list");
+        helpLine(out, "/regenerateTerrain confirm <task>", "help.confirm");
+        helpLine(out, "/regenerateTerrain run <task>", "help.run");
+        helpLine(out, "/regenerateTerrain cancel <task>", "help.cancel");
+        helpLine(out, "/regenerateTerrain retry <task>", "help.retry");
+        out.append("\n").append(note("carpet.fga.terrain_regeneration.help.note", ChatFormatting.YELLOW));
+        context.getSource().sendSuccess(() -> out, false);
+        return 1;
+    }
+
+    /** Command syntax stays literal (it is the same in every language); the note is translated client side. */
+    private static void helpLine(MutableComponent out, String command, String noteKey) {
+        out.append(Component.literal(command).withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)
+                .withClickEvent(FgaClickEvents.suggestCommand(command))));
+        out.append(note("carpet.fga.terrain_regeneration." + noteKey, ChatFormatting.GOLD)).append("\n");
+    }
+
+    private static MutableComponent note(String key, ChatFormatting color) {
+        return Component.literal("  ").append(Component.translatable(key)).withStyle(color);
     }
 
     private static String describe(TerrainRegenerationManager.Task t){return t.type()+" "+t.dimension()+" chunks ["+t.minChunkX()+","+t.minChunkZ()+"]..["+t.maxChunkX()+","+t.maxChunkZ()+"] blocks ["+t.minBlockX()+","+t.minBlockZ()+"]..["+t.maxBlockX()+","+t.maxBlockZ()+"] count="+t.chunks()+" status="+t.status();}

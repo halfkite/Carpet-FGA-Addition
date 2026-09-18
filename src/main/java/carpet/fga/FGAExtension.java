@@ -211,6 +211,9 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.21 && MC <= 26.3
         EndGatewayRegenerationManager.tick(server);
         //#endif
+        //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.3
+        TerrainRegenerationManager.tick(server);
+        //#endif
         //#if MC >= 1.19.4
         PlayerHealthDisplay.tick(server);
         //#endif

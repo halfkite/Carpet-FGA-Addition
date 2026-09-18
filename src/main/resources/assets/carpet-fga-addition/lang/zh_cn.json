@@ -281,5 +281,17 @@
     "carpet.fga.map_load.button.stop": "[终止]",
     "carpet.fga.map_load.hint.pause": "点击暂停该加载任务",
     "carpet.fga.map_load.hint.resume": "点击继续该加载任务",
-    "carpet.fga.map_load.hint.stop": "点击终止该加载任务"
+    "carpet.fga.map_load.hint.stop": "点击终止该加载任务",
+    "carpet.fga.terrain_regeneration.help.title": "地形重生成与清空",
+    "carpet.fga.terrain_regeneration.help.regenerate_box": "矩形范围重生成地形",
+    "carpet.fga.terrain_regeneration.help.regenerate_radius": "以点为中心按半径重生成地形",
+    "carpet.fga.terrain_regeneration.help.clear_box": "矩形范围清空为空气",
+    "carpet.fga.terrain_regeneration.help.clear_radius": "以点为中心按半径清空为空气",
+    "carpet.fga.terrain_regeneration.help.dimension": "指定维度，控制台必须用此形式",
+    "carpet.fga.terrain_regeneration.help.list": "查看草稿、待执行、执行中、完成、失败的任务",
+    "carpet.fga.terrain_regeneration.help.confirm": "确认草稿，之后可用 run 执行",
+    "carpet.fga.terrain_regeneration.help.run": "立即执行已确认的任务，不需要重启服务器",
+    "carpet.fga.terrain_regeneration.help.cancel": "取消草稿、待执行或执行中的任务",
+    "carpet.fga.terrain_regeneration.help.retry": "用已有备份重试失败的任务",
+    "carpet.fga.terrain_regeneration.help.note": "坐标参数可 Tab 补全自身位置或视线指向方块；区块坐标按完整区块向外取整；清空会额外处理水平外沿 8 格流体"
 }
