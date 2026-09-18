@@ -98,6 +98,8 @@ public final class TerrainRegenerationManager {
         ServerPlayer owner;
         final long startedAtNanos = System.nanoTime();
         int ticksSinceReport;
+        /** Chunks we asked the chunk map to drop, so the request is only made once. */
+        final Set<Long> unloading = new HashSet<>();
 
         LiveState(Task task, Path backup) {
             this.task = task;
@@ -181,12 +183,19 @@ public final class TerrainRegenerationManager {
             long key = iterator.next();
             ChunkPos pos = unpackChunk(key);
             if (level.getChunkSource().getChunkNow(pos.x, pos.z) != null) {
-                // Still in memory: deleting its data now would be undone when the chunk saves on
-                // unload, so skip it and report instead of waiting for the player to walk away.
-                state.loadedNow++;
-                iterator.remove();
+                // Still in memory: a loaded chunk cannot be regenerated, so ask the chunk map to drop
+                // it. Its data is cleared first and the chunk is marked not unsaved, so dropping it
+                // cannot write the old terrain back; the ticket then reloads it, which regenerates it.
+                if (requestUnload(level, state, pos)) {
+                    state.loadedNow++;
+                    state.unloading.add(key);
+                    //#if MC >= 1.20.1 && MC <= 1.21.1
+                    prepareChunkData(state, pos);
+                    //#endif
+                }
                 continue;
             }
+            state.unloading.remove(key);
             prepareChunkData(state, pos);
             level.getChunkSource().addRegionTicket(LIVE_TICKET, pos, 0, pos);
             state.ticketed.add(key);
@@ -243,6 +252,30 @@ public final class TerrainRegenerationManager {
             level.getChunkSource().removeRegionTicket(LIVE_TICKET, pos, 0, pos);
             tickets.remove();
         }
+    }
+
+    /**
+     * Asks the chunk map to drop one chunk, so the ticket reloads and regenerates it. Returns false on
+     * versions where the drop queue is not reachable, which keeps the older skip behaviour.
+     */
+    private static boolean requestUnload(ServerLevel level, LiveState state, ChunkPos pos) {
+        //#if MC >= 1.20.1 && MC <= 1.21.1
+        net.minecraft.server.level.ServerChunkCache cache = level.getChunkSource();
+        long key = chunkKey(pos);
+        if (state.unloading.contains(key)) return false;
+        LevelChunk chunk = cache.getChunkNow(pos.x, pos.z);
+        if (chunk == null) return false;
+        //#if MC >= 1.21.3
+        //$$ chunk.markUnsaved();
+        //#else
+        chunk.setUnsaved(false);
+        //#endif
+        ((carpet.fga.mixin.ChunkMapToDropAccessor) (Object) cache.chunkMap).carpetFga$getToDrop()
+                .add(chunkKey(pos));
+        return true;
+        //#else
+        //$$ return false;
+        //#endif
     }
 
     private static boolean isTaskChunk(Task task, ChunkPos pos) {
@@ -376,6 +409,8 @@ public final class TerrainRegenerationManager {
                     shortId(state.task.id), state.task.chunks(), seconds / 60L, seconds % 60L));
         }
         forceNormal = LIVE.values().stream().anyMatch(other -> other.task.type == Type.REGENERATE);
+        LOGGER.info("Terrain task {} {}: {} chunks, {} still loaded, {} s", shortId(state.task.id), status,
+                state.task.chunks(), state.loadedNow, seconds);
         replace(state.task.withStatus(status, error));
         markSources(state.task.sources, status, error);
         try { save(); } catch (IOException exception) { LOGGER.error("Failed to save terrain task result", exception); }
