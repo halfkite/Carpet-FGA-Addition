@@ -280,6 +280,8 @@
     "carpet.fga.map_load.hint.pause": "Click to pause this map load",
     "carpet.fga.map_load.hint.resume": "Click to resume this map load",
     "carpet.fga.map_load.hint.stop": "Click to stop this map load",
+    "carpet.fga.terrain_regeneration.preview.clear": "Clears whole chunks plus an 8-block fluid border; runs right away after confirming",
+    "carpet.fga.terrain_regeneration.preview.regenerate": "Deletes the old chunks and regenerates normal terrain; runs right away after confirming",
     "carpet.fga.terrain_regeneration.help.title": "Terrain regeneration and clearing",
     "carpet.fga.terrain_regeneration.help.regenerate_box": "regenerate terrain in a rectangle",
     "carpet.fga.terrain_regeneration.help.regenerate_radius": "regenerate terrain by chunk radius around you",

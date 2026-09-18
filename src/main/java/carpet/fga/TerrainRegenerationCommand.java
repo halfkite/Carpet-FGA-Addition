@@ -112,20 +112,17 @@ public final class TerrainRegenerationCommand {
             var task = TerrainRegenerationManager.draft(type,id,x1,z1,x2,z2,creator);
             String command = "/regenerateTerrain confirm " + task.id();
             MutableComponent out = Component.literal("地形任务预览 / Terrain task preview\n").withStyle(ChatFormatting.GOLD)
-                    .append(Component.literal(typeLabel(task.type()) + "  维度 / Dimension: " + task.dimension() + "\n").withStyle(ChatFormatting.YELLOW))
-                    .append(Component.literal("区块 / Chunks: [" + task.minChunkX() + ", " + task.minChunkZ() + "] -> ["
-                            + task.maxChunkX() + ", " + task.maxChunkZ() + "]  共 " + task.chunks() + " 个 / total\n").withStyle(ChatFormatting.GRAY))
-                    .append(Component.literal("实际方块范围 / Effective blocks: [" + task.minBlockX() + ", " + task.minBlockZ()
-                            + "] -> [" + task.maxBlockX() + ", " + task.maxBlockZ() + "]\n").withStyle(ChatFormatting.GRAY));
-            if (task.type() == TerrainRegenerationManager.Type.CLEAR) {
-                out.append(Component.literal("清空完整区块，并清除水平外沿 8 格流体 / Clears whole chunks and fluids eight blocks outside the horizontal border\n")
-                        .withStyle(ChatFormatting.RED));
-            } else {
-                out.append(Component.literal("删除旧区块并在下次重启按正常地形重新生成 / Deletes old chunks and regenerates normal terrain on next restart\n")
-                        .withStyle(ChatFormatting.RED));
-            }
-            action(out, "[点击确认并加入重启队列] / [CLICK TO CONFIRM]", command,
-                    "点击后立即确认任务，服务器下次重启执行 / Click to confirm now; runs on next server restart");
+                    .append(Component.literal(typeLabel(task.type()) + " " + shortDimension(task.dimension())
+                            + " 区块 [" + task.minChunkX() + "," + task.minChunkZ() + "]..["
+                            + task.maxChunkX() + "," + task.maxChunkZ() + "] 共 " + task.chunks() + " 个\n")
+                            .withStyle(ChatFormatting.YELLOW))
+                    .append(Component.literal("实际方块 [" + task.minBlockX() + "," + task.minBlockZ() + "]..["
+                            + task.maxBlockX() + "," + task.maxBlockZ() + "]\n").withStyle(ChatFormatting.GRAY));
+            out.append(note(task.type() == TerrainRegenerationManager.Type.CLEAR
+                    ? "carpet.fga.terrain_regeneration.preview.clear"
+                    : "carpet.fga.terrain_regeneration.preview.regenerate", ChatFormatting.RED)).append("\n");
+            action(out, "[点击确认并立即执行] / [CLICK TO CONFIRM AND RUN]", command,
+                    "点击后确认并立即执行 / Click to confirm and run right away");
             context.getSource().sendSuccess(() -> out,false);
             return 1;
         } catch(Exception e){return fail(context,e);}
@@ -242,8 +239,12 @@ public final class TerrainRegenerationCommand {
 
     /** Command syntax stays literal (it is the same in every language); the note is translated client side. */
     private static void helpLine(MutableComponent out, String command, String noteKey) {
+        // Clicking fills in only the fixed part: the <...> placeholders would otherwise be typed into
+        // the chat bar and have to be deleted again.
+        int placeholder = command.indexOf('<');
+        String suggest = placeholder < 0 ? command : command.substring(0, placeholder);
         out.append(Component.literal(command).withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)
-                .withClickEvent(FgaClickEvents.suggestCommand(command))));
+                .withClickEvent(FgaClickEvents.suggestCommand(suggest))));
         out.append(note("carpet.fga.terrain_regeneration." + noteKey, ChatFormatting.GOLD)).append("\n");
     }
 
@@ -251,7 +252,13 @@ public final class TerrainRegenerationCommand {
         return Component.literal("  ").append(FGAText.text(key)).withStyle(color);
     }
 
-    private static String describe(TerrainRegenerationManager.Task t){return shortId(t.id())+" "+t.type()+" "+t.dimension()+" chunks ["+t.minChunkX()+","+t.minChunkZ()+"]..["+t.maxChunkX()+","+t.maxChunkZ()+"] x"+t.chunks()+" "+t.status();}
+    /** minecraft:overworld -> overworld, so the task lines stay short. */
+    private static String shortDimension(String dimension) {
+        int colon = dimension.indexOf(':');
+        return colon < 0 ? dimension : dimension.substring(colon + 1);
+    }
+
+    private static String describe(TerrainRegenerationManager.Task t){return shortId(t.id())+" "+t.type()+" "+shortDimension(t.dimension())+" chunks ["+t.minChunkX()+","+t.minChunkZ()+"]..["+t.maxChunkX()+","+t.maxChunkZ()+"] x"+t.chunks()+" "+t.status();}
     private static void line(MutableComponent out,String command,String note){out.append(Component.literal(command).withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withClickEvent(FgaClickEvents.suggestCommand(command)))).append(Component.literal("  # "+note+"\n").withStyle(ChatFormatting.GOLD));}
     private static void action(MutableComponent out, String label, String command, String hover) {
         out.append(Component.literal(label).withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN)

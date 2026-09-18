@@ -283,6 +283,8 @@
     "carpet.fga.map_load.hint.pause": "点击暂停该加载任务",
     "carpet.fga.map_load.hint.resume": "点击继续该加载任务",
     "carpet.fga.map_load.hint.stop": "点击终止该加载任务",
+    "carpet.fga.terrain_regeneration.preview.clear": "清空整区块，并清除水平沿 8 格流体；确认后立即执行",
+    "carpet.fga.terrain_regeneration.preview.regenerate": "删除旧区块并按正常地形重新生成；确认后立即执行",
     "carpet.fga.terrain_regeneration.help.title": "地形重生成与清空",
     "carpet.fga.terrain_regeneration.help.regenerate_box": "矩形范围重生成地形",
     "carpet.fga.terrain_regeneration.help.regenerate_radius": "以所在坐标为中心按半径区块重生成地形",
