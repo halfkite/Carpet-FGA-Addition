@@ -485,6 +485,25 @@ public class FGASettings {
     //#endif
     public static boolean enchantmentLevelAddition = false;
 
+    //#if MC == 1.21.1
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean fireAspectOnTools = false;
+    //#endif
+
+    //#if MC == 1.21.1
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean soulSpeedNoDurability = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean thornsNoDurability = false;
+    //#endif
+
     public static int enchantmentLevelLimitIncrease() {
         return EnchantmentLevelRules.parseIncrease(enchantmentLevelLimitIncrease);
     }
@@ -607,6 +626,31 @@ public class FGASettings {
     //$$ )
     //#endif
     public static boolean woodStonecuttingRecipes = false;
+    //#endif
+
+    //#if MC == 1.21.1
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean lightSourceStonecuttingRecipes = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true", "onlyholding"},
+        strict = false,
+        validators = FGASettings.LightBlockBreakableValidator.class
+    )
+    public static String lightBlockBreakable = "false";
+
+    public static class LightBlockBreakableValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if ("false".equals(value) || "true".equals(value) || "onlyholding".equals(value)) return value;
+            Messenger.m(source, "r lightBlockBreakable must be false, true, or onlyholding");
+            return null;
+        }
+    }
     //#endif
 
     //#if MC >= 1.20.1 && MC <= 26.3
@@ -1357,6 +1401,33 @@ public class FGASettings {
             return null;
         }
     }
+
+    //#if MC == 1.21.1
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
+        strict = false,
+        validators = FGASettings.MapLoadCommandPermissionValidator.class
+    )
+    public static String mapLoadCommandPermission = "ops";
+
+    public static class MapLoadCommandPermissionValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (Set.of("false", "true", "ops", "0", "1", "2", "3", "4").contains(value)) return value;
+            Messenger.m(source, "r mapLoadCommandPermission must be false, true, ops, or 0-4");
+            return null;
+        }
+    }
+    //#endif
+    //#endif
+
+    //#if MC == 1.21.1
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean namedEnderPearlTeleport = false;
     //#endif
 
     //#if MC >= 1.21 && MC <= 26.3
@@ -1397,6 +1468,12 @@ public class FGASettings {
             return null;
         }
     }
+    //#endif
+
+    //#if MC == 1.21.1
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"})
+    public static boolean boneMealMaxEfficiency = false;
     //#endif
 
 

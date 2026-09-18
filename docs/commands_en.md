@@ -13,6 +13,40 @@ Available in Minecraft `1.21.1`
 - `/fga food clear [player]`: same as `/food clear [player]`
 - Uses Carpet `commandPlayer` entry permission
 
+<a id="cmd-map-load"></a>
+
+## Map command (mapLoad)
+
+### `/mapLoad` and `/fga mapLoad`
+
+Related rules: `mapLoadCommandPermission`
+
+Available in Minecraft `1.21.1`
+
+Client requirement: none (server side only), player facing text is resolved on the server in the server language
+
+```text
+/mapLoad start <mode>
+/mapLoad list
+/mapLoad pause [player]
+/mapLoad resume [player]
+/mapLoad stop [player]
+```
+
+A mode is always required: `/mapLoad start <mode>` is the only way to start a load (`/mapLoad` on its own only prints the usage). Modes are tab completable and `/fga mapLoad start ...` works the same way; the offhand is used when the main hand is empty, and empty, invalid, locked, and cross-dimension maps are not updated.
+
+- `smooth` (default): smoothness first, at most 384 chunks in flight at once
+- `fast`: speed first, at most 1024 chunks in flight at once
+- `loaded`: only refreshes chunks that are already loaded, requests and generates nothing, areas that are not loaded stay as they are
+
+Neither request mode changes the cost of rendering itself (rendering always stays inside the 3 millisecond per tick budget); what causes stutter is how many chunks are in flight at once rather than how fast they are requested, so areas that are already generated load at the chunk pipeline's own speed and only terrain that has to be generated is slow. An unknown mode name is rejected with the list of accepted values.
+
+One chat message is sent when the load starts and one when it finishes: the start message gives the area, how many chunks the map covers, and the mode used (a scale 3 map, for example, is 4096 chunks), a progress line is written to chat every 30 seconds while loading (so a long wait cannot be mistaken for a hang given the action bar alone), the finish message reports how long the load took (seconds, or minutes and seconds), and the number of skipped samples is reported when the load ends.
+
+Loading is asynchronous and streamed: samples are refreshed nearest to the player first and the chunks they need are handed to the vanilla chunk pipeline, so the server thread never waits for chunk generation. The action bar shows two numbers: the percentage of refreshed samples, and the chunk progress (for example `Loading map 55% (mode smooth, chunks 2579/4096)`); the denominator is every chunk the map covers (the same number the start message reports) and the numerator is how many chunks have been loaded so far, which only ever grows. A big map spends most of its time on chunk generation, so the percentage moves slowly while the chunk counter is the number that keeps changing, and `mapLoad list` additionally labels each task as loading or waiting for chunks.
+
+`list` prints one line per running task (player, progress, state) with clickable `[Pause]`/`[Resume]` and `[Stop]` buttons; `pause`, `resume`, and `stop` target yourself unless a player name is given (which needs a player), and with a player name they can also be run from the server console or RCON; controlling another player needs OP 2, and player names are tab completable from the running tasks. Pausing stops requesting new tickets and hands the existing ones back at a limited rate, resuming requests them again, and stopping lets that player start a new load right away. A sample that makes no chunk progress at all for 30 seconds is skipped so a load can always finish.
+
 ## Player and fake-player commands (player)
 
 <a id="cmd-player-possession"></a>

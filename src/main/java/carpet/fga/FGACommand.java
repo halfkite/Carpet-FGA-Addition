@@ -47,6 +47,12 @@ public final class FGACommand {
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         redirect(root, "playerLoadDistance", dispatcher);
+        //#if MC == 1.21.1
+        // Register this branch directly instead of looking up the root command
+        // during extension registration.  This keeps /fga mapLoad present when
+        // the client command tree is rebuilt after its independent permission rule changes.
+        root.then(MapLoadCommand.root("mapLoad"));
+        //#endif
         //#endif
         redirect(root, "vehicleStop", dispatcher);
         //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.3
@@ -104,6 +110,13 @@ public final class FGACommand {
         line(out, "/fga vehicleStop help", "玩家离开载具急停 / stop vehicles when drivers dismount");
         //#if MC == 1.20.1 || MC == 1.21.1
         line(out, "/fga playerLoadDistance help", "玩家加载距离 / per-player chunk loading distance");
+        //#if MC == 1.21.1
+        if (CommandHelper.canUseCommand(context.getSource(), FGASettings.mapLoadCommandPermission)) {
+            line(out, "/fga mapLoad start <smooth|fast|loaded>", "加载手持地图 / refresh the held map");
+            line(out, "/fga mapLoad list", "查看进行中的加载任务 / list running map loads");
+            line(out, "/fga mapLoad pause|resume|stop [玩家]", "暂停、继续或终止加载 / pause, resume, stop a load");
+        }
+        //#endif
         //#endif
         line(out, "/fga inventoryAdvancementOptimization help", "背包进度优化 / inventory advancement optimization");
         //#if MC >= 1.21 && MC <= 26.3
