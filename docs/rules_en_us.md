@@ -712,6 +712,8 @@ Controls access to `/mapLoad` and `/fga mapLoad`<br>`false`: disables the comman
 - Options: `false`, `true`, `ops`, `0-4`
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21.1`
+- Client requirements: None (server-side only)
+- Relations to other rules: None
 
 ### Trial Spawner Equivalent Players(trialSpawnerPlayerMultiplier)
 
