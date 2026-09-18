@@ -283,14 +283,14 @@
     "carpet.fga.map_load.hint.stop": "點擊終止該載入任務",
     "carpet.fga.terrain_regeneration.help.title": "地形重生成與清空",
     "carpet.fga.terrain_regeneration.help.regenerate_box": "矩形範圍重生成地形",
-    "carpet.fga.terrain_regeneration.help.regenerate_radius": "以點為中心按半徑重生成地形",
-    "carpet.fga.terrain_regeneration.help.clear_box": "矩形範圍清空為空氣",
-    "carpet.fga.terrain_regeneration.help.clear_radius": "以點為中心按半徑清空為空氣",
+    "carpet.fga.terrain_regeneration.help.regenerate_radius": "以所在座標為中心按半徑區塊重生成地形",
+    "carpet.fga.terrain_regeneration.help.clear_box": "矩形範圍清地形",
+    "carpet.fga.terrain_regeneration.help.clear_radius": "以所在座標為中心按半徑區塊清空地形",
     "carpet.fga.terrain_regeneration.help.dimension": "指定維度，控制台必須用此形式",
-    "carpet.fga.terrain_regeneration.help.list": "查看草稿、待執行、執行中、完成、失敗的任務",
-    "carpet.fga.terrain_regeneration.help.confirm": "確認草稿，之後可用 run 執行",
+    "carpet.fga.terrain_regeneration.help.list": "待執行、執行中、完成、失敗的任務",
+    "carpet.fga.terrain_regeneration.help.confirm": "確認草稿並立即執行",
     "carpet.fga.terrain_regeneration.help.run": "立即執行已確認的任務，不需要重啟伺服器",
     "carpet.fga.terrain_regeneration.help.cancel": "取消草稿、待執行或執行中的任務",
     "carpet.fga.terrain_regeneration.help.retry": "用已有備份重試失敗的任務",
-    "carpet.fga.terrain_regeneration.help.note": "座標參數可 Tab 補全自身位置或視線指向方塊；區塊座標按完整區塊向外取整；清空會額外處理水平外沿 8 格流體"
+    "carpet.fga.terrain_regeneration.help.note": "座標參數可 Tab 補全自身位置或視線指向方塊；區塊座標按完整區塊向外取整；清空會額外處理水平沿 8 格流體"
 }

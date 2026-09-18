@@ -35,7 +35,7 @@ public final class TerrainRegenerationCommand {
                 .then(Commands.literal("list").executes(c -> list(c, 1))
                         .then(Commands.argument("page", IntegerArgumentType.integer(1)).executes(c -> list(c,
                                 IntegerArgumentType.getInteger(c, "page")))))
-                .then(preview("regenerate", TerrainRegenerationManager.Type.REGENERATE))
+                .then(preview("create", TerrainRegenerationManager.Type.REGENERATE))
                 .then(preview("clear", TerrainRegenerationManager.Type.CLEAR))
                 .then(Commands.literal("confirm").then(Commands.argument("task", StringArgumentType.word())
                         .suggests((c,b) -> suggestTasks(b, TerrainRegenerationManager.Status.DRAFT))
@@ -53,10 +53,10 @@ public final class TerrainRegenerationCommand {
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> preview(
             String name, TerrainRegenerationManager.Type type) {
         return Commands.literal(name)
-                .then(Commands.literal("box").then(boxArguments(type, false)))
+                .then(Commands.literal("from").then(boxArguments(type, false)))
                 .then(Commands.literal("radius").then(radiusArguments(type, false)))
                 .then(Commands.literal("dimension").then(Commands.argument("dimension", DimensionArgument.dimension())
-                        .then(Commands.literal("box").then(boxArguments(type, true)))
+                        .then(Commands.literal("from").then(boxArguments(type, true)))
                         .then(Commands.literal("radius").then(radiusArguments(type, true)))));
     }
 
@@ -73,13 +73,27 @@ public final class TerrainRegenerationCommand {
 
     private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, Integer> radiusArguments(
             TerrainRegenerationManager.Type type, boolean dimension) {
-        return coordinate("x", true)
-                .then(coordinate("z", false)
-                        .then(Commands.argument("radius", IntegerArgumentType.integer(0))
-                                .executes(c -> {
-                                    int x=IntegerArgumentType.getInteger(c,"x"), z=IntegerArgumentType.getInteger(c,"z"), r=IntegerArgumentType.getInteger(c,"radius");
-                                    return draft(c,type,dimension,x-r,z-r,x+r,z+r);
-                                })));
+        return Commands.argument("range", IntegerArgumentType.integer(0, 64))
+                .executes(c -> draftRadius(c, type, dimension, IntegerArgumentType.getInteger(c, "range")));
+    }
+
+    /** Radius counts chunks, centred on the chunk the player stands in. */
+    private static int draftRadius(CommandContext<CommandSourceStack> context,
+                                   TerrainRegenerationManager.Type type, boolean dimension, int range) {
+        try {
+            ServerPlayer player = context.getSource().getPlayer();
+            if (player == null) {
+                throw new IllegalArgumentException(
+                        "Console must use the from form with coordinates / 控制台请使用 from 形式并给出坐标");
+            }
+            int chunkX = player.blockPosition().getX() >> 4;
+            int chunkZ = player.blockPosition().getZ() >> 4;
+            return draft(context, type, dimension,
+                    (chunkX - range) << 4, (chunkZ - range) << 4,
+                    ((chunkX + range) << 4) + 15, ((chunkZ + range) << 4) + 15);
+        } catch (Exception e) {
+            return fail(context, e);
+        }
     }
 
     private static int draft(CommandContext<CommandSourceStack> context, TerrainRegenerationManager.Type type,
@@ -119,8 +133,10 @@ public final class TerrainRegenerationCommand {
 
     private static int confirm(CommandContext<CommandSourceStack> context) {
         try {
-            var task=TerrainRegenerationManager.confirm(taskId(context));
-            context.getSource().sendSuccess(() -> Component.literal("Confirmed, use run to apply now / 已确认，可用 run 立即执行\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
+            UUID id = taskId(context);
+            TerrainRegenerationManager.confirm(id);
+            var task = TerrainRegenerationManager.run(id);
+            context.getSource().sendSuccess(() -> Component.literal("Confirmed, running now / 已确认并开始执行\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
             return 1;
         } catch(Exception e){return fail(context,e);}
     }
@@ -211,17 +227,14 @@ public final class TerrainRegenerationCommand {
     private static int help(CommandContext<CommandSourceStack> context) {
         MutableComponent out = Component.empty();
         out.append(note("carpet.fga.terrain_regeneration.help.title", ChatFormatting.GOLD)).append("\n\n");
-        helpLine(out, "/regenerateTerrain regenerate box <x1> <z1> <x2> <z2>", "help.regenerate_box");
-        helpLine(out, "/regenerateTerrain regenerate radius <x> <z> <radius>", "help.regenerate_radius");
-        helpLine(out, "/regenerateTerrain clear box <x1> <z1> <x2> <z2>", "help.clear_box");
-        helpLine(out, "/regenerateTerrain clear radius <x> <z> <radius>", "help.clear_radius");
-        helpLine(out, "/regenerateTerrain <regenerate|clear> dimension <dimension> <box|radius> ...", "help.dimension");
+        helpLine(out, "/regenerateTerrain create from <x1> <z1> <x2> <z2>", "help.regenerate_box");
+        helpLine(out, "/regenerateTerrain create radius <range>", "help.regenerate_radius");
+        helpLine(out, "/regenerateTerrain clear from <x1> <z1> <x2> <z2>", "help.clear_box");
+        helpLine(out, "/regenerateTerrain clear radius <range>", "help.clear_radius");
         out.append("\n");
         helpLine(out, "/regenerateTerrain list [page]", "help.list");
         helpLine(out, "/regenerateTerrain confirm <task>", "help.confirm");
-        helpLine(out, "/regenerateTerrain run <task>", "help.run");
         helpLine(out, "/regenerateTerrain cancel <task>", "help.cancel");
-        helpLine(out, "/regenerateTerrain retry <task>", "help.retry");
         out.append("\n").append(note("carpet.fga.terrain_regeneration.help.note", ChatFormatting.YELLOW));
         context.getSource().sendSuccess(() -> out, false);
         return 1;
