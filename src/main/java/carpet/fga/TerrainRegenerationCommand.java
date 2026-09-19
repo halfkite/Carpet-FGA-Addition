@@ -116,7 +116,7 @@ public final class TerrainRegenerationCommand {
                             + " 区块 [" + task.minChunkX() + "," + task.minChunkZ() + "]..["
                             + task.maxChunkX() + "," + task.maxChunkZ() + "] 共 " + task.chunks() + " 个\n")
                             .withStyle(ChatFormatting.YELLOW))
-                    .append(Component.literal("实际方块 [" + task.minBlockX() + "," + task.minBlockZ() + "]..["
+                    .append(Component.literal("实际方块（方块坐标）[" + task.minBlockX() + "," + task.minBlockZ() + "]..["
                             + task.maxBlockX() + "," + task.maxBlockZ() + "]\n").withStyle(ChatFormatting.GRAY));
             // Chunks outside the world border are never rendered by the client, so say so up front.
             var sourceLevel = context.getSource().getLevel();
