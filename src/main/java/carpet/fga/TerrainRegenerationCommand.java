@@ -111,31 +111,45 @@ public final class TerrainRegenerationCommand {
             String creator = context.getSource().getTextName();
             var task = TerrainRegenerationManager.draft(type,id,x1,z1,x2,z2,creator);
             String command = "/regenerateTerrain confirm " + task.id();
-            MutableComponent out = Component.literal("地形任务预览 / Terrain task preview\n").withStyle(ChatFormatting.GOLD)
-                    .append(Component.literal(typeLabel(task.type()) + " " + shortDimension(task.dimension())
-                            + " 区块 [" + task.minChunkX() + "," + task.minChunkZ() + "]..["
-                            + task.maxChunkX() + "," + task.maxChunkZ() + "] 共 " + task.chunks() + " 个\n")
-                            .withStyle(ChatFormatting.YELLOW))
-                    .append(Component.literal("实际方块（方块坐标）[" + task.minBlockX() + "," + task.minBlockZ() + "]..["
-                            + task.maxBlockX() + "," + task.maxBlockZ() + "]\n").withStyle(ChatFormatting.GRAY));
+            MutableComponent out = Component.empty();
+            out.append(FGAText.text(titleKey(task.type())).withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal(" " + shortDimension(task.dimension())).withStyle(ChatFormatting.GOLD))
+                    .append("\n")
+                    .append(FGAText.text("carpet.fga.terrain_regeneration.preview.chunks",
+                            pair(task.minChunkX(), task.minChunkZ()), pair(task.maxChunkX(), task.maxChunkZ()),
+                            String.valueOf(task.chunks())).withStyle(ChatFormatting.YELLOW))
+                    .append("\n")
+                    .append(FGAText.text("carpet.fga.terrain_regeneration.preview.coords",
+                            pair(task.minBlockX(), task.minBlockZ()), pair(task.maxBlockX(), task.maxBlockZ()))
+                            .withStyle(ChatFormatting.GRAY))
+                    .append("\n");
             // Chunks outside the world border are never rendered by the client, so say so up front.
             var sourceLevel = context.getSource().getLevel();
             if (sourceLevel != null) {
                 var border = sourceLevel.getWorldBorder();
                 if (task.minBlockX() < border.getMinX() || task.maxBlockX() > border.getMaxX()
                         || task.minBlockZ() < border.getMinZ() || task.maxBlockZ() > border.getMaxZ()) {
-                    out.append(note("carpet.fga.terrain_regeneration.preview.outside_border",
-                            ChatFormatting.RED)).append("\n");
+                    out.append(FGAText.text("carpet.fga.terrain_regeneration.preview.outside_border")
+                            .withStyle(ChatFormatting.RED)).append("\n");
                 }
             }
-            out.append(note(task.type() == TerrainRegenerationManager.Type.CLEAR
+            out.append(FGAText.text(task.type() == TerrainRegenerationManager.Type.CLEAR
                     ? "carpet.fga.terrain_regeneration.preview.clear"
-                    : "carpet.fga.terrain_regeneration.preview.regenerate", ChatFormatting.RED)).append("\n");
-            action(out, "[点击确认并立即执行] / [CLICK TO CONFIRM AND RUN]", command,
-                    "点击后确认并立即执行 / Click to confirm and run right away");
+                    : "carpet.fga.terrain_regeneration.preview.regenerate").withStyle(ChatFormatting.RED)).append(" ");
+            action(out, "carpet.fga.terrain_regeneration.preview.confirm",
+                    "carpet.fga.terrain_regeneration.preview.confirm_hover", command);
             context.getSource().sendSuccess(() -> out,false);
             return 1;
         } catch(Exception e){return fail(context,e);}
+    }
+
+    /** [x,z], the shape every coordinate and chunk position is printed in. */
+    private static String pair(int x, int z) { return "[" + x + "," + z + "]"; }
+
+    private static String titleKey(TerrainRegenerationManager.Type type) {
+        return type == TerrainRegenerationManager.Type.CLEAR
+                ? "carpet.fga.terrain_regeneration.preview.clear_title"
+                : "carpet.fga.terrain_regeneration.preview.regenerate_title";
     }
 
     private static int confirm(CommandContext<CommandSourceStack> context) {
@@ -143,7 +157,7 @@ public final class TerrainRegenerationCommand {
             UUID id = taskId(context);
             TerrainRegenerationManager.confirm(id);
             var task = TerrainRegenerationManager.run(id);
-            context.getSource().sendSuccess(() -> Component.literal("Confirmed, running now / 已确认并开始执行\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
+            context.getSource().sendSuccess(() -> statusLine("carpet.fga.terrain_regeneration.message.confirmed", task),true);
             return 1;
         } catch(Exception e){return fail(context,e);}
     }
@@ -152,7 +166,7 @@ public final class TerrainRegenerationCommand {
         try {
             UUID id=taskId(context);
             var task = TerrainRegenerationManager.run(id);
-            context.getSource().sendSuccess(() -> Component.literal("Running now / 开始执行\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
+            context.getSource().sendSuccess(() -> statusLine("carpet.fga.terrain_regeneration.message.running", task),true);
             return 1;
         } catch(Exception e){return fail(context,e);}
     }
@@ -179,8 +193,8 @@ public final class TerrainRegenerationCommand {
     private static int cancel(CommandContext<CommandSourceStack> context) {
         try {
             UUID id=taskId(context);
-            if(!TerrainRegenerationManager.cancel(id)){context.getSource().sendFailure(Component.literal("Task not found or already executed / 任务不存在或已执行"));return 0;}
-            context.getSource().sendSuccess(() -> Component.literal("Task cancelled / 已取消任务").withStyle(ChatFormatting.GREEN),true);
+            if(!TerrainRegenerationManager.cancel(id)){context.getSource().sendFailure(FGAText.text("carpet.fga.terrain_regeneration.message.not_running"));return 0;}
+            context.getSource().sendSuccess(() -> FGAText.text("carpet.fga.terrain_regeneration.message.cancelled").withStyle(ChatFormatting.GREEN),true);
             return 1;
         } catch(Exception e){return fail(context,e);}
     }
@@ -188,42 +202,43 @@ public final class TerrainRegenerationCommand {
     private static int retry(CommandContext<CommandSourceStack> context) {
         try {
             var task = TerrainRegenerationManager.retry(taskId(context));
-            context.getSource().sendSuccess(() -> Component.literal("Task queued for retry / 任务已加入重试队列\n"+describe(task)).withStyle(ChatFormatting.GREEN),true);
+            context.getSource().sendSuccess(() -> statusLine("carpet.fga.terrain_regeneration.message.retried", task),true);
             return 1;
         } catch(Exception e){return fail(context,e);}
     }
 
     private static int list(CommandContext<CommandSourceStack> context,int page) {
         List<TerrainRegenerationManager.Task> tasks=TerrainRegenerationManager.tasks(); int per=8,pages=Math.max(1,(tasks.size()+per-1)/per);
-        if(page>pages) page=pages; MutableComponent out=Component.literal("Terrain tasks / 地形任务 "+page+"/"+pages+"\n").withStyle(ChatFormatting.GOLD);
+        if(page>pages) page=pages; MutableComponent out=Component.empty().append(FGAText.text("carpet.fga.terrain_regeneration.list.title", page, pages).withStyle(ChatFormatting.GOLD)).append("\n");
         int from=(page-1)*per,to=Math.min(tasks.size(),from+per);
         for(int i=from;i<to;i++){
             var t=tasks.get(i);
             out.append(Component.literal(describe(t) + "\n").withStyle(ChatFormatting.GRAY));
             switch (t.status()) {
-                case DRAFT -> action(out, "[点击确认并加入重启队列] / [CLICK TO CONFIRM]",
-                        "/regenerateTerrain confirm " + t.id(),
-                        "点击后立即确认任务，服务器下次重启执行 / Click to confirm now; runs on next server restart");
+                case DRAFT -> action(out, "carpet.fga.terrain_regeneration.action.confirm",
+                        "carpet.fga.terrain_regeneration.action.confirm_hover",
+                        "/regenerateTerrain confirm " + t.id());
                 case CONFIRMED -> {
-                    action(out, "[点击立即执行] / [CLICK TO RUN NOW]",
-                            "/regenerateTerrain run " + t.id(),
-                            "立即在线执行，不需要重启服务器 / Apply right now, no restart needed");
-                    action(out, "[点击取消] / [CLICK TO CANCEL]",
-                            "/regenerateTerrain cancel " + t.id(),
-                            "点击后取消该任务 / Click to cancel this task");
+                    action(out, "carpet.fga.terrain_regeneration.action.run",
+                            "carpet.fga.terrain_regeneration.action.run_hover",
+                            "/regenerateTerrain run " + t.id());
+                    action(out, "carpet.fga.terrain_regeneration.action.cancel",
+                            "carpet.fga.terrain_regeneration.action.cancel_hover",
+                            "/regenerateTerrain cancel " + t.id());
                 }
                 case RUNNING -> {
                     int[] progress = TerrainRegenerationManager.liveProgress(t.id());
-                    out.append(Component.literal(progress == null ? "" :
-                            "progress " + progress[0] + "/" + progress[1] + " chunks, in flight " + progress[2]
-                                    + ", still loaded " + progress[3] + "\n").withStyle(ChatFormatting.YELLOW));
-                    action(out, "[点击取消执行中的任务] / [CLICK TO CANCEL]",
-                            "/regenerateTerrain cancel " + t.id(),
-                            "点击后停止本次在线执行 / Click to stop this live run");
+                    if (progress != null) {
+                        out.append(FGAText.text("carpet.fga.terrain_regeneration.list.live", progress[0], progress[1],
+                                progress[2], progress[3]).withStyle(ChatFormatting.YELLOW)).append("\n");
+                    }
+                    action(out, "carpet.fga.terrain_regeneration.action.cancel_running",
+                            "carpet.fga.terrain_regeneration.action.cancel_running_hover",
+                            "/regenerateTerrain cancel " + t.id());
                 }
-                case FAILED -> action(out, "[点击重新加入重试队列] / [CLICK TO RETRY]",
-                        "/regenerateTerrain retry " + t.id(),
-                        "点击后使用已有备份在下次重启重试 / Click to retry from the existing backup on next restart");
+                case FAILED -> action(out, "carpet.fga.terrain_regeneration.action.retry",
+                        "carpet.fga.terrain_regeneration.action.retry_hover",
+                        "/regenerateTerrain retry " + t.id());
                 default -> {
                 }
             }
@@ -268,17 +283,23 @@ public final class TerrainRegenerationCommand {
         return colon < 0 ? dimension : dimension.substring(colon + 1);
     }
 
+    /** One translated status word followed by the compact task line. */
+    private static Component statusLine(String key, TerrainRegenerationManager.Task task) {
+        return Component.empty().append(FGAText.text(key)).append(Component.literal("\n" + describe(task)))
+                .withStyle(ChatFormatting.GREEN);
+    }
+
     private static String describe(TerrainRegenerationManager.Task t){return shortId(t.id())+" "+t.type()+" "+shortDimension(t.dimension())+" chunks ["+t.minChunkX()+","+t.minChunkZ()+"]..["+t.maxChunkX()+","+t.maxChunkZ()+"] x"+t.chunks()+" "+t.status();}
     private static void line(MutableComponent out,String command,String note){out.append(Component.literal(command).withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withClickEvent(FgaClickEvents.suggestCommand(command)))).append(Component.literal("  # "+note+"\n").withStyle(ChatFormatting.GOLD));}
-    private static void action(MutableComponent out, String label, String command, String hover) {
-        out.append(Component.literal(label).withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN)
+    private static void action(MutableComponent out, String labelKey, String hoverKey, String command) {
+        out.append(FGAText.text(labelKey).withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN)
                 .withClickEvent(FgaClickEvents.runCommand(command))
                 .withHoverEvent(
                         //#if MC >= 1.21.5
-                        //$$ new net.minecraft.network.chat.HoverEvent.ShowText(Component.literal(hover))
+                        //$$ new net.minecraft.network.chat.HoverEvent.ShowText(FGAText.text(hoverKey))
                         //#else
                         new net.minecraft.network.chat.HoverEvent(
-                                net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT, Component.literal(hover))
+                                net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT, FGAText.text(hoverKey))
                         //#endif
                 ))).append("\n");
     }
@@ -296,9 +317,6 @@ public final class TerrainRegenerationCommand {
             if (target != self) builder.suggest(target, Component.literal(xAxis ? "指向方块 X / targeted block X" : "指向方块 Z / targeted block Z"));
         }
         return builder.buildFuture();
-    }
-    private static String typeLabel(TerrainRegenerationManager.Type type) {
-        return type == TerrainRegenerationManager.Type.CLEAR ? "清空为空气 / CLEAR TO AIR" : "正常地形重生成 / REGENERATE TERRAIN";
     }
     private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestTasks(com.mojang.brigadier.suggestion.SuggestionsBuilder b,TerrainRegenerationManager.Status status){for(var t:TerrainRegenerationManager.tasks())if(status==null||t.status()==status)b.suggest(t.id().toString());return b.buildFuture();}
     private static int fail(CommandContext<CommandSourceStack> c,Exception e){c.getSource().sendFailure(Component.literal(e.getMessage()==null?e.toString():e.getMessage()));return 0;}

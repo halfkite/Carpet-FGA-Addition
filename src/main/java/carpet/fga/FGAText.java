@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -25,7 +26,7 @@ public final class FGAText {
     private FGAText() {
     }
 
-    public static Component text(String key, Object... args) {
+    public static MutableComponent text(String key, Object... args) {
         return Component.translatableWithFallback(key, format(key, args), args);
     }
 
