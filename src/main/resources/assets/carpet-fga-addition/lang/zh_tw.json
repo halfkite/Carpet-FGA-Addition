@@ -283,6 +283,7 @@
     "carpet.fga.map_load.hint.stop": "點擊終止該載入任務",
     "carpet.fga.terrain_regeneration.skipped_loaded": "有 %s 個區塊仍被載入，已跳過；離開該區域後重新執行即可補上",
     "carpet.fga.terrain_regeneration.started": "地形任務 %s 已開始執行",
+    "carpet.fga.terrain_regeneration.leave_area": "還有 %s 個區塊仍在載入，請離開該區域，任務會在區塊卸載後繼續",
     "carpet.fga.terrain_regeneration.progress": "地形任務 %s：%s/%s 個區塊（%s%%），已用 %s 分 %s 秒",
     "carpet.fga.terrain_regeneration.complete": "地形任務 %s 完成：%s 個區塊，耗時 %s 分 %s 秒",
     "carpet.fga.terrain_regeneration.failed_done": "地形任務 %s 失敗：%s 個區塊，已用 %s 分 %s 秒",

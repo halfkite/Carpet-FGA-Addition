@@ -346,6 +346,11 @@ public final class TerrainRegenerationManager {
         if (state.owner == null || state.owner.isRemoved()) return;
         if (state.ticksSinceReport++ % 100 != 0) return;
         long seconds = Math.max(1L, (System.nanoTime() - state.startedAtNanos) / 1_000_000_000L);
+        if (state.loadedNow > 0) {
+            // Waiting on chunks that are still in memory: tell the executor how to unblock it.
+            state.owner.sendSystemMessage(FGAText.text("carpet.fga.terrain_regeneration.leave_area",
+                    state.loadedNow));
+        }
         state.owner.sendSystemMessage(FGAText.text("carpet.fga.terrain_regeneration.progress",
                 shortId(state.task.id), done, total, percent, seconds / 60L, seconds % 60L));
     }
