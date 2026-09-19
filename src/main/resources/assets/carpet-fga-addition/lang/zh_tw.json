@@ -287,6 +287,7 @@
     "carpet.fga.terrain_regeneration.progress": "地形任務 %s：%s/%s 個區塊（%s%%），已用 %s 分 %s 秒",
     "carpet.fga.terrain_regeneration.complete": "地形任務 %s 完成：%s 個區塊，耗時 %s 分 %s 秒",
     "carpet.fga.terrain_regeneration.failed_done": "地形任務 %s 失敗：%s 個區塊，已用 %s 分 %s 秒",
+    "carpet.fga.terrain_regeneration.preview.outside_border": "注意：部分範圍在世界邊界外，客戶端不會算繪這些區塊",
     "carpet.fga.terrain_regeneration.preview.clear": "清空整區塊，並清除水平沿 8 格流體；確認後立即執行",
     "carpet.fga.terrain_regeneration.preview.regenerate": "刪除舊區塊並按正常地形重新生成；確認後立即執行",
     "carpet.fga.terrain_regeneration.help.title": "地形重生成與清空",

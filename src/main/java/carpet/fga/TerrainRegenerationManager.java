@@ -51,7 +51,6 @@ public final class TerrainRegenerationManager {
             "task exceeds the " + MAX_TASK_CHUNKS + " chunk limit / 任务超出 " + MAX_TASK_CHUNKS + " 区块上限";
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/terrain-regeneration");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static volatile boolean forceNormal;
     private static final List<Task> TASKS = new ArrayList<>();
     private static final Map<UUID, Task> DRAFTS = new LinkedHashMap<>();
     private static final List<Task> STARTUP_TASKS = new ArrayList<>();
@@ -70,7 +69,25 @@ public final class TerrainRegenerationManager {
 
     private TerrainRegenerationManager() {}
 
-    public static boolean forceNormalGeneration() { return forceNormal; }
+    /**
+     * True when this chunk belongs to a running regeneration task, so it must be generated
+     * normally instead of being voided. A global flag also normalised every other chunk the
+     * players walked through while a task was running, which made terrain look like it followed
+     * the player.
+     */
+    public static boolean forceNormalGeneration(net.minecraft.world.level.chunk.ChunkAccess chunk) {
+        if (chunk == null) return false;
+        long key = chunkKey(chunk.getPos());
+        int chunkX = ChunkPos.getX(key);
+        int chunkZ = ChunkPos.getZ(key);
+        for (LiveState state : LIVE.values()) {
+            Task task = state.task;
+            if (task.type != Type.REGENERATE) continue;
+            if (chunkX >= task.minChunkX && chunkX <= task.maxChunkX
+                    && chunkZ >= task.minChunkZ && chunkZ <= task.maxChunkZ) return true;
+        }
+        return false;
+    }
 
     /** Tasks only live for the current run: a restart starts with an empty list. */
     public static synchronized void beforeWorldLoad(MinecraftServer server) {
@@ -130,9 +147,6 @@ public final class TerrainRegenerationManager {
             forEachChunk(task, pos -> state.remaining.add(chunkKey(pos)));
         }
         LIVE.put(id, state);
-        // Regeneration must not be voided by the void world generator; this used to be set by the
-        // startup path only, which is gone now that tasks run live.
-        if (task.type == Type.REGENERATE) forceNormal = true;
         state.owner = onlineCreator(CarpetServer.minecraft_server, task.creator);
         state.bossBar = new net.minecraft.server.level.ServerBossEvent(
                 Component.literal(bossTitle(task)), net.minecraft.world.BossEvent.BossBarColor.GREEN,
@@ -381,7 +395,6 @@ public final class TerrainRegenerationManager {
                             : "carpet.fga.terrain_regeneration.failed_done",
                     shortId(state.task.id), state.task.chunks(), seconds / 60L, seconds % 60L));
         }
-        forceNormal = LIVE.values().stream().anyMatch(other -> other.task.type == Type.REGENERATE);
         LOGGER.info("Terrain task {} {}: {} chunks, {} still loaded, {} s", shortId(state.task.id), status,
                 state.task.chunks(), state.loadedNow, seconds);
         replace(state.task.withStatus(status, error));
@@ -766,7 +779,7 @@ public final class TerrainRegenerationManager {
 
     private static void clearMemory() {
         TASKS.clear(); DRAFTS.clear(); STARTUP_TASKS.clear(); configPath = null; worldRoot = null;
-        invalid = false; forceNormal = false;
+        invalid = false;
     }
 
     public enum Type { REGENERATE, CLEAR }

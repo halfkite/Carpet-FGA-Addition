@@ -286,6 +286,7 @@
     "carpet.fga.terrain_regeneration.progress": "Terrain task %s: %s/%s chunks (%s%%), %s min %s s elapsed",
     "carpet.fga.terrain_regeneration.complete": "Terrain task %s finished: %s chunks in %s min %s s",
     "carpet.fga.terrain_regeneration.failed_done": "Terrain task %s failed: %s chunks, %s min %s s elapsed",
+    "carpet.fga.terrain_regeneration.preview.outside_border": "Note: part of this area is outside the world border and will not be rendered by the client",
     "carpet.fga.terrain_regeneration.preview.clear": "Clears whole chunks plus an 8-block fluid border; runs right away after confirming",
     "carpet.fga.terrain_regeneration.preview.regenerate": "Deletes the old chunks and regenerates normal terrain; runs right away after confirming",
     "carpet.fga.terrain_regeneration.help.title": "Terrain regeneration and clearing",

@@ -118,6 +118,16 @@ public final class TerrainRegenerationCommand {
                             .withStyle(ChatFormatting.YELLOW))
                     .append(Component.literal("实际方块 [" + task.minBlockX() + "," + task.minBlockZ() + "]..["
                             + task.maxBlockX() + "," + task.maxBlockZ() + "]\n").withStyle(ChatFormatting.GRAY));
+            // Chunks outside the world border are never rendered by the client, so say so up front.
+            var sourceLevel = context.getSource().getLevel();
+            if (sourceLevel != null) {
+                var border = sourceLevel.getWorldBorder();
+                if (task.minBlockX() < border.getMinX() || task.maxBlockX() > border.getMaxX()
+                        || task.minBlockZ() < border.getMinZ() || task.maxBlockZ() > border.getMaxZ()) {
+                    out.append(note("carpet.fga.terrain_regeneration.preview.outside_border",
+                            ChatFormatting.RED)).append("\n");
+                }
+            }
             out.append(note(task.type() == TerrainRegenerationManager.Type.CLEAR
                     ? "carpet.fga.terrain_regeneration.preview.clear"
                     : "carpet.fga.terrain_regeneration.preview.regenerate", ChatFormatting.RED)).append("\n");

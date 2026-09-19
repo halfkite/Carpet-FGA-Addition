@@ -28,7 +28,7 @@ public abstract class ChunkGeneratorVoidDecorationMixin {
     //$$ private void fga$skipFeatures(WorldGenRegion level,StructureFeatureManager structures,CallbackInfo ci){
     //#endif
         //#if MC >= 1.21 && MC <= 26.3
-        if(FGASettings.voidWorldGeneration&&!TerrainRegenerationManager.forceNormalGeneration())ci.cancel();
+        if(FGASettings.voidWorldGeneration&&!TerrainRegenerationManager.forceNormalGeneration(chunk))ci.cancel();
         //#else
         //$$ if(FGASettings.voidWorldGeneration)ci.cancel();
         //#endif

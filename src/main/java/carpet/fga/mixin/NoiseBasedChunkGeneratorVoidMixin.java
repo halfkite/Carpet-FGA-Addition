@@ -35,23 +35,23 @@ import java.util.concurrent.CompletableFuture;
 
 @Mixin(NoiseBasedChunkGenerator.class)
 public abstract class NoiseBasedChunkGeneratorVoidMixin {
-    private static boolean voiding(){
+    private static boolean voiding(ChunkAccess chunk){
         //#if MC >= 1.21 && MC <= 26.3
-        return FGASettings.voidWorldGeneration&&!TerrainRegenerationManager.forceNormalGeneration();
+        return FGASettings.voidWorldGeneration&&!TerrainRegenerationManager.forceNormalGeneration(chunk);
         //#else
         //$$ return FGASettings.voidWorldGeneration;
         //#endif
     }
     //#if MC >= 1.21 && MC < 26.3
     @Inject(method="fillFromNoise",at=@At("HEAD"),cancellable=true)
-    private void fga$skipNoise(Blender blender, RandomState random, StructureManager structures, ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir){if(voiding())cir.setReturnValue(CompletableFuture.completedFuture(chunk));}
+    private void fga$skipNoise(Blender blender, RandomState random, StructureManager structures, ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir){if(voiding(chunk))cir.setReturnValue(CompletableFuture.completedFuture(chunk));}
     @Inject(method="buildSurface(Lnet/minecraft/server/level/WorldGenRegion;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/chunk/ChunkAccess;)V",at=@At("HEAD"),cancellable=true)
-    private void fga$skipSurface(WorldGenRegion level,StructureManager structures,RandomState random,ChunkAccess chunk,CallbackInfo ci){if(voiding())ci.cancel();}
+    private void fga$skipSurface(WorldGenRegion level,StructureManager structures,RandomState random,ChunkAccess chunk,CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     @Inject(method="applyCarvers",at=@At("HEAD"),cancellable=true)
     //#if MC >= 1.21.2
-    //$$ private void fga$skipCarvers(WorldGenRegion level,long seed,RandomState random,BiomeManager biomes,StructureManager structures,ChunkAccess chunk,CallbackInfo ci){if(voiding())ci.cancel();}
+    //$$ private void fga$skipCarvers(WorldGenRegion level,long seed,RandomState random,BiomeManager biomes,StructureManager structures,ChunkAccess chunk,CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     //#else
-    private void fga$skipCarvers(WorldGenRegion level,long seed,RandomState random,BiomeManager biomes,StructureManager structures,ChunkAccess chunk,GenerationStep.Carving carving,CallbackInfo ci){if(voiding())ci.cancel();}
+    private void fga$skipCarvers(WorldGenRegion level,long seed,RandomState random,BiomeManager biomes,StructureManager structures,ChunkAccess chunk,GenerationStep.Carving carving,CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     //#endif
     //#elseif MC >= 26.3
     //$$ @Inject(method="buildTerrain",at=@At("HEAD"),cancellable=true)
@@ -62,27 +62,27 @@ public abstract class NoiseBasedChunkGeneratorVoidMixin {
     //$$ }
     //#elseif MC >= 1.19
     //$$ @Inject(method="fillFromNoise",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipNoise(java.util.concurrent.Executor executor, Blender blender, RandomState random, StructureManager structures, ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir){if(voiding())cir.setReturnValue(CompletableFuture.completedFuture(chunk));}
+    //$$ private void fga$skipNoise(java.util.concurrent.Executor executor, Blender blender, RandomState random, StructureManager structures, ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir){if(voiding(chunk))cir.setReturnValue(CompletableFuture.completedFuture(chunk));}
     //$$ @Inject(method="buildSurface(Lnet/minecraft/server/level/WorldGenRegion;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/chunk/ChunkAccess;)V",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipSurface(WorldGenRegion level,StructureManager structures,RandomState random,ChunkAccess chunk,CallbackInfo ci){if(voiding())ci.cancel();}
+    //$$ private void fga$skipSurface(WorldGenRegion level,StructureManager structures,RandomState random,ChunkAccess chunk,CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     //$$ @Inject(method="applyCarvers",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipCarvers(WorldGenRegion level,long seed,RandomState random,BiomeManager biomes,StructureManager structures,ChunkAccess chunk,GenerationStep.Carving carving,CallbackInfo ci){if(voiding())ci.cancel();}
+    //$$ private void fga$skipCarvers(WorldGenRegion level,long seed,RandomState random,BiomeManager biomes,StructureManager structures,ChunkAccess chunk,GenerationStep.Carving carving,CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     //#elseif MC >= 1.18
     //$$ @Inject(method="fillFromNoise",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipNoise(java.util.concurrent.Executor executor, Blender blender, net.minecraft.world.level.StructureFeatureManager structures, ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir){if(voiding())cir.setReturnValue(CompletableFuture.completedFuture(chunk));}
+    //$$ private void fga$skipNoise(java.util.concurrent.Executor executor, Blender blender, net.minecraft.world.level.StructureFeatureManager structures, ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir){if(voiding(chunk))cir.setReturnValue(CompletableFuture.completedFuture(chunk));}
     //$$ @Inject(method="buildSurface",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipSurface(WorldGenRegion level,net.minecraft.world.level.StructureFeatureManager structures,ChunkAccess chunk,CallbackInfo ci){if(voiding())ci.cancel();}
+    //$$ private void fga$skipSurface(WorldGenRegion level,net.minecraft.world.level.StructureFeatureManager structures,ChunkAccess chunk,CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     //$$ @Inject(method="applyCarvers",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipCarvers(WorldGenRegion level,long seed,BiomeManager biomes,net.minecraft.world.level.StructureFeatureManager structures,ChunkAccess chunk,GenerationStep.Carving carving,CallbackInfo ci){if(voiding())ci.cancel();}
+    //$$ private void fga$skipCarvers(WorldGenRegion level,long seed,BiomeManager biomes,net.minecraft.world.level.StructureFeatureManager structures,ChunkAccess chunk,GenerationStep.Carving carving,CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     //#elseif MC >= 1.17
     //$$ @Inject(method="fillFromNoise",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipNoise(java.util.concurrent.Executor executor, StructureFeatureManager structures, ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir){if(voiding())cir.setReturnValue(CompletableFuture.completedFuture(chunk));}
+    //$$ private void fga$skipNoise(java.util.concurrent.Executor executor, StructureFeatureManager structures, ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir){if(voiding(chunk))cir.setReturnValue(CompletableFuture.completedFuture(chunk));}
     //$$ @Inject(method="buildSurfaceAndBedrock",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipSurface(WorldGenRegion level,ChunkAccess chunk,CallbackInfo ci){if(voiding())ci.cancel();}
+    //$$ private void fga$skipSurface(WorldGenRegion level,ChunkAccess chunk,CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     //#else
     //$$ @Inject(method="fillFromNoise",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipNoise(LevelAccessor level, StructureFeatureManager structures, ChunkAccess chunk, CallbackInfo ci){if(voiding())ci.cancel();}
+    //$$ private void fga$skipNoise(LevelAccessor level, StructureFeatureManager structures, ChunkAccess chunk, CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     //$$ @Inject(method="buildSurfaceAndBedrock",at=@At("HEAD"),cancellable=true)
-    //$$ private void fga$skipSurface(WorldGenRegion level,ChunkAccess chunk,CallbackInfo ci){if(voiding())ci.cancel();}
+    //$$ private void fga$skipSurface(WorldGenRegion level,ChunkAccess chunk,CallbackInfo ci){if(voiding(chunk))ci.cancel();}
     //#endif
 }
