@@ -1,4 +1,4 @@
-﻿{
+{
     "carpet.category.FGA":  "FGA",
     "carpet.rule.playerPossession.name": "Player Possession",
     "carpet.rule.playerPossession.desc": "Use /player <name> possess to control an online player or fake player without an FGA client",
@@ -164,8 +164,6 @@
     "carpet-fga-addition.command.fakePlayerItemSort.rebuildQueued":  "Queued %s sorter routes for rate-limited rebuild.",
     "carpet.rule.voidWorldGeneration.name":  "Void World Generation",
     "carpet.rule.voidWorldGeneration.desc":  "Makes newly generated chunks empty while retaining biome and structure-location data",
-    "carpet.rule.terrainRegenerationRemoveFloatingMushrooms.name": "Remove floating mushrooms after regeneration",
-    "carpet.rule.terrainRegenerationRemoveFloatingMushrooms.desc": "Removes mushrooms that have no block under them from regenerated chunks, so the mushrooms nether wastes places at a random height over the whole column do not hang in the air: false keeps the vanilla result, true removes them",
     "carpet.rule.terrainRegenerationCommandPermission.name":  "Terrain Regeneration Command Permission",
     "carpet.rule.terrainRegenerationCommandPermission.desc":  "Controls access to terrain regeneration and void clearing commands",
     "carpet.rule.endGatewayRegeneration.name":  "End Gateway Regeneration",
@@ -309,6 +307,7 @@
     "carpet.fga.terrain_regeneration.message.running": "Running now",
     "carpet.fga.terrain_regeneration.message.cancelled": "Task cancelled",
     "carpet.fga.terrain_regeneration.message.retried": "Retried, running now",
+    "carpet.fga.terrain_regeneration.message.marked": "Marked %s chunks; they regenerate as normal terrain when a player loads them",
     "carpet.fga.terrain_regeneration.message.not_running": "Task not found or already executed",
     "carpet.fga.terrain_regeneration.list.title": "Terrain tasks %s/%s",
     "carpet.fga.terrain_regeneration.list.live": "Progress %s/%s chunks, generating %s, still loaded %s",

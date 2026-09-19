@@ -242,20 +242,6 @@ Controls permission for terrain regeneration and terrain clearing commands<br>`f
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21+`
 
-### Remove floating mushrooms after regeneration(terrainRegenerationRemoveFloatingMushrooms) · [Related command](commands_en.md#cmd-regenerate-terrain)
-
-Removes mushrooms that have no block under them from the chunks a regeneration task produced; nether wastes places mushrooms at a random height over the whole column, so many of them hang in the open, and with this rule only mushrooms on or right above a block are kept
-false: keeps the vanilla result, floating mushrooms stay<br>
-true: removes mushrooms that have no block within two blocks below
-
-- Type: `boolean`
-- Default: `true`
-- Reference options: `false`, `true`
-- Category: `FGA`, `FEATURE`
-- Since: `1.21+`
-- Client: none (server side only)
-- Related rules: works with `voidWorldGeneration`; only affects regeneration tasks, not normal world generation
-
 ### Full Shulker Box Crafting(fullShulkerBoxCrafting)
 
 Allows shulker boxes containing one item type to craft directly through matching crafting or stonecutter recipes<br>`false`: disables the feature<br>`only64`: input boxes must be full at the vanilla stack limit, and outputs and recipe returns must form whole full boxes<br>`any`: input boxes may contain the same amount from 1 to the container stack limit; the total is crafted in one operation, a final output box may be partial, and leftovers remain in the input boxes<br>All input boxes must contain the same stackable item type and amount and have the same capacity<br>The legacy value `true` is treated as `any`

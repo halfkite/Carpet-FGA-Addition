@@ -98,7 +98,7 @@
 
 ### `/regenerateTerrain`
 
-相关规则：`voidWorldGeneration`、`terrainRegenerationCommandPermission`、`terrainRegenerationRemoveFloatingMushrooms`
+相关规则：`voidWorldGeneration`、`terrainRegenerationCommandPermission`
 
 ```text
 /regenerateTerrain create from <x1> <z1> <x2> <z2>

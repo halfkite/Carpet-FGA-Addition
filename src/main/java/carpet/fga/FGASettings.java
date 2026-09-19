@@ -1292,22 +1292,6 @@ public class FGASettings {
     //#endif
     public static String terrainRegenerationCommandPermission = "ops";
 
-    //#if MC >= 1.19
-    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
-        options = {"false", "true"},
-        strict = false,
-        conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
-    )
-    //#else
-    //$$ @Rule(
-        //$$ desc = "Removes mushrooms without a support block under them from regenerated chunks",
-        //$$ category = {FGA, FEATURE},
-        //$$ options = {"false", "true"},
-        //$$ strict = false,
-        //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
-    //$$ )
-    //#endif
-    public static boolean terrainRegenerationRemoveFloatingMushrooms = true;
     //#endif
 
     //#if MC >= 1.21
