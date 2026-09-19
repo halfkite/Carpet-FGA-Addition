@@ -307,7 +307,7 @@
     "carpet.fga.terrain_regeneration.message.confirmed": "已確認並開始執行",
     "carpet.fga.terrain_regeneration.message.running": "開始執行",
     "carpet.fga.terrain_regeneration.message.cancelled": "已取消任務",
-    "carpet.fga.terrain_regeneration.message.retried": "任務已加入重試佇列",
+    "carpet.fga.terrain_regeneration.message.retried": "已重試並開始執行",
     "carpet.fga.terrain_regeneration.message.not_running": "任務不存在或已執行",
     "carpet.fga.terrain_regeneration.list.title": "地形任務 %s/%s",
     "carpet.fga.terrain_regeneration.list.live": "進度 %s/%s 個區塊，生成中 %s，仍在載入 %s",

@@ -54,7 +54,6 @@ public final class TerrainRegenerationManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final List<Task> TASKS = new ArrayList<>();
     private static final Map<UUID, Task> DRAFTS = new LinkedHashMap<>();
-    private static final List<Task> STARTUP_TASKS = new ArrayList<>();
     /** Live runs: confirmed tasks being applied right now, no restart needed. Chunk generation reads
      * this from worker threads, so it has to be concurrent. */
     private static final Map<UUID, LiveState> LIVE = new ConcurrentHashMap<>();
@@ -545,12 +544,13 @@ public final class TerrainRegenerationManager {
         return removed;
     }
 
+    /** Puts a failed task back to confirmed so it can run again from its existing backup. */
     public static synchronized Task retry(UUID id) throws IOException {
         ensureWritable();
         for (int i = 0; i < TASKS.size(); i++) {
             Task task = TASKS.get(i);
             if (task.id.equals(id) && task.status == Status.FAILED) {
-                Task retried = task.withStatus(Status.PREPARED, null);
+                Task retried = task.withStatus(Status.CONFIRMED, null);
                 TASKS.set(i, retried);
                 save();
                 return retried;
@@ -776,30 +776,6 @@ public final class TerrainRegenerationManager {
         }
     }
 
-    private static List<Task> mergedConfirmedTasks() {
-        List<Task> pending = TASKS.stream()
-                .filter(t -> t.status == Status.CONFIRMED || t.status == Status.PREPARED).toList();
-        List<Task> result = new ArrayList<>();
-        for (Task source : pending) {
-            Task current = source.withSources(List.of(source.id));
-            boolean changed;
-            do {
-                changed = false;
-                for (int i = 0; i < result.size(); i++) {
-                    Task other = result.get(i);
-                    if (current.mergeable(other)) {
-                        result.remove(i);
-                        current = current.merge(other);
-                        changed = true;
-                        break;
-                    }
-                }
-            } while (changed);
-            result.add(current);
-        }
-        return result;
-    }
-
     private static void markSources(List<UUID> sources, Status status, String error) {
         for (int i = 0; i < TASKS.size(); i++) {
             Task task = TASKS.get(i);
@@ -853,7 +829,7 @@ public final class TerrainRegenerationManager {
     }
 
     private static void clearMemory() {
-        TASKS.clear(); DRAFTS.clear(); STARTUP_TASKS.clear(); configPath = null; worldRoot = null;
+        TASKS.clear(); DRAFTS.clear(); configPath = null; worldRoot = null;
         invalid = false;
     }
 

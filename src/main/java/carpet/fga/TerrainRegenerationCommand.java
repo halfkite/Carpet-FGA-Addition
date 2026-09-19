@@ -201,7 +201,9 @@ public final class TerrainRegenerationCommand {
 
     private static int retry(CommandContext<CommandSourceStack> context) {
         try {
-            var task = TerrainRegenerationManager.retry(taskId(context));
+            UUID id=taskId(context);
+            TerrainRegenerationManager.retry(id);
+            var task = TerrainRegenerationManager.run(id);
             context.getSource().sendSuccess(() -> statusLine("carpet.fga.terrain_regeneration.message.retried", task),true);
             return 1;
         } catch(Exception e){return fail(context,e);}

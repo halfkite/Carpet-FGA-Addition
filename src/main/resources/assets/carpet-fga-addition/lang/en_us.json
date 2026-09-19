@@ -306,7 +306,7 @@
     "carpet.fga.terrain_regeneration.message.confirmed": "Confirmed, running now",
     "carpet.fga.terrain_regeneration.message.running": "Running now",
     "carpet.fga.terrain_regeneration.message.cancelled": "Task cancelled",
-    "carpet.fga.terrain_regeneration.message.retried": "Task queued for retry",
+    "carpet.fga.terrain_regeneration.message.retried": "Retried, running now",
     "carpet.fga.terrain_regeneration.message.not_running": "Task not found or already executed",
     "carpet.fga.terrain_regeneration.list.title": "Terrain tasks %s/%s",
     "carpet.fga.terrain_regeneration.list.live": "Progress %s/%s chunks, generating %s, still loaded %s",
