@@ -242,7 +242,7 @@ custom：按 `/vehicleStop` 为每名玩家保存的矿车和船设置处理<br>
 
 ### 虚空世界生成(voidWorldGeneration) · [相关指令](commands.md#cmd-regenerate-terrain)
 
-让新生成区块为虚空，同时保留群系和结构定位数据，可以用指令重新生成地形
+让新生成区块为虚空，同时保留群系和结构定位数据，可以用 `/regenerateTerrain` 指令重新生成或者重新删除地形
 
 - 类型：`布尔`
 - 默认值：`false`
@@ -263,6 +263,20 @@ ops：需要 OP 2 及以上<br>
 - 参考选项：`false`、`true`、`ops`、`0-4`
 - 分类：`FGA`，`特性`，`命令`
 - 生效版本：`1.21+`
+
+### 重生成后清除悬空蘑菇(terrainRegenerationRemoveFloatingMushrooms) · [相关指令](commands.md#cmd-regenerate-terrain)
+
+地形重生成完成后，清除重生成区块里下方没有方块的蘑菇；下界荒地会用整列随机高度放置蘑菇，重生成区域里大量蘑菇会悬在空中，开启本规则后只保留贴着方块或紧贴方块上方的蘑菇
+false：保持原版结果，保留悬空蘑菇<br>
+true：清除下方两格内没有方块的蘑菇
+
+- 类型：`布尔`
+- 默认值：`true`
+- 参考选项：`false`、`true`
+- 分类：`FGA`，`特性`
+- 生效版本：`1.21+`
+- 客户端要求：无（纯服务端）
+- 与其他规则的关系：配合 `voidWorldGeneration` 使用；只影响地形重生成任务，不影响正常世界生成
 
 ### 满潜影盒合成(fullShulkerBoxCrafting)
 
@@ -795,11 +809,8 @@ ops：需要 OP 2 及以上<br>
 
 ### 地图加载命令权限(mapLoadCommandPermission) · [相关指令](commands.md#cmd-map-load)
 
-控制 `/mapLoad` 和 `/fga mapLoad` 的使用权限<br>
-false：禁用命令<br>
-true：允许所有玩家使用<br>
-ops：需要 OP 2 及以上<br>
-0-4：设置命令的最低权限等级
+可以通过`/mapLoad` 和 `/fga mapLoad` 指令加载地图或者更新地图<br>
+地图指手持的物品地图
 
 - 类型：`权限字符串`
 - 默认值：`ops`

@@ -312,6 +312,8 @@ public final class TerrainRegenerationManager {
             tickets.remove();
             if (state.regenerated.remove(key)) {
                 state.pending.remove(key);
+                LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+                if (chunk != null) removeFloatingMushrooms(chunk, level);
                 continue;
             }
             // The ticket brought back the chunk that was already in memory instead of generating it
@@ -323,6 +325,59 @@ public final class TerrainRegenerationManager {
         }
     }
 
+
+    /**
+     * Removes the mushrooms of a freshly regenerated chunk that have no block under them. Nether
+     * wastes places its mushrooms with a random height over the whole column, so a large part of them
+     * ends up hanging in the open, which looks wrong in a regenerated area. Keeps the ones that sit
+     * on or right above a block.
+     */
+    private static void removeFloatingMushrooms(LevelChunk chunk, ServerLevel level) {
+        if (!FGASettings.terrainRegenerationRemoveFloatingMushrooms) return;
+        LevelChunkSection[] sections = chunk.getSections();
+        boolean changed = false;
+        for (int index = 0; index < sections.length; index++) {
+            LevelChunkSection section = sections[index];
+            if (section == null || section.hasOnlyAir()) continue;
+            PalettedContainer<BlockState> states = section.getStates();
+            if (!states.maybeHas(TerrainRegenerationManager::isMushroom)) continue;
+            int bottom = (chunk.getMinSection() + index) << 4;
+            boolean sectionChanged = false;
+            for (int y = 0; y < 16; y++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        if (!isMushroom(states.get(x, y, z))) continue;
+                        BlockPos pos = new BlockPos(chunk.getPos().getMinBlockX() + x, bottom + y,
+                                chunk.getPos().getMinBlockZ() + z);
+                        if (hasSupportBelow(level, pos)) continue;
+                        states.set(x, y, z, Blocks.AIR.defaultBlockState());
+                        sectionChanged = true;
+                    }
+                }
+            }
+            if (sectionChanged) {
+                section.recalcBlockCounts();
+                changed = true;
+            }
+        }
+        if (changed) {
+            //#if MC >= 1.21.3
+            //$$ chunk.markUnsaved();
+            //#else
+            chunk.setUnsaved(true);
+            //#endif
+            syncChunkToPlayers(chunk, level);
+        }
+    }
+
+    private static boolean isMushroom(BlockState state) {
+        return state.is(Blocks.BROWN_MUSHROOM) || state.is(Blocks.RED_MUSHROOM);
+    }
+
+    /** True when the mushroom sits on a block or right above one, so it does not look like it floats. */
+    private static boolean hasSupportBelow(ServerLevel level, BlockPos pos) {
+        return !level.getBlockState(pos.below()).isAir() || !level.getBlockState(pos.below(2)).isAir();
+    }
 
     private static boolean isTaskChunk(Task task, ChunkPos pos) {
         return pos.x >= task.minChunkX && pos.x <= task.maxChunkX && pos.z >= task.minChunkZ && pos.z <= task.maxChunkZ;

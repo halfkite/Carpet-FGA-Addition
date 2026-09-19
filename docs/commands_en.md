@@ -98,7 +98,7 @@ Preferences are saved by UUID at `world/config/carpetfgaaddition/player-tp-end-c
 
 ### `/regenerateTerrain`
 
-Related rules: `voidWorldGeneration`, `terrainRegenerationCommandPermission`
+Related rules: `voidWorldGeneration`, `terrainRegenerationCommandPermission`, `terrainRegenerationRemoveFloatingMushrooms`
 
 ```text
 /regenerateTerrain create from <x1> <z1> <x2> <z2>

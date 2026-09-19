@@ -164,6 +164,8 @@
     "carpet.rule.wanderingTraderNoDespawn.desc":  "false 保持原版；true 使全部流浪商人不消失；controlled 仅保护命中 /villagerPerformance wanderingTrader 名称或脚下方块名单的流浪商人。",
     "carpet.rule.voidWorldGeneration.name":  "虚空世界生成",
     "carpet.rule.voidWorldGeneration.desc":  "让新生成区块为空白，同时保留群系和结构定位数据",
+    "carpet.rule.terrainRegenerationRemoveFloatingMushrooms.name": "重生成后清除悬空蘑菇",
+    "carpet.rule.terrainRegenerationRemoveFloatingMushrooms.desc": "地形重生成后清除下方没有方块的蘑菇，避免下界荒地按整列随机高度生成的蘑菇悬在空中：false 保持原版结果，true 清除悬空蘑菇",
     "carpet.rule.terrainRegenerationCommandPermission.name":  "地形重生成命令权限",
     "carpet.rule.terrainRegenerationCommandPermission.desc":  "控制地形重生成与虚空清除命令的使用权限",
     "carpet.rule.endGatewayRegeneration.name":  "末地折跃门再生",
