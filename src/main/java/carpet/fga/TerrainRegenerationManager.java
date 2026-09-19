@@ -395,8 +395,11 @@ public final class TerrainRegenerationManager {
                             : "carpet.fga.terrain_regeneration.failed_done",
                     shortId(state.task.id), state.task.chunks(), seconds / 60L, seconds % 60L));
         }
-        LOGGER.info("Terrain task {} {}: {} chunks, {} still loaded, {} s", shortId(state.task.id), status,
-                state.task.chunks(), state.loadedNow, seconds);
+        LOGGER.info("Terrain task {} {}: {} chunks [{}]..[{}] dim={}, {} still loaded, {} s",
+                shortId(state.task.id), status, state.task.chunks(),
+                state.task.minChunkX + "," + state.task.minChunkZ,
+                state.task.maxChunkX + "," + state.task.maxChunkZ,
+                state.task.dimension, state.loadedNow, seconds);
         replace(state.task.withStatus(status, error));
         markSources(state.task.sources, status, error);
         try { save(); } catch (IOException exception) { LOGGER.error("Failed to save terrain task result", exception); }
