@@ -101,16 +101,19 @@
 相关规则：`voidWorldGeneration`、`terrainRegenerationCommandPermission`
 
 ```text
-/regenerateTerrain regenerate box <x1> <z1> <x2> <z2>
-/regenerateTerrain clear radius <x> <z> <半径>
-/regenerateTerrain regenerate|clear dimension <维度> box|radius ...
+/regenerateTerrain create from <x1> <z1> <x2> <z2>
+/regenerateTerrain create radius <半径>
+/regenerateTerrain clear from <x1> <z1> <x2> <z2>
+/regenerateTerrain clear radius <半径>
+/regenerateTerrain create|clear dimension <维度> from|radius ...
+/regenerateTerrain list [页码]
 /regenerateTerrain confirm <任务ID>
+/regenerateTerrain run <任务ID>
 /regenerateTerrain cancel <任务ID>
 /regenerateTerrain retry <任务ID>
-/regenerateTerrain list [页码]
 ```
 
-输入使用方块坐标，实际向外取整到完整区块，所有 X/Z 参数都可按 Tab 补全玩家自身坐标或视线指向方块坐标，预览会显示精确区块数和实际生效范围。预览中的绿色确认按钮可直接点击执行确认；确认只加入队列，世界会在下次服务器重启时修改。可以确认多个任务并在下一次重启统一执行。`regenerate` 删除旧区块并按原版正常生成；`clear` 将每个 section 的 palette 通过全空气网络数据替换为空气，同时清除方块实体、非玩家实体、POI、计划刻、高度图和旧光照数据，并清除实际范围水平外沿八格内的相邻流体，覆盖原版水与下界熔岩的最大水平传播距离；含水方块只取消含水状态。清空范围与外沿涉及的 Region 都会在执行前备份。失败任务可在修复原因后使用 `retry` 继续，且不会覆盖原始备份。单个任务（含合并后的任务）不能超过 4096 个区块，超出上限的草稿无法确认，历史遗留的超大任务会在加载时标记为失败。
+`from` 使用方块坐标，`radius` 使用以玩家所在区块为中心的区块半径；实际范围按完整区块向外取整，所有坐标参数都可按 Tab 补全玩家自身坐标或视线指向方块坐标，预览会显示精确区块数和实际生效方块范围，预览中的绿色确认按钮可直接点击执行。确认后立即开始执行、不需要重启；执行时先等区域内已加载的区块自然卸载再逐个重新生成，所以站在区域内的玩家需要先离开，离开再回来看到的就是新地形。`create` 让区块按原版正常生成；`clear` 将每个 section 的 palette 通过全空气网络数据替换为空气，同时清除方块实体、非玩家实体、POI、计划刻、高度图和旧光照数据，并清除实际范围水平外沿八格内的相邻流体，覆盖原版水与下界熔岩的最大水平传播距离；含水方块只取消含水状态。清空范围与外沿涉及的 Region 都会在执行前备份。失败任务可在修复原因后使用 `retry` 继续，且不会覆盖原始备份。单个任务（含合并后的任务）不能超过 4096 个区块，超出上限的草稿无法确认，历史遗留的超大任务会在加载时标记为失败。
 
 ## 玩家与假人区域操作 (player)
 

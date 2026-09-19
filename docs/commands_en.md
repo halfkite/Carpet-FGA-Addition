@@ -101,16 +101,19 @@ Preferences are saved by UUID at `world/config/carpetfgaaddition/player-tp-end-c
 Related rules: `voidWorldGeneration`, `terrainRegenerationCommandPermission`
 
 ```text
-/regenerateTerrain regenerate box <x1> <z1> <x2> <z2>
-/regenerateTerrain clear radius <x> <z> <radius>
-/regenerateTerrain regenerate|clear dimension <dimension> box|radius ...
+/regenerateTerrain create from <x1> <z1> <x2> <z2>
+/regenerateTerrain create radius <radius>
+/regenerateTerrain clear from <x1> <z1> <x2> <z2>
+/regenerateTerrain clear radius <radius>
+/regenerateTerrain create|clear dimension <dimension> from|radius ...
+/regenerateTerrain list [page]
 /regenerateTerrain confirm <taskId>
+/regenerateTerrain run <taskId>
 /regenerateTerrain cancel <taskId>
 /regenerateTerrain retry <taskId>
-/regenerateTerrain list [page]
 ```
 
-Coordinates are block coordinates and expand to whole chunks. Every X/Z argument offers Tab suggestions for the player's position and targeted block, and previews show the exact chunk count and effective range. The green confirmation button executes the confirmation directly; confirmation only queues the task, and the world changes on the next server restart. Multiple confirmed tasks can run together. `regenerate` deletes and normally regenerates terrain. `clear` reads an all-air network payload into every section palette, clears block entities, non-player entities, POI, scheduled ticks, heightmaps, and lighting data, and removes adjacent fluids within eight blocks outside the effective horizontal border, covering the maximum horizontal spread of vanilla water and Nether lava; waterlogged blocks keep the block and lose only their waterlogged state. Region files touched by the clear range or its border are backed up before execution. A failed task can be retried without overwriting its original backup. A single task (including merged ones) cannot exceed 4096 chunks; oversized drafts cannot be confirmed, and legacy oversized tasks are marked failed on load.
+`from` takes block coordinates and `radius` takes a chunk radius around the chunk the player stands in. The range always expands outward to whole chunks. Every coordinate argument offers Tab suggestions for the player's position and targeted block, and previews show the exact chunk count and effective block range; the green confirmation button starts the task immediately, with no restart needed. A running task first waits for chunks of the area that are still loaded to unload on their own and then regenerates them one by one, so a player standing inside the area has to leave first; coming back afterwards shows the new terrain. `create` lets chunks generate normally. `clear` reads an all-air network payload into every section palette, clears block entities, non-player entities, POI, scheduled ticks, heightmaps, and lighting data, and removes adjacent fluids within eight blocks outside the effective horizontal border, covering the maximum horizontal spread of vanilla water and Nether lava; waterlogged blocks keep the block and lose only their waterlogged state. Region files touched by the clear range or its border are backed up before execution. A failed task can be retried without overwriting its original backup. A single task (including merged ones) cannot exceed 4096 chunks; oversized drafts cannot be confirmed, and legacy oversized tasks are marked failed on load.
 
 ## Player and fake-player range commands (player)
 
