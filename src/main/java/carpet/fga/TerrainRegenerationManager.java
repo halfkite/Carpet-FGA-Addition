@@ -80,24 +80,27 @@ public final class TerrainRegenerationManager {
      * the player.
      */
     public static boolean forceNormalGeneration(net.minecraft.world.level.chunk.ChunkAccess chunk) {
-        return chunk != null && shouldRegenerateFromScratch(chunk.getPos());
+        if (chunk == null) return false;
+        return shouldRegenerateFromScratch(chunk.getPos(), dimensionOf(chunk));
     }
 
     /**
-     * True while a live regeneration task covers this chunk. Vanilla only runs the generation
-     * pipeline when the stored chunk status is not good enough, so such a chunk is answered with a
-     * fresh empty chunk when it is loaded and is then generated from scratch. Doing this at the load
-     * entry point instead of deleting the stored data is what makes the regeneration reliable: the
-     * server keeps its own cached copy of every region header, and any write through that copy puts
-     * deleted chunk entries back.
+     * True while a live regeneration task still has to regenerate this chunk. A chunk the run already
+     * finished must not be answered with an empty chunk again: chunk generation is asynchronous, so a
+     * second generation started now can still be running when the run is over, and the void rule
+     * would empty the chunk that was just regenerated. {@code dimension} may be null when it cannot
+     * be determined, in which case every dimension matches.
      */
-    public static boolean shouldRegenerateFromScratch(ChunkPos pos) {
+    public static boolean shouldRegenerateFromScratch(ChunkPos pos, String dimension) {
         if (LIVE.isEmpty()) return false;
+        long key = chunkKey(pos);
         for (LiveState state : LIVE.values()) {
             Task task = state.task;
             if (task.type != Type.REGENERATE) continue;
-            if (pos.x >= task.minChunkX && pos.x <= task.maxChunkX
-                    && pos.z >= task.minChunkZ && pos.z <= task.maxChunkZ) return true;
+            if (dimension != null && !task.dimension.equals(dimension)) continue;
+            if (pos.x < task.minChunkX || pos.x > task.maxChunkX
+                    || pos.z < task.minChunkZ || pos.z > task.maxChunkZ) continue;
+            if (state.pending.contains(key)) return true;
         }
         return false;
     }
@@ -106,15 +109,26 @@ public final class TerrainRegenerationManager {
      * Called by the chunk load hook after it answered a load with a fresh empty chunk, so the run
      * knows this chunk was really generated again instead of being reused from memory.
      */
-    public static void markRegenerated(ChunkPos pos) {
+    public static void markRegenerated(ChunkPos pos, String dimension) {
         if (LIVE.isEmpty()) return;
         long key = chunkKey(pos);
         for (LiveState state : LIVE.values()) {
             Task task = state.task;
             if (task.type != Type.REGENERATE) continue;
+            if (dimension != null && !task.dimension.equals(dimension)) continue;
             if (pos.x >= task.minChunkX && pos.x <= task.maxChunkX
                     && pos.z >= task.minChunkZ && pos.z <= task.maxChunkZ) state.regenerated.add(key);
         }
+    }
+
+    /** Dimension a chunk is generated in, or null when the chunk does not expose it. */
+    private static String dimensionOf(net.minecraft.world.level.chunk.ChunkAccess chunk) {
+        //#if MC >= 1.21 && MC <= 26.2
+        Object accessor = ((carpet.fga.mixin.ChunkAccessLevelAccessor) chunk).carpetFga$levelHeightAccessor();
+        return accessor instanceof ServerLevel level ? level.dimension().location().toString() : null;
+        //#else
+        //$$ return null;
+        //#endif
     }
 
     /** Tasks only live for the current run: a restart starts with an empty list. */
@@ -136,6 +150,9 @@ public final class TerrainRegenerationManager {
         final Set<Long> ticketed = new LinkedHashSet<>();
         /** Chunks the load hook really generated again; written from chunk worker threads. */
         final Set<Long> regenerated = ConcurrentHashMap.newKeySet();
+        /** Chunks of this run that are not finished yet, so their loads must not read stored data.
+         * Read from chunk worker threads, written by the run. */
+        final Set<Long> pending = ConcurrentHashMap.newKeySet();
         /** Chunks whose ticket did not regenerate anything, and the tick they may be tried again. */
         final Map<Long, Integer> retryAfter = new HashMap<>();
         /** Ticks this run has been alive, used to space out retries. */
@@ -181,6 +198,7 @@ public final class TerrainRegenerationManager {
         } else {
             forEachChunk(task, pos -> state.remaining.add(chunkKey(pos)));
         }
+        state.pending.addAll(state.remaining);
         LIVE.put(id, state);
         state.owner = onlineCreator(CarpetServer.minecraft_server, task.creator);
         state.bossBar = new net.minecraft.server.level.ServerBossEvent(
@@ -293,7 +311,10 @@ public final class TerrainRegenerationManager {
             if (level.getChunkSource().getChunkNow(pos.x, pos.z) == null) continue;
             level.getChunkSource().removeRegionTicket(LIVE_TICKET, pos, 0, pos);
             tickets.remove();
-            if (state.regenerated.remove(key)) continue;
+            if (state.regenerated.remove(key)) {
+                state.pending.remove(key);
+                continue;
+            }
             // The ticket brought back the chunk that was already in memory instead of generating it
             // again: vanilla keeps unloading chunks in a queue and revives them from there when a new
             // ticket arrives, so the old data is reused without any load. Let the unload finish and

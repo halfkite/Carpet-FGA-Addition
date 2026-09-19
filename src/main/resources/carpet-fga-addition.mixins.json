@@ -82,6 +82,7 @@
         //#endif
         //#if MC >= 1.21 && MC <= 26.2
         ,"ChunkMapRegenerationAccessor",
+        "ChunkAccessLevelAccessor",
         "ChunkMapRegenerationMixin"
         //#endif
         //#if MC >= 1.21 && MC <= 26.3
