@@ -2,10 +2,8 @@
 package carpet.fga;
 
 import net.minecraft.resources.ResourceLocation;
-//#if MC == 1.21.1
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
-//#endif
 //#if MC >= 1.20.2
 import net.minecraft.world.item.crafting.RecipeHolder;
 //#else

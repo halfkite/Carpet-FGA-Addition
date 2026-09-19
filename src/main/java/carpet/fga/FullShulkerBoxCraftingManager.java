@@ -3,9 +3,9 @@ package carpet.fga;
 
 //#if MC == 1.21.1
 import carpet.fga.mixin.StonecutterMenuAccessor;
+//#endif
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
-//#endif
 import net.minecraft.core.NonNullList;
 //#if MC < 1.20.5
 import net.minecraft.nbt.CompoundTag;
