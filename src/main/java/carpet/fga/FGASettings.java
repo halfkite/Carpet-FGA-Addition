@@ -485,14 +485,14 @@ public class FGASettings {
     //#endif
     public static boolean enchantmentLevelAddition = false;
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"}
     )
     public static boolean fireAspectOnTools = false;
     //#endif
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"}
     )
@@ -628,7 +628,7 @@ public class FGASettings {
     public static boolean woodStonecuttingRecipes = false;
     //#endif
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"}
     )
@@ -1403,7 +1403,7 @@ public class FGASettings {
         }
     }
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true", "ops", "0", "1", "2", "3", "4"},
         strict = false,
@@ -1424,7 +1424,7 @@ public class FGASettings {
     //#endif
     //#endif
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"}
     )
@@ -1471,7 +1471,7 @@ public class FGASettings {
     }
     //#endif
 
-    //#if MC == 1.21.1
+    //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         options = {"false", "true"})
     public static boolean boneMealMaxEfficiency = false;

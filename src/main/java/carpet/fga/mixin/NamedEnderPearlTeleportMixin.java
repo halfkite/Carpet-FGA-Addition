@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga.mixin;
 
 import carpet.fga.NamedEnderPearlTeleport;

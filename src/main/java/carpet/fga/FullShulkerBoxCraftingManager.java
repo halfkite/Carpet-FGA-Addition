@@ -285,6 +285,14 @@ public final class FullShulkerBoxCraftingManager {
     /** How many content items one craft of this recipe consumes, taken from the recipe itself. */
     private static int requiredCraftingInput(CraftingRecipe recipe, ItemStack content) {
         int required = 0;
+        //#if MC >= 1.21.3
+        //$$ for (var ingredient : recipe.placementInfo().ingredients()) {
+            //#if MC == 1.21.3
+            //$$ if (ingredient.items().stream().anyMatch(item -> content.is(item.value()))) required++;
+            //#else
+            //$$ if (ingredient.items().anyMatch(item -> content.is(item.value()))) required++;
+            //#endif
+        //#else
         for (var ingredient : recipe.getIngredients()) {
             if (ingredient.isEmpty()) continue;
             for (ItemStack stack : ingredient.getItems()) {
@@ -293,6 +301,7 @@ public final class FullShulkerBoxCraftingManager {
                     break;
                 }
             }
+        //#endif
         }
         return required;
     }

@@ -47,7 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class TerrainRegenerationManager {
     private static final int FLUID_BORDER = 8;
     /** Upper bound of chunks per task; keeps startup regeneration and fluid-border clearing bounded. */
-    private static final long MAX_TASK_CHUNKS = 4096;
+    private static final long MAX_TASK_CHUNKS = 16384;
     private static final String CHUNK_LIMIT_MESSAGE =
             "task exceeds the " + MAX_TASK_CHUNKS + " chunk limit / 任务超出 " + MAX_TASK_CHUNKS + " 区块上限";
     private static final Logger LOGGER = LoggerFactory.getLogger("carpet-fga-addition/terrain-regeneration");
@@ -69,8 +69,19 @@ public final class TerrainRegenerationManager {
     private static final int REGENERATE_RETRY_TICKS = 100;
     /** Chunks cleared per tick; clearing one chunk writes a lot of blocks. */
     private static final int LIVE_CLEAR_PER_TICK = 4;
+    //#if MC >= 1.21.5
+    //#if MC >= 1.21.10
+    //$$ private static final TicketType LIVE_TICKET =
+    //$$         new TicketType(TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING);
+    //#else
+    //$$ private static final TicketType LIVE_TICKET =
+    //$$         new TicketType(TicketType.NO_TIMEOUT, false, TicketType.TicketUse.LOADING);
+    //#else
+    //#endif
+    //#else
     private static final TicketType<ChunkPos> LIVE_TICKET =
             TicketType.create("carpet_fga_terrain_regeneration", Comparator.comparingLong(ChunkPos::toLong));
+    //#endif
     private static Path configPath;
     private static Path worldRoot;
     private static boolean invalid;
@@ -106,8 +117,8 @@ public final class TerrainRegenerationManager {
             Task task = state.task;
             if (task.type != Type.REGENERATE) continue;
             if (dimension != null && !task.dimension.equals(dimension)) continue;
-            if (pos.x < task.minChunkX || pos.x > task.maxChunkX
-                    || pos.z < task.minChunkZ || pos.z > task.maxChunkZ) continue;
+            if (FGACompat.chunkX(pos) < task.minChunkX || FGACompat.chunkX(pos) > task.maxChunkX
+                    || FGACompat.chunkZ(pos) < task.minChunkZ || FGACompat.chunkZ(pos) > task.maxChunkZ) continue;
             if (state.pending.contains(key)) return true;
         }
         return false;
@@ -133,8 +144,8 @@ public final class TerrainRegenerationManager {
             Task task = state.task;
             if (task.type != Type.REGENERATE) continue;
             if (dimension != null && !task.dimension.equals(dimension)) continue;
-            if (pos.x >= task.minChunkX && pos.x <= task.maxChunkX
-                    && pos.z >= task.minChunkZ && pos.z <= task.maxChunkZ) state.regenerated.add(key);
+            if (FGACompat.chunkX(pos) >= task.minChunkX && FGACompat.chunkX(pos) <= task.maxChunkX
+                    && FGACompat.chunkZ(pos) >= task.minChunkZ && FGACompat.chunkZ(pos) <= task.maxChunkZ) state.regenerated.add(key);
         }
     }
 
@@ -236,9 +247,14 @@ public final class TerrainRegenerationManager {
         state.pending.addAll(state.remaining);
         LIVE.put(id, state);
         state.owner = onlineCreator(CarpetServer.minecraft_server, task.creator);
-        state.bossBar = new net.minecraft.server.level.ServerBossEvent(
-                Component.literal(bossTitle(task)), net.minecraft.world.BossEvent.BossBarColor.GREEN,
-                net.minecraft.world.BossEvent.BossBarOverlay.PROGRESS);
+        state.bossBar =
+                //#if MC >= 26.1.2
+                //$$ new net.minecraft.server.level.ServerBossEvent(task.id,
+                //#else
+                new net.minecraft.server.level.ServerBossEvent(
+                //#endif
+                        Component.literal(bossTitle(task)), net.minecraft.world.BossEvent.BossBarColor.GREEN,
+                        net.minecraft.world.BossEvent.BossBarOverlay.PROGRESS);
         if (state.owner != null) {
             state.bossBar.addPlayer(state.owner);
             state.owner.sendSystemMessage(FGAText.text("carpet.fga.terrain_regeneration.started", shortId(task.id)));
@@ -286,7 +302,7 @@ public final class TerrainRegenerationManager {
             while (iterator.hasNext()) {
                 long key = iterator.next();
                 ChunkPos pos = unpackChunk(key);
-                if (level.getChunkSource().getChunkNow(pos.x, pos.z) == null) continue;
+                if (level.getChunkSource().getChunkNow(FGACompat.chunkX(pos), FGACompat.chunkZ(pos)) == null) continue;
                 // The chunk is complete, so its mark has done its job and the next load may read the
                 // generated terrain instead of generating it again.
                 Set<Long> marks = REGENERATE_ON_LOAD.get(entry.getKey());
@@ -294,6 +310,22 @@ public final class TerrainRegenerationManager {
                 iterator.remove();
             }
         }
+    }
+
+    private static void addLiveTicket(ServerLevel level, ChunkPos pos) {
+        //#if MC >= 1.21.5
+        //$$ level.getChunkSource().addTicketWithRadius(LIVE_TICKET, pos, 0);
+        //#else
+        level.getChunkSource().addRegionTicket(LIVE_TICKET, pos, 0, pos);
+        //#endif
+    }
+
+    private static void removeLiveTicket(ServerLevel level, ChunkPos pos) {
+        //#if MC >= 1.21.5
+        //$$ level.getChunkSource().removeTicketWithRadius(LIVE_TICKET, pos, 0);
+        //#else
+        level.getChunkSource().removeRegionTicket(LIVE_TICKET, pos, 0, pos);
+        //#endif
     }
 
     private static boolean tickRegenerate(ServerLevel level, LiveState state) throws IOException {
@@ -305,7 +337,7 @@ public final class TerrainRegenerationManager {
             ChunkPos pos = unpackChunk(key);
             Integer retryAt = state.retryAfter.get(key);
             if (retryAt != null && state.ticks < retryAt) continue;
-            if (level.getChunkSource().getChunkNow(pos.x, pos.z) != null) {
+            if (level.getChunkSource().getChunkNow(FGACompat.chunkX(pos), FGACompat.chunkZ(pos)) != null) {
                 // Still in memory: wait for it to unload instead of touching it. Deleting its
                 // data now would be undone by the save on unload, and forcing the unload by hand
                 // broke vanilla's chunk bookkeeping and crashed the world tick.
@@ -314,7 +346,7 @@ public final class TerrainRegenerationManager {
             }
             state.retryAfter.remove(key);
             prepareChunkData(state, pos);
-            level.getChunkSource().addRegionTicket(LIVE_TICKET, pos, 0, pos);
+            addLiveTicket(level, pos);
             state.ticketed.add(key);
             iterator.remove();
             budget--;
@@ -331,7 +363,7 @@ public final class TerrainRegenerationManager {
         while (iterator.hasNext() && budget > 0) {
             long key = iterator.next();
             ChunkPos pos = unpackChunk(key);
-            level.getChunkSource().addRegionTicket(LIVE_TICKET, pos, 0, pos);
+            addLiveTicket(level, pos);
             state.ticketed.add(key);
             iterator.remove();
             budget--;
@@ -340,7 +372,7 @@ public final class TerrainRegenerationManager {
         while (tickets.hasNext() && cleared < LIVE_CLEAR_PER_TICK) {
             long key = tickets.next();
             ChunkPos pos = unpackChunk(key);
-            LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+            LevelChunk chunk = level.getChunkSource().getChunkNow(FGACompat.chunkX(pos), FGACompat.chunkZ(pos));
             if (chunk == null) continue;
             if (isTaskChunk(state.task, pos)) {
                 backupChunkFiles(state, pos);
@@ -349,7 +381,7 @@ public final class TerrainRegenerationManager {
                 removeEntities(level, pos);
                 cleared++;
             }
-            level.getChunkSource().removeRegionTicket(LIVE_TICKET, pos, 0, pos);
+            removeLiveTicket(level, pos);
             tickets.remove();
         }
         if (state.remaining.isEmpty() && state.ticketed.isEmpty()) {
@@ -365,8 +397,8 @@ public final class TerrainRegenerationManager {
         while (tickets.hasNext()) {
             long key = tickets.next();
             ChunkPos pos = unpackChunk(key);
-            if (level.getChunkSource().getChunkNow(pos.x, pos.z) == null) continue;
-            level.getChunkSource().removeRegionTicket(LIVE_TICKET, pos, 0, pos);
+            if (level.getChunkSource().getChunkNow(FGACompat.chunkX(pos), FGACompat.chunkZ(pos)) == null) continue;
+            removeLiveTicket(level, pos);
             tickets.remove();
             if (state.regenerated.remove(key)) {
                 state.pending.remove(key);
@@ -386,7 +418,8 @@ public final class TerrainRegenerationManager {
     
     
     private static boolean isTaskChunk(Task task, ChunkPos pos) {
-        return pos.x >= task.minChunkX && pos.x <= task.maxChunkX && pos.z >= task.minChunkZ && pos.z <= task.maxChunkZ;
+        return FGACompat.chunkX(pos) >= task.minChunkX && FGACompat.chunkX(pos) <= task.maxChunkX
+                && FGACompat.chunkZ(pos) >= task.minChunkZ && FGACompat.chunkZ(pos) <= task.maxChunkZ;
     }
 
     private static void removeEntities(ServerLevel level, ChunkPos pos) {
@@ -506,7 +539,7 @@ public final class TerrainRegenerationManager {
         if (level != null) {
             for (long key : state.ticketed) {
                 ChunkPos pos = unpackChunk(key);
-                level.getChunkSource().removeRegionTicket(LIVE_TICKET, pos, 0, pos);
+                removeLiveTicket(level, pos);
             }
         }
         state.ticketed.clear();

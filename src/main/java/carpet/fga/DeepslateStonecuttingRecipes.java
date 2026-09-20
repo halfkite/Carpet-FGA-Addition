@@ -27,7 +27,7 @@ public final class DeepslateStonecuttingRecipes {
                     //#elseif MC >= 1.21.4 && MC <= 26.3
                     || WoodStonecuttingRecipes.isWoodRecipe(id)
                     //#endif
-                    //#if MC == 1.21.1
+                    //#if MC >= 1.21 && MC <= 26.3
                     || LightSourceStonecuttingRecipes.isRecipe(id)
                     //#endif
                 );
@@ -64,7 +64,7 @@ public final class DeepslateStonecuttingRecipes {
             return !FGASettings.woodStonecuttingRecipes;
         }
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.3
         if (LightSourceStonecuttingRecipes.isRecipe(id)) {
             return !FGASettings.lightSourceStonecuttingRecipes;
         }

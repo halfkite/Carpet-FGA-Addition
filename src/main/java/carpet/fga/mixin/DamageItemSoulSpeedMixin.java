@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga.mixin;
 
 import carpet.fga.EnchantmentDurabilityManager;
@@ -25,7 +25,11 @@ public abstract class DamageItemSoulSpeedMixin {
             int amount,
             ServerLevel level,
             ServerPlayer player,
+            //#if MC >= 26.3
+            //$$ Consumer<net.minecraft.world.item.ItemStack> onBroken) {
+            //#else
             Consumer<Item> onBroken) {
+            //#endif
         if (!EnchantmentDurabilityManager.suppressSoulSpeedDamage(level, stack)) {
             stack.hurtAndBreak(amount, level, player, onBroken);
         }

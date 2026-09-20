@@ -10,7 +10,7 @@ import net.minecraft.world.inventory.ResultContainer;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
-//#if MC >= 1.21.6
+//#if MC >= 1.21.3
 //$$ import net.minecraft.server.level.ServerLevel;
 //#endif
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,7 +23,7 @@ public abstract class CraftingMenuEnchantedGoldenCarrotMixin {
     @Inject(method = "slotChangedCraftingGrid", at = @At("RETURN"))
     private static void carpetFga$filterEnchantedGoldenCarrotResult(
             AbstractContainerMenu menu,
-            //#if MC < 1.21.6
+            //#if MC == 1.21.1
             Level level,
             //#else
             //$$ ServerLevel level,

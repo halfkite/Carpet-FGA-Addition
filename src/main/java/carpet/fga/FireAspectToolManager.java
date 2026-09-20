@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga;
 
 import net.minecraft.core.Holder;
@@ -6,7 +6,11 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+//#if MC >= 1.21.5
+import net.minecraft.core.component.DataComponents;
+//#else
 import net.minecraft.world.item.DiggerItem;
+//#endif
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -31,7 +35,11 @@ public final class FireAspectToolManager {
     }
 
     public static boolean isTool(ItemStack stack) {
+        //#if MC >= 1.21.5
+        //$$ return stack.get(DataComponents.TOOL) != null;
+        //#else
         return stack.getItem() instanceof DiggerItem;
+        //#endif
     }
 
     public static boolean allowsFireAspect(Enchantment enchantment, ItemStack stack) {
@@ -54,17 +62,27 @@ public final class FireAspectToolManager {
             return drops;
         }
 
-        Holder<Enchantment> fireAspect = level.registryAccess()
-                .registryOrThrow(Registries.ENCHANTMENT)
-                .getHolderOrThrow(Enchantments.FIRE_ASPECT);
+        Holder<Enchantment> fireAspect =
+                //#if MC >= 1.21.3
+                //$$ level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
+                //$$         .getOrThrow(Enchantments.FIRE_ASPECT);
+                //#else
+                level.registryAccess().registryOrThrow(Registries.ENCHANTMENT)
+                        .getHolderOrThrow(Enchantments.FIRE_ASPECT);
+                //#endif
         int fireAspectLevel = EnchantmentHelper.getItemEnchantmentLevel(fireAspect, tool);
         if (fireAspectLevel <= 0) {
             return drops;
         }
 
-        Holder<Enchantment> silkTouch = level.registryAccess()
-                .registryOrThrow(Registries.ENCHANTMENT)
-                .getHolderOrThrow(Enchantments.SILK_TOUCH);
+        Holder<Enchantment> silkTouch =
+                //#if MC >= 1.21.3
+                level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
+                        .getOrThrow(Enchantments.SILK_TOUCH);
+                //#else
+                //$$ level.registryAccess().registryOrThrow(Registries.ENCHANTMENT)
+                //$$         .getHolderOrThrow(Enchantments.SILK_TOUCH);
+                //#endif
         if (EnchantmentHelper.getItemEnchantmentLevel(silkTouch, tool) > 0) {
             return drops;
         }
@@ -94,8 +112,12 @@ public final class FireAspectToolManager {
         if (recipe.isEmpty()) return drop;
 
         ItemStack output = recipe.get().value().assemble(
-                new SingleRecipeInput(drop.copyWithCount(1)),
-                level.registryAccess());
+                new SingleRecipeInput(drop.copyWithCount(1))
+                //#if MC >= 26.1.2
+                //$$ );
+                //#else
+                , level.registryAccess());
+                //#endif
         if (output.isEmpty()) return drop;
         return output.copyWithCount(output.getCount() * drop.getCount());
     }

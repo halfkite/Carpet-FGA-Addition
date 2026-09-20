@@ -29,16 +29,14 @@ public final class PlayerPossessionStatusCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("controlPlayer")
                 .requires(source -> PlayerPossessionManager.isActive())
-                .executes(PlayerPossessionStatusCommand::list)
+                .executes(PlayerPossessionStatusCommand::self)
                 .then(Commands.literal("list").executes(PlayerPossessionStatusCommand::list))
-                .then(Commands.literal("@").executes(PlayerPossessionStatusCommand::self))
                 .then(Commands.argument("player", StringArgumentType.word())
                         .suggests(SUGGEST_PLAYERS)
                         .executes(PlayerPossessionStatusCommand::selected)));
     }
 
     private static final SuggestionProvider<CommandSourceStack> SUGGEST_PLAYERS = (context, builder) -> {
-        builder.suggest("@");
         MinecraftServer server = context.getSource().getServer();
         Set<String> names = new LinkedHashSet<>();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -77,7 +75,6 @@ public final class PlayerPossessionStatusCommand {
 
     private static int selected(CommandContext<CommandSourceStack> context) {
         String requested = getString(context, "player");
-        if ("@".equals(requested)) return self(context);
         ServerPlayer player = findPlayer(context.getSource().getServer(), requested);
         return player == null ? fail(context, "query_missing") : show(context, player);
     }

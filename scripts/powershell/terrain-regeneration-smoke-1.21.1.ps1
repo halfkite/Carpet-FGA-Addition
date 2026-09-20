@@ -49,8 +49,16 @@ function Stop-TestServer([Diagnostics.Process] $process) {
     }
 }
 
+function Read-ServerLog([string] $path) {
+    if (-not [IO.File]::Exists($path)) { return '' }
+    $stream = [IO.File]::Open($path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+    try {
+        $reader = [IO.StreamReader]::new($stream)
+        try { return $reader.ReadToEnd() } finally { $reader.Dispose() }
+    } finally { $stream.Dispose() }
+}
+
 $first = $null
-$second = $null
 foreach ($name in @('eula.txt', 'server.properties')) {
     $path = Join-Path $run $name
     if ([IO.File]::Exists($path)) {
@@ -68,53 +76,66 @@ foreach ($name in @('eula.txt', 'server.properties')) {
 try {
     $log1 = Join-Path $report 'first.log'
     $first = Start-TestServer $log1
+    $first.StandardInput.WriteLine('forceload add 0 0')
     $first.StandardInput.WriteLine('setblock 0 100 0 minecraft:diamond_block')
-    $first.StandardInput.WriteLine('regenerateTerrain clear box 0 0 0 0')
+    $first.StandardInput.WriteLine('regenerateTerrain clear from 0 0 0 0')
+    $first.StandardInput.WriteLine('regenerateTerrain list')
     $first.StandardInput.Flush()
-    $config = Join-Path $world 'config\carpetfgaaddition\terrain-regeneration.json'
+    $draftPattern = '(?m)(?<id>[0-9a-f]{8})\s+CLEAR\b.*\bDRAFT\b'
+    $draftMatch = $null
     $deadline = (Get-Date).AddSeconds(20)
-    while ((Get-Date) -lt $deadline -and -not [IO.File]::Exists($config)) { Start-Sleep -Milliseconds 250 }
-    if (-not [IO.File]::Exists($config)) { throw 'Task config was not created' }
-    $draft = (Get-Content -LiteralPath $config -Raw | ConvertFrom-Json).tasks |
-        Where-Object status -eq 'draft' | Select-Object -First 1
-    if (-not $draft) { throw 'Draft task was not created' }
-    $first.StandardInput.WriteLine("regenerateTerrain confirm $($draft.id)")
+    while ((Get-Date) -lt $deadline) {
+        $logText = Read-ServerLog $log1
+        $draftMatch = [regex]::Match($logText, $draftPattern)
+        if ($draftMatch.Success) { break }
+        Start-Sleep -Milliseconds 250
+    }
+    if ($null -eq $draftMatch -or -not $draftMatch.Success) { throw 'Draft task was not listed' }
+    $taskId = $draftMatch.Groups['id'].Value
+    $first.StandardInput.WriteLine("regenerateTerrain confirm $taskId")
+    $first.StandardInput.Flush()
+    $completePattern = "Terrain task $taskId COMPLETE:"
+    $deadline = (Get-Date).AddSeconds(90)
+    while ((Get-Date) -lt $deadline) {
+        $logText = Read-ServerLog $log1
+        if ($logText.Contains($completePattern)) { break }
+        Start-Sleep -Milliseconds 500
+    }
+    if (-not $logText.Contains($completePattern)) { throw 'Terrain clear task did not complete' }
+    $first.StandardInput.WriteLine('regenerateTerrain list')
     $first.StandardInput.WriteLine('save-all flush')
     $first.StandardInput.Flush()
     Start-Sleep -Seconds 2
-    Stop-TestServer $first
-    $first = $null
-    $queued = (Get-Content -LiteralPath $config -Raw | ConvertFrom-Json).tasks |
-        Where-Object id -eq $draft.id
-    if ($queued.status -ne 'confirmed') { throw "Unexpected queue status: $($queued.status)" }
-
-    $log2 = Join-Path $report 'second.log'
-    $second = Start-TestServer $log2
-    $second.StandardInput.WriteLine('regenerateTerrain list')
-    $second.StandardInput.Flush()
-    Start-Sleep -Seconds 2
-    Stop-TestServer $second
-    $second = $null
-    $after = (Get-Content -LiteralPath $config -Raw | ConvertFrom-Json).tasks |
-        Where-Object id -eq $draft.id
-    $logText = [IO.File]::ReadAllText($log2)
+    $first.StandardInput.WriteLine('regenerateTerrain clear from 0 0 2047 2047')
+    $first.StandardInput.WriteLine('regenerateTerrain clear from 0 0 2063 2047')
+    $first.StandardInput.Flush()
+    $capDeadline = (Get-Date).AddSeconds(20)
+    while ((Get-Date) -lt $capDeadline) {
+        $logText = Read-ServerLog $log1
+        if ($logText.Contains('16384 total') -and $logText.Contains('task exceeds the 16384 chunk limit')) { break }
+        Start-Sleep -Milliseconds 250
+    }
+    $capAccepted = $logText.Contains('16384 total')
+    $overLimitRejected = $logText.Contains('task exceeds the 16384 chunk limit')
     $backupRoot = Join-Path $world 'config\carpetfgaaddition\terrain-regeneration-backups'
     $backupFiles = if ([IO.Directory]::Exists($backupRoot)) {
         @(Get-ChildItem -LiteralPath $backupRoot -Recurse -File)
     } else { @() }
     $result = [ordered]@{
-        passed = $after.status -eq 'complete' -and $backupFiles.Count -gt 0
-        task = $draft.id
-        status = $after.status
-        taskCompleted = $after.status -eq 'complete'
+        passed = $logText.Contains($completePattern) -and $backupFiles.Count -gt 0 -and $capAccepted -and $overLimitRejected
+        task = $taskId
+        status = if ($logText.Contains($completePattern)) { 'complete' } else { 'unknown' }
+        taskCompleted = $logText.Contains($completePattern)
         backupFiles = $backupFiles.Count
+        capAccepted = $capAccepted
+        overLimitRejected = $overLimitRejected
         report = $report
     }
     $result | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $report 'result.json') -Encoding UTF8
     $result | ConvertTo-Json
     if (-not $result.passed) { exit 1 }
 } finally {
-    foreach ($process in @($first, $second)) {
+    foreach ($process in @($first)) {
         if ($null -ne $process -and -not $process.HasExited) {
             & taskkill.exe /PID $process.Id /T /F 2>$null | Out-Null
         }

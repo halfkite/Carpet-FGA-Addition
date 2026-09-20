@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga;
 
 import net.minecraft.resources.ResourceLocation;
@@ -21,7 +21,12 @@ public final class LightSourceStonecuttingRecipes {
     /** Returns a stable menu sort key with the brightest level first. */
     public static int menuSortOrder(Object recipe) {
         if (!(recipe instanceof RecipeHolder<?> holder)) return Integer.MAX_VALUE;
-        String path = holder.id().getPath();
+        String path =
+                //#if MC >= 1.21.3
+                //$$ holder.id().location().getPath();
+                //#else
+                holder.id().getPath();
+                //#endif
         int prefix = path.indexOf("light_level_");
         if (prefix < 0) return Integer.MAX_VALUE;
         int orderEnd = path.indexOf('_', prefix + "light_level_".length());

@@ -58,7 +58,7 @@ public abstract class NoiseBasedChunkGeneratorVoidMixin {
     //$$ private void fga$skipTerrain(ChunkAccess chunk, Blender blender, RandomState random,
     //$$         StructureManager structures, BiomeManager biomes, WorldGenRegion region,
     //$$         Set<Holder<Biome>> biomeSet, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir) {
-    //$$     if (voiding()) cir.setReturnValue(CompletableFuture.completedFuture(chunk));
+    //$$     if (voiding(chunk)) cir.setReturnValue(CompletableFuture.completedFuture(chunk));
     //$$ }
     //#elseif MC >= 1.19
     //$$ @Inject(method="fillFromNoise",at=@At("HEAD"),cancellable=true)

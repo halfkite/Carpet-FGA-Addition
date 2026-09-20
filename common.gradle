@@ -11,6 +11,10 @@ repositories {
         content { includeModule('carpet', 'fabric-carpet') }
     }
     maven {
+        url = 'https://cursemaven.com/'
+        content { includeGroup('curse.maven') }
+    }
+    maven {
         url = 'https://maven.fallenbreath.me/jitpack'
         content { includeGroupAndSubgroups('com.github') }
     }
@@ -24,6 +28,7 @@ dependencies {
     def loader = unobfuscated ? implementation("net.fabricmc:fabric-loader:${project.loader_version}")
             : modImplementation("net.fabricmc:fabric-loader:${project.loader_version}")
     def carpet = project.carpet_core_version.startsWith('com.github.')
+            || project.carpet_core_version.startsWith('curse.maven:')
             ? project.carpet_core_version
             : "carpet:fabric-carpet:${project.carpet_core_version}"
     if (unobfuscated) {

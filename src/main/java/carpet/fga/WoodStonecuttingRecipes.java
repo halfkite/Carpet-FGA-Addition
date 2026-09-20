@@ -65,11 +65,15 @@ public final class WoodStonecuttingRecipes {
         Object value = recipe;
         if (value instanceof net.minecraft.world.item.crafting.RecipeHolder<?> holder) value = holder.value();
         if (value instanceof net.minecraft.world.item.crafting.StonecutterRecipe stonecutter) {
+            //#if MC >= 1.21.3
+            //$$ return 1;
+            //#else
             var ingredients = stonecutter.getIngredients();
             if (!ingredients.isEmpty()) {
                 var items = ingredients.get(0).getItems();
                 if (items.length > 0 && items[0].getCount() > 0) return items[0].getCount();
             }
+            //#endif
         }
         return 1;
     }

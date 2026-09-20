@@ -292,7 +292,7 @@ Fully grows saplings, bamboo, sea pickles, and other plants that can grow throug
 - Default value: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1`
+- Effective versions: `1.21+`
 - Client requirements: `None (server-side only)`
 - Relations to other rules: independent of `grassBonemealAnyFlower`
 
@@ -304,7 +304,7 @@ Named ender pearls teleport the online player with the matching custom name; whe
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1`
+- Effective versions: `1.21+`
 - Client requirements: None (server-side only)
 
 ### Player End Portal Teleport Control(PlayerTpEndControl) · [Related command](commands_en.md#cmd-playertpend)
@@ -467,7 +467,7 @@ Mining tools can receive Fire Aspect; Fire Aspect I smelts drops once and Fire A
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1`
+- Effective versions: `1.21+`
 - Client requirements: None (server-side only)
 
 ### Soul Speed No Durability Cost(soulSpeedNoDurability)
@@ -478,7 +478,7 @@ Soul Speed no longer damages boots while moving on soul sand, soul soil, or othe
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1`
+- Effective versions: `1.21+`
 - Client requirements: None (server-side only)
 
 ### Thorns No Durability Cost(thornsNoDurability)
@@ -489,7 +489,7 @@ Thorns no longer damages armor when its retaliation effect triggers
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1`
+- Effective versions: `1.21+`
 - Client requirements: None (server-side only)
 
 ### Flat Experience Level Costs(experienceLevelCost)
@@ -680,7 +680,7 @@ Allows beacons, glowstone, jack-o-lanterns, sea lanterns, frog lights, end rods,
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1`
+- Effective versions: `1.21+`
 
 ### Breakable Light Blocks(lightBlockBreakable)
 
@@ -691,7 +691,7 @@ The client must have FGA installed to start survival breaking
 - Default: `false`
 - Options: `false`, `true`, `onlyholding`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21.1`
+- Effective versions: `1.21+`
 
 ### Player Load Distance(playerLoadDistance) · [Related command](commands_en.md#cmd-player-load-distance)
 
@@ -711,7 +711,7 @@ Controls access to `/mapLoad` and `/fga mapLoad`<br>`false`: disables the comman
 - Default: `ops`
 - Options: `false`, `true`, `ops`, `0-4`
 - Categories: `FGA`, `Feature`, `Command`
-- Effective versions: `1.21.1`
+- Effective versions: `1.21+`
 - Client requirements: None (server-side only)
 - Relations to other rules: None
 

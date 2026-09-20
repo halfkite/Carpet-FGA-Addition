@@ -72,7 +72,7 @@ Effective versions: `1.21+`. Install FGA on the server; both participants may us
 These read-only commands are available while `playerPossession` is enabled and do not require OP
 
 - `/controlPlayer list`: lists every active possession relationship from controller to possessed player; names are clickable for a targeted query
-- `/controlPlayer @`: shows the executor's own possession relationship
+- `/controlPlayer`: shows the executor's own possession relationship
 - `/controlPlayer <player name>`: shows whether an online player is controlling or being controlled
 - `/fga controlPlayer ...`: equivalent to `/controlPlayer ...`
 
@@ -113,7 +113,7 @@ Related rules: `voidWorldGeneration`, `terrainRegenerationCommandPermission`
 /regenerateTerrain retry <taskId>
 ```
 
-`from` takes block coordinates and `radius` takes a chunk radius around the chunk the player stands in. The range always expands outward to whole chunks. Every coordinate argument offers Tab suggestions for the player's position and targeted block, and previews show the exact chunk count and effective block range; the green confirmation button starts the task immediately, with no restart needed. A running task first waits for chunks of the area that are still loaded to unload on their own and then regenerates them one by one, so a player standing inside the area has to leave first; coming back afterwards shows the new terrain. `create` lets chunks generate normally. `clear` reads an all-air network payload into every section palette, clears block entities, non-player entities, POI, scheduled ticks, heightmaps, and lighting data, and removes adjacent fluids within eight blocks outside the effective horizontal border, covering the maximum horizontal spread of vanilla water and Nether lava; waterlogged blocks keep the block and lose only their waterlogged state. Region files touched by the clear range or its border are backed up before execution. A failed task can be retried without overwriting its original backup. A single task (including merged ones) cannot exceed 4096 chunks; oversized drafts cannot be confirmed, and legacy oversized tasks are marked failed on load.
+`from` takes block coordinates and `radius` takes a chunk radius around the chunk the player stands in. The range always expands outward to whole chunks. Every coordinate argument offers Tab suggestions for the player's position and targeted block, and previews show the exact chunk count and effective block range; the green confirmation button starts the task immediately, with no restart needed. `create` only marks the target chunks; they generate normally the next time they are loaded, so a player standing inside the area has to leave first and will see the new terrain after coming back. `clear` reads an all-air network payload into every section palette, clears block entities, non-player entities, POI, scheduled ticks, heightmaps, and lighting data, and removes adjacent fluids within eight blocks outside the effective horizontal border, covering the maximum horizontal spread of vanilla water and Nether lava; waterlogged blocks keep the block and lose only their waterlogged state. Region files touched by the clear range or its border are backed up before execution. A failed task can be retried without overwriting its original backup. A single task (including merged ones) cannot exceed 16384 chunks; oversized drafts cannot be confirmed, and legacy oversized tasks are marked failed on load.
 
 ## Player and fake-player range commands (player)
 

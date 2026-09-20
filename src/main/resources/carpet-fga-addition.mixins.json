@@ -136,7 +136,7 @@
         ,"StonecutterMenuFullShulkerMixin",
         "GrassBlockAnyFlowerMixin"
         //#endif
-        //#if MC == 1.21.1
+        //#if MC >= 1.21 && MC <= 26.3
         ,"CropBlockBoneMealMaxMixin",
         "StemBlockBoneMealMaxMixin",
         "BambooStalkBlockBoneMealMaxMixin",

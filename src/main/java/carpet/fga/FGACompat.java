@@ -71,6 +71,30 @@ public final class FGACompat {
         //#endif
     }
 
+    public static int chunkX(net.minecraft.world.level.ChunkPos pos) {
+        //#if MC >= 26.1.2
+        //$$ return pos.x();
+        //#else
+        return pos.x;
+        //#endif
+    }
+
+    public static int chunkZ(net.minecraft.world.level.ChunkPos pos) {
+        //#if MC >= 26.1.2
+        //$$ return pos.z();
+        //#else
+        return pos.z;
+        //#endif
+    }
+
+    public static long chunkKey(int x, int z) {
+        //#if MC >= 26.1.2
+        //$$ return net.minecraft.world.level.ChunkPos.pack(x, z);
+        //#else
+        return net.minecraft.world.level.ChunkPos.asLong(x, z);
+        //#endif
+    }
+
     public static Level level(Entity entity) {
         //#if MC >= 1.19.4
         return entity.level();

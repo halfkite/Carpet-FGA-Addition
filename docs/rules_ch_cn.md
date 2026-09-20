@@ -8,15 +8,13 @@
 
 ### 夺舍操控玩家(playerPossession) · [相关指令](commands.md#cmd-player-possession)
 
-使用 `/player <名字> possess` 夺舍操控在线玩家或假人，无需安装 FGA 客户端<br>
-使用 `/player <名字> possess stop` 结束自己或被接管者参与的会话<br>
-夺舍逻辑采用 PlayerControl 的在线实体状态交换；被操控的假人使用 `/player <名字> kill` 时按原模组释放会话并按原版结算，断线、权限收紧或规则关闭时由 FGA 结束会话<br>
-规则值为 `false` 时关闭本功能<br>
+使用 `/player <名字> possess` 夺舍操控在线玩家或假人<br>
+使用 `/player <名字> possess stop` 结束操控<br>
 规则值为 `true` 时所有玩家可控制假人或真人<br>
 规则值为 `onlyfake` 时所有玩家仅可控制假人<br>
 规则值为 `opreal` 时普通玩家仅可控制假人，OP 可控制假人或真人<br>
 规则值为 `ops` 时仅 OP 可控制假人或真人<br>
-本功能同时遵守 Carpet `commandPlayer` 入口权限，功能和主要代码来源于模组 [PlayerControl](https://modrinth.com/mod/playercontrol)（CC0-1.0）本功能为纯服务端实现
+本功能同时遵守 Carpet `commandPlayer` 入口权限，功能和主要代码来源于模组 [PlayerControl](https://modrinth.com/mod/playercontrol)
 
 - 类型：`枚举`
 - 默认值：`false`
@@ -26,7 +24,7 @@
 
 ### 显示夺舍关系名称(showControllerPrefix) · [相关指令](commands.md#cmd-control-player)
 
-仅在被操控者名称后显示[操控者]，方括号为红色，操控者名称为浅灰色
+仅在被操控者名称后显示`[操控者]`，方括号为红色，操控者名称为浅灰色
 
 - 类型：`布尔`
 - 默认值：`false`
@@ -60,7 +58,7 @@ false 使用被操控者的命令权限<br>
 
 ### 假人名字最大长度(fakePlayerNameLength)
 
-原版游戏玩家名称只允许16字符，本模组可以更改字符限制为（1-128），客户端可选，超过 16 字符的名字会以兼容别名发送给未安装本模组的客户端(例如half...)
+原版玩家名称最多允许 16 个字符，本模组可将该限制修改为 1‑128；超过 16 字符的假人名称，会生成兼容别名发送给未安装本模组的客户端（例如 `half...`）
 
 - 类型：`整数`
 - 默认值：`-1`
@@ -103,9 +101,8 @@ false：保留 Carpet 默认的 Steve 和 Alex<br>
 
 ### 流浪商人不消失(wanderingTraderNoDespawn) · [相关指令](commands.md#cmd-villager-performance)
 
-false：保持原版<br>
 true：使全部流浪商人不消失<br>
-controlled：仅保护命中 /villagerPerformance wanderingTrader 命名或脚下方块名单的流浪商人不消失
+controlled：仅保护与 `/villagerPerformance wanderingTrader` 的命名名单、脚下方块名单相匹配的流浪商人，阻止其消失
 
 - 类型：`枚举`
 - 默认值：`false`
@@ -116,7 +113,6 @@ controlled：仅保护命中 /villagerPerformance wanderingTrader 命名或脚�
 ### 假人档案预加载(fakePlayerProfilePreload)
 
 在召唤假人前异步查询玩家档案，避免正版验证请求阻塞服务端主线程<br>
-false：保持 Carpet 原有的同步档案查询<br>
 always：每次召唤假人前都异步预加载档案<br>
 adaptive：第一次召唤保持原行为；30 秒内第二次召唤开启 2 分钟预加载窗口，窗口内每次召唤都会重置剩余时间
 
@@ -172,7 +168,7 @@ adaptive：第一次召唤保持原行为；30 秒内第二次召唤开启 2 分
 
 在多人游戏列表显示生命值<br>
 true 显示全部玩家<br>
-false 仅向 /log playerHealth 订阅者显示<br>
+false 仅向 `/log playerHealth` 订阅者显示<br>
 nofake 不显示假人血量
 
 - 类型：`枚举`
@@ -213,10 +209,6 @@ nofake 不显示假人血量
 ### 矿车功能命令权限(minecartFeatureCommandPermission) · [相关指令](commands.md#cmd-minecart)
 
 控制矿车烟花加速与锁链列车配置命令的使用权限
-false：禁用相关命令<br>
-true：允许所有玩家使用<br>
-ops：需要 OP 2 及以上<br>
-0-4：设置命令的最低权限等级
 
 - 类型：`权限`
 - 默认值：`false`
@@ -227,7 +219,6 @@ ops：需要 OP 2 及以上<br>
 ### 玩家离开载具急停(vehicleStopOnDismount) · [相关指令](commands.md#cmd-vehicle-stop)
 
 驾驶者离开矿车或船时立即清除载具速度<br>
-false：关闭急停<br>
 minecart：驾驶者离开矿车时清除水平速度<br>
 boat：驾驶者离开船时清除水平速度<br>
 all：同时处理矿车和船<br>
@@ -253,10 +244,6 @@ custom：按 `/vehicleStop` 为每名玩家保存的矿车和船设置处理<br>
 ### 地形重生成命令权限(terrainRegenerationCommandPermission) · [相关指令](commands.md#cmd-regenerate-terrain)
 
 控制地形重生成与地形清空命令的使用权限
-false：禁用相关命令<br>
-true：允许所有玩家使用<br>
-ops：需要 OP 2 及以上<br>
-0-4：设置命令的最低权限等级
 
 - 类型：`权限`
 - 默认值：`ops`
@@ -267,7 +254,6 @@ ops：需要 OP 2 及以上<br>
 ### 满潜影盒合成(fullShulkerBoxCrafting)
 
 允许装单种物品的潜影盒按照对应普通合成/切石配方直接合成为成品盒<br>
-false：关闭功能<br>
 only64：输入盒必须按原版堆叠上限装满，产物和配方返还物必须恰好组成整数个满盒<br>
 any：输入盒内可为 1 至容器堆叠上限的相同数量，按总材料一次完成合成，最后一个成品盒可不满，余料留在输入盒<br>
 所有输入盒必须装相同种类、相同数量且容量相同的可堆叠物品
@@ -282,8 +268,6 @@ any：输入盒内可为 1 至容器堆叠上限的相同数量，按总材料�
 ### 旁观者免权限自身传送(spectatorFreeTeleport)
 
 允许旁观模式玩家使用 `/tp` 与 `/teleport`，但是只能控制自己传送；[TIS](https://modrinth.com/mod/carpet-tis-addition) 或 [AMS](https://modrinth.com/mod/carpet-ams-addition) 的禁止管理员作弊规则未开启时，OP 保持完整传送权限<br>
-false：保持原版旁观者传送权限<br>
-true：旁观者只能传送自己，不能借此传送其他实体；TIS 或 AMS 禁止管理员作弊规则开启时 OP 也受同样限制
 
 - 类型：`布尔`
 - 默认值：`false`
@@ -294,7 +278,6 @@ true：旁观者只能传送自己，不能借此传送其他实体；TIS 或 AM
 ### 地狱门不发光(netherPortalNoLight)
 
 控制地狱门是否发出光照<br>
-false：保持原版<br>
 true：关闭所有地狱门光照<br>
 onlynew：仅规则启用新生成的地狱门无光照<br>
 关闭规则不会主动刷新地狱门光照，会自动同步客户端 [MiniHUD](https://modrinth.com/mod/minihud) 的光照显示
@@ -308,7 +291,6 @@ onlynew：仅规则启用新生成的地狱门无光照<br>
 ### 骨粉催任意花(grassBonemealAnyFlower)
 
 任何群系的草方块上用骨粉都能催出任意花种；花仍需光照充足才能生成，大花会生成完整两格<br>
-false：保持原版（只能催出当前群系的花）<br>
 true：可催出原版本就能催熟获得的所有小花<br>
 all：还能催出大花（向日葵、丁香、玫瑰丛、牡丹）
 
@@ -328,7 +310,7 @@ all：还能催出大花（向日葵、丁香、玫瑰丛、牡丹）
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`，`特性`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21+`
 - 客户端要求：无（纯服务端）
 - 与其他规则的关系：与 `grassBonemealAnyFlower` 独立
 
@@ -340,13 +322,12 @@ all：还能催出大花（向日葵、丁香、玫瑰丛、牡丹）
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`、`特性`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21+`
 - 客户端要求：无（纯服务端）
 
 ### 玩家末地门传送控制(PlayerTpEndControl) · [相关指令](commands.md#cmd-playertpend)
 
 控制玩家通过末地传送门、末地主岛出口和末地折跃门传送<br>
-false：保持原版<br>
 true：阻止所有玩家传送<br>
 control：按 `/playertpend` 的个人设置决定，未设置的门默认允许传送；此纯服务端规则不阻止非玩家实体
 
@@ -394,7 +375,6 @@ control：按 `/playertpend` 的个人设置决定，未设置的门默认允许
 ### 村民繁殖动物化(villagerBreedingAnimalization)
 
 潜行右键喂食成年村民可产生繁殖意愿；喂食幼年村民可像其他动物一样加快成长<br>
-false：仅保留原版村民繁殖方式<br>
 true：同时保留原版拾取食物和玩家直接喂食两种方式<br>
 only：只有玩家直接喂食可以产生繁殖意愿<br>
 幼年村民每次消耗 1 个食物；面包的成长加速效果相当于连续喂食 4 个胡萝卜、马铃薯或甜菜根
@@ -408,7 +388,6 @@ only：只有玩家直接喂食可以产生繁殖意愿<br>
 ### 幼年生物不长大(babyMobNoGrowth)
 
 阻止幼年生物生长，包括蝌蚪<br>
-false：关闭<br>
 true：阻止全部幼年生物生长，包括蝌蚪<br>
 mini：仅阻止自定义名称完整等于小写 `mini` 的幼体，`Mini` 不匹配<br>
 其他值：按实体自定义名称的完整文本、区分大小写匹配；带空格的名称需要用引号传入<br>
@@ -423,7 +402,6 @@ mini：仅阻止自定义名称完整等于小写 `mini` 的幼体，`Mini` 不�
 ### 坚韧的花草(resilientPlants)
 
 让匹配的花草忽略原版存活限制，可以放在空气位置或任意方块上<br>
-false：关闭<br>
 true：匹配全部支持的花草候选方块<br>
 []：清空匹配列表<br>
 方块 ID 列表：只匹配列表中的方块，命名空间可省略
@@ -437,8 +415,6 @@ true：匹配全部支持的花草候选方块<br>
 ### 坚韧方块(resilientBlocks)
 
 自定义方块被放置时不检查下方方块类型，收到更新时不检查自身状态<br>
-false 或 `[]`：关闭<br>
-方块 ID 列表：跳过放置时的支撑检查、方块更新时的存活检查和下落调度；命名空间可省略，保存时会归一化为完整 ID 列表
 
 - 类型：`字符串`
 - 默认值：`false`
@@ -449,8 +425,6 @@ false 或 `[]`：关闭<br>
 ### 比较器隔方块检测容器信号(comparatorThroughBlocks)
 
 允许比较器隔着配置的前方方块读取后方容器信号，例如 `[chain,piston]`，不改变其他红石行为<br>
-false：关闭<br>
-方块 ID 列表：允许比较器隔着列表中的方块读取后方容器信号，命名空间可省略
 
 - 类型：`方块列表`
 - 默认值：`false`
@@ -482,7 +456,6 @@ false：关闭<br>
 ### 潜影贝攻击盔甲架(shulkerAttackArmorStand)
 
 允许潜影贝瞄准并射击盔甲架<br>
-false：保持原版，不攻击盔甲架<br>
 true：攻击范围内的所有盔甲架<br>
 pumpkin：仅攻击头戴雕刻南瓜的盔甲架
 
@@ -530,7 +503,7 @@ false 或 0 保持原版上限；直接输入数字 N 让附魔的原版等级�
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`、`特性`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21+`
 - 客户端要求：无（纯服务端）
 
 ### 灵魂疾行不消耗耐久(soulSpeedNoDurability)
@@ -541,7 +514,7 @@ false 或 0 保持原版上限；直接输入数字 N 让附魔的原版等级�
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`、`特性`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21+`
 - 客户端要求：无（纯服务端）
 
 ### 荆棘不消耗耐久(thornsNoDurability)
@@ -552,7 +525,7 @@ false 或 0 保持原版上限；直接输入数字 N 让附魔的原版等级�
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`、`特性`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21+`
 - 客户端要求：无（纯服务端）
 
 ### 经验升级消耗扁平化(experienceLevelCost)
@@ -624,7 +597,6 @@ more：允许提升到 `enchantmentLevelLimitIncrease` 设置的等级<br>
 ### 村民性能优化(villagerPerformanceOptimization) · [相关指令](commands.md#cmd-villager-performance)
 
 启用村民性能优化并控制 `/villagerPerformance` 权限<br>
-false：关闭优化并禁用相关命令<br>
 true：允许所有玩家使用<br>
 ops：需要 OP 2 及以上<br>
 1-4：设置命令的最低权限等级
@@ -648,7 +620,6 @@ ops：需要 OP 2 及以上<br>
 ### 地面掉落物堆叠上限(droppedItemStackLimit) · [相关指令](commands.md#cmd-dropped-item-stack-limit)
 
 启用地面掉落物、玩家背包和容器的独立服务端堆叠上限；使用 `/droppedItemStackLimit` 配置，最大数量为 1000000000<br>
-false：关闭规则并保持原版上限<br>
 true：允许所有玩家管理配置<br>
 ops：仅 OP 2 及以上可管理配置<br>
 0-4：设置管理命令的最低权限等级
@@ -672,8 +643,6 @@ ops：仅 OP 2 及以上可管理配置<br>
 ### 解除填充命令上限(unlimitedFillCommands)
 
 解除 /fill 与 /fillbiome 的体积上限；区块仍须加载，其他原版检查保持不变<br>
-false：保持原版体积上限<br>
-true：移除体积上限
 
 - 类型：`布尔`
 - 默认值：`false`
@@ -694,7 +663,6 @@ true：移除体积上限
 ### 僵尸猪灵掉落物自定义去除(zombifiedPiglinDropReduction)
 
 自定义去除僵尸猪灵的指定掉落物<br>
-false：保持原版掉落<br>
 goldEquipment：去除金制盔甲、金剑和金矛<br>
 rottenFlesh：去除腐肉<br>
 all：同时去除金制装备和腐肉<br>
@@ -709,7 +677,6 @@ all：同时去除金制装备和腐肉<br>
 ### 生物掉落物自定义去除(entityDropRemoval) · [相关指令](commands.md#cmd-entity-drop-removal)
 
 按生物配置要去除的死亡掉落物<br>
-false：关闭命令<br>
 true：允许所有玩家配置<br>
 ops：需要 OP 2 及以上<br>
 0-4：设置配置命令的最低权限等级
@@ -764,7 +731,7 @@ ops：需要 OP 2 及以上<br>
 - 默认值：`false`
 - 参考选项：`false`、`true`
 - 分类：`FGA`、`特性`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21+`
 
 ### 光源方块可破坏(lightBlockBreakable)
 
@@ -775,12 +742,11 @@ ops：需要 OP 2 及以上<br>
 - 默认值：`false`
 - 参考选项：`false`、`true`、`onlyholding`
 - 分类：`FGA`、`特性`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21+`
 
 ### 玩家加载距离(playerLoadDistance) · [相关指令](commands.md#cmd-player-load-distance)
 
 控制每名玩家的区块发送与跟踪距离，不改变模拟距离<br>
-false：关闭相关命令<br>
 true：允许所有玩家使用<br>
 ops：需要 OP 2 及以上<br>
 0-4：设置命令的最低权限等级
@@ -802,7 +768,7 @@ ops：需要 OP 2 及以上<br>
 - 默认值：`ops`
 - 参考选项：`false`、`true`、`ops`、`0-4`
 - 分类：`FGA`、`特性`、`命令`
-- 生效版本：`1.21.1`
+- 生效版本：`1.21+`
 - 客户端要求：无（纯服务端）
 - 与其他规则的关系：无
 
@@ -820,7 +786,6 @@ ops：需要 OP 2 及以上<br>
 ### 试炼刷怪笼多倍触发(trialSpawnerPlayerFilter)
 
 选择哪些玩家触发试炼等效人数：false、true、bot_ 或自定义名称前缀<br>
-false：关闭多倍计算<br>
 true：匹配所有玩家<br>
 其他值：按名称区分大小写的前缀匹配
 
@@ -833,7 +798,6 @@ true：匹配所有玩家<br>
 ### 试炼截停命令权限(trialStopCommandPermission) · [相关指令](commands.md#cmd-trial-stop)
 
 启用并控制 `/trialStop` 与 `/fga trialStop` 截停刷新命令<br>
-false：禁用命令<br>
 true：允许所有玩家使用<br>
 ops：需要 OP 2 及以上<br>
 0-4：设置最低权限等级；命令只处理已加载区块内的刷怪笼，奖励模式支持 `none`、`reward`、`fast`

@@ -1,6 +1,6 @@
 package carpet.fga.mixin;
 
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.3
 import carpet.fga.BoneMealMaxEfficiency;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;

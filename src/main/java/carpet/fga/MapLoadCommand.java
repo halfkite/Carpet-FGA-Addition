@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga;
 
 import carpet.utils.CommandHelper;
@@ -146,7 +146,13 @@ public final class MapLoadCommand {
             return 0;
         }
         ServerPlayer owner = target == null ? self : target;
-        if (target != null && target != self && !context.getSource().hasPermission(2)) {
+        if (target != null && target != self &&
+                //#if MC >= 1.21.11
+                //$$ !context.getSource().permissions().hasPermission(
+                //$$         net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)) {
+                //#else
+                !context.getSource().hasPermission(2)) {
+                //#endif
             context.getSource().sendFailure(MapLoadManager.text("carpet.fga.map_load.control_denied"));
             return 0;
         }

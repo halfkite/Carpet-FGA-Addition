@@ -1,6 +1,6 @@
 # Carpet FGA Addition 命令
 
-> 文档版本：`1.5.9`
+> 文档版本：`1.5.11`
 
 ## 玩家状态指令 (food)
 
@@ -8,9 +8,11 @@
 
 生效版本：`1.21.1`
 
-- `/food clear`：清空执行者的饱食度和饱和度
-- `/food clear <玩家>`：清空指定在线玩家的饱食度和饱和度，可一次指定多个玩家
-- `/fga food clear [玩家]`：与 `/food clear [玩家]` 相同
+```text
+/food clear [player]        # 清空执行者或指定在线玩家的饱食度和饱和度
+/fga food clear [player]    # 与 /food clear [player] 相同
+```
+
 - 入口权限沿用 Carpet `commandPlayer`
 
 <a id="cmd-map-load"></a>
@@ -26,26 +28,22 @@
 客户端要求：无（纯服务端），玩家可见消息在服务端按服务器语言解析
 
 ```text
-/mapLoad start <模式>
-/mapLoad list
-/mapLoad pause [玩家]
-/mapLoad resume [玩家]
-/mapLoad stop [玩家]
+/mapLoad start <smooth|fast|loaded>    # 开始加载手持地图
+/mapLoad list                          # 列出正在进行的加载任务
+/mapLoad pause [player]                # 暂停自己或指定玩家的加载任务
+/mapLoad resume [player]               # 继续自己或指定玩家的加载任务
+/mapLoad stop [player]                 # 停止自己或指定玩家的加载任务
+/fga mapLoad ...                       # 与 /mapLoad ... 相同
 ```
 
-必须显式给出加载模式（只允许 `/mapLoad start <模式>` 这一种写法，`/mapLoad` 单独执行只会提示用法）；模式支持 Tab 补全，`/fga mapLoad start ...` 等价可用：
+必须显式给出加载模式，模式支持 Tab 补全：
 
-- `smooth`（默认）：不卡优先，同时在途最多 384 个区块
-- `fast`：速度优先，同时在途最多 1024 个区块
-- `loaded`：只刷新已加载区块，不请求也不生成任何区块，未加载区域保持原样
+```text
+smooth    # 默认推荐，同时在途最多 384 个区块，优先减少卡顿
+fast      # 速度优先，同时在途最多 1024 个区块
+loaded    # 只刷新已加载区块，不请求或生成区块
+```
 
-两种请求模式都不改变渲染本身的开销（渲染始终受每 tick 3 毫秒预算约束），真正影响卡顿的是同时在途的区块数量，而不是每 tick 的请求速度，所以已经生成过的区域会以区块流水线本身的速度加载，只有需要现场生成的地形才会慢。无效的模式名会被拒绝并提示可选值。
-
-开始与结束各发一条聊天消息：开始消息给出坐标范围、地图覆盖的区块数量与本次模式（缩放 3 的地图是 4096 个区块），加载期间每 30 秒在聊天栏报一次进度（避免长时间只在快捷栏显示而被误认为卡死），结束消息带本次耗时（不足 1 分钟显示秒数，否则显示分秒），被跳过的采样点数量会在结束时报告。
-
-加载为异步流式：采样点按到玩家的距离由近到远刷新，所需区块通过区域票据交给原版区块流水线加载，服务端线程不会等待区块生成。快捷栏上方的提示同时给出已刷新采样点百分比与区块进度（例如 `地图加载中 55%（模式 smooth，区块 2579/4096）`）：分母是这张地图覆盖的全部区块数（与开始消息里的数字一致），分子是**已经加载过的区块数**，只增不减；大图会把大部分时间花在区块生成上，百分比因此推进得慢，区块计数才是持续变化的那个数字。`mapLoad list` 里还会额外标出 `加载中` 或 `等待区块` 状态。
-
-`list` 每行列出一个正在进行的任务（玩家名、进度、状态），行尾的 `[暂停]`/`[继续]` 与 `[终止]` 可以直接点击；`pause`、`resume`、`stop` 不带玩家名时作用于自己（需要玩家执行），带玩家名时可由控制台或 RCON 执行、控制他人需要 OP 2，玩家名支持 Tab 补全（只列出有任务的玩家）。暂停会停止申请新票据并把已申请的票据按限速交还，继续时重新申请，终止后该玩家可以立刻重新发起加载。某个采样点连续 30 秒没有任何区块进展时会被跳过，保证加载一定能够结束。
 
 ## 玩家与假人指令 (player)
 
@@ -55,15 +53,10 @@
 
 生效版本：`1.21+`，服务端安装 FGA 即可，双方客户端均可使用原版。
 
-- `/player <名字> possess`：按 PlayerControl 参考实现交换双方在线实体的游戏状态、身份、位置、视角、背包、容器和骑乘关系；操控者继续使用自己的连接和命令源。
-- `/player <目标名字> possess stop`：操控者或被接管者结束该会话。
-- `playerPossession` 默认 `false`。`true` 允许所有目标；`onlyfake` 仅假人（OP 也不例外）；`opreal` 仅 OP 可接管真人；`ops` 仅 OP 能接管任何目标。始终同时检查 Carpet `commandPlayer`。
-- 双方实体和 UUID 保持不变，交换期间各实体继续参与世界模拟，期间发生的伤害、移动、经验和物品变化随当前实体状态保留；退出时将双方状态交换回各自实体，不复制或写入离线玩家数据。
-- 禁止自身、重复或嵌套接管。PlayerControl 的假人 `kill()` 生命周期会释放会话；断线和规则收紧由 FGA 生命周期处理。
-- Minecraft 1.21.1 中任一方退出游戏会结束夺舍，在玩家保存和移除前恢复身份归属；本体与目标分别保留会话结束时各自身体的当前位置，不会被集中到同一位置
-
-- 夺舍规则启用时，共用的 `/player` 名字补全按夺舍目标权限筛选；参与夺舍的玩家不能启动或继续 Carpet 自动操控任务，退出命令始终保留。
-- 不新增自定义 Payload 或持久化夺舍配置；不修改离线玩家数据。客户端画面和实际多人操作的验收步骤见 `scripts/tests/possession.md`。
+```text
+/player <name> possess         # 操控指定名称的在线玩家或假人
+/player <name> possess stop    # 结束当前夺舍关系
+```
 
 <a id="cmd-control-player"></a>
 
@@ -71,10 +64,12 @@
 
 仅 `playerPossession` 开启后提供，查询命令不额外要求 OP
 
-- `/controlPlayer list`：查看全部活动夺舍关系，输出控制者到被控制者；点击名称可填入指定玩家查询
-- `/controlPlayer @`：查看执行者自己的夺舍关系
-- `/controlPlayer <玩家名>`：查看指定在线玩家是否正在控制或被控制
-- `/fga controlPlayer ...`：与 `/controlPlayer ...` 相同
+```text
+/controlPlayer list        # 列出全部正在进行的夺舍关系
+/controlPlayer             # 查看执行者自己的夺舍关系
+/controlPlayer <player>    # 查看指定在线玩家的夺舍关系
+/fga controlPlayer ...     # 与 /controlPlayer ... 相同
+```
 
 <a id="cmd-playertpend"></a>
 
@@ -83,11 +78,11 @@
 先执行 `/carpet PlayerTpEndControl control`。`enter` 是进入末地门，`exit` 是末地主岛出口，`gateway` 是末地折跃门。
 
 ```text
-/playertpend status [玩家]
-/playertpend set <enter|exit|gateway> <allow|deny>
-/playertpend set <玩家> <enter|exit|gateway> <allow|deny>
-/playertpend reset [enter|exit|gateway]
-/playertpend reset <玩家> [enter|exit|gateway]
+/playertpend status [player]                                   # 查看自己或指定玩家的传送设置
+/playertpend set <enter|exit|gateway> <allow|deny>             # 设置自己的传送权限
+/playertpend set <player> <enter|exit|gateway> <allow|deny>    # 设置指定玩家的传送权限
+/playertpend reset [enter|exit|gateway]                        # 重置自己的设置
+/playertpend reset <player> [enter|exit|gateway]               # 重置指定玩家的设置
 ```
 
 偏好按 UUID 保存到 `world/config/carpetfgaaddition/player-tp-end-control.json`。OP 能修改任意在线玩家；非 OP 只能修改自己与在线 Carpet 假人。
@@ -101,19 +96,19 @@
 相关规则：`voidWorldGeneration`、`terrainRegenerationCommandPermission`
 
 ```text
-/regenerateTerrain create from <x1> <z1> <x2> <z2>
-/regenerateTerrain create radius <半径>
-/regenerateTerrain clear from <x1> <z1> <x2> <z2>
-/regenerateTerrain clear radius <半径>
-/regenerateTerrain create|clear dimension <维度> from|radius ...
-/regenerateTerrain list [页码]
-/regenerateTerrain confirm <任务ID>
-/regenerateTerrain run <任务ID>
-/regenerateTerrain cancel <任务ID>
-/regenerateTerrain retry <任务ID>
+/regenerateTerrain create from <x1> <z1> <x2> <z2>                       # 创建地形重生成任务
+/regenerateTerrain create radius <radius>                                # 按区块半径创建重生成任务
+/regenerateTerrain clear from <x1> <z1> <x2> <z2>                        # 创建地形清空任务
+/regenerateTerrain clear radius <radius>                                 # 按区块半径创建清空任务
+/regenerateTerrain create|clear dimension <dimension> from|radius ...    # 指定维度创建任务
+/regenerateTerrain list [page]                                           # 列出任务
+/regenerateTerrain confirm <task>                                        # 确认并开始任务
+/regenerateTerrain run <task>                                            # 执行已确认任务
+/regenerateTerrain cancel <task>                                         # 取消任务
+/regenerateTerrain retry <task>                                          # 重试失败任务
 ```
 
-`from` 使用方块坐标，`radius` 使用以玩家所在区块为中心的区块半径；实际范围按完整区块向外取整，所有坐标参数都可按 Tab 补全玩家自身坐标或视线指向方块坐标，预览会显示精确区块数和实际生效方块范围，预览中的绿色确认按钮可直接点击执行。确认后立即开始执行、不需要重启；执行时先等区域内已加载的区块自然卸载再逐个重新生成，所以站在区域内的玩家需要先离开，离开再回来看到的就是新地形。`create` 让区块按原版正常生成；`clear` 将每个 section 的 palette 通过全空气网络数据替换为空气，同时清除方块实体、非玩家实体、POI、计划刻、高度图和旧光照数据，并清除实际范围水平外沿八格内的相邻流体，覆盖原版水与下界熔岩的最大水平传播距离；含水方块只取消含水状态。清空范围与外沿涉及的 Region 都会在执行前备份。失败任务可在修复原因后使用 `retry` 继续，且不会覆盖原始备份。单个任务（含合并后的任务）不能超过 4096 个区块，超出上限的草稿无法确认，历史遗留的超大任务会在加载时标记为失败。
+
 
 ## 玩家与假人区域操作 (player)
 
@@ -128,12 +123,12 @@
 #### 语法
 
 ```text
-/player <假人> use range <起点> to <终点> [参数]
-/player <假人> use continuous range <起点> to <终点> [参数]
-/player <假人> attack range <起点> to <终点> [参数]
-/player <假人> attack continuous range <起点> to <终点> [参数]
-/player <假人> stop
-/player <假人> use|attack range help
+/player <fake_player> use range <start> to <end> [options]                  # 执行一次区域放置
+/player <fake_player> use continuous range <start> to <end> [options]       # 持续执行区域放置
+/player <fake_player> attack range <start> to <end> [options]               # 执行一次区域破坏
+/player <fake_player> attack continuous range <start> to <end> [options]    # 持续执行区域破坏
+/player <fake_player> stop                                                  # 停止区域操作
+/player <fake_player> use|attack range help                                 # 查看区域操作帮助
 ```
 
 参数可组合：`pathfinding`、`reach <0.1-64>`、`airPlace`、`ignoreObstruction`、`placeBlock`、`interactBlock`、`interactSpeed <1-64>`。未指定 `placeBlock` 或 `interactBlock` 时按放置模式处理。
@@ -151,19 +146,19 @@
 #### 语法
 
 ```text
-/droppedItemStackLimit mode all <数量>
-/droppedItemStackLimit mode black <数量>
-/droppedItemStackLimit mode whitelist
-/droppedItemStackLimit mode inventory <数量>
-/droppedItemStackLimit mode container <数量>
-/droppedItemStackLimit reset inventory
-/droppedItemStackLimit reset container
-/droppedItemStackLimit set black <物品ID>
-/droppedItemStackLimit remove black <物品ID>
-/droppedItemStackLimit set whitelist <物品ID> <数量>
-/droppedItemStackLimit remove whitelist <物品ID>
-/droppedItemStackLimit list [black|whitelist] [页码]
-/droppedItemStackLimit clear
+/droppedItemStackLimit mode all <count>                   # 设置掉落物总上限
+/droppedItemStackLimit mode black <count>                 # 设置黑名单模式上限
+/droppedItemStackLimit mode whitelist                     # 启用白名单模式
+/droppedItemStackLimit mode inventory <count>             # 设置玩家背包上限
+/droppedItemStackLimit mode container <count>             # 设置容器上限
+/droppedItemStackLimit reset inventory                    # 重置玩家背包上限
+/droppedItemStackLimit reset container                    # 重置容器上限
+/droppedItemStackLimit set black <item_id>                # 添加黑名单物品
+/droppedItemStackLimit remove black <item_id>             # 移除黑名单物品
+/droppedItemStackLimit set whitelist <item_id> <count>    # 设置白名单物品上限
+/droppedItemStackLimit remove whitelist <item_id>         # 移除白名单物品
+/droppedItemStackLimit list [black|whitelist] [page]      # 查看黑名单或白名单
+/droppedItemStackLimit clear                              # 清空配置
 ```
 
 `list` 按页显示中文名称、完整物品 ID 和数量；列表中的删除按钮可点击执行对应命令。配置损坏时保持原版安全限制并拒绝写入。
@@ -177,15 +172,14 @@
 相关规则：`entityDropRemoval`
 
 ```text
-/entityDropRemoval help
-/entityDropRemoval status
-/entityDropRemoval set <生物ID> <物品ID|allEquipment>
-/entityDropRemoval remove <生物ID> <物品ID|allEquipment>
-/entityDropRemoval list
-/entityDropRemoval list <生物ID>
+/entityDropRemoval help                                         # 查看帮助
+/entityDropRemoval status                                       # 查看当前配置
+/entityDropRemoval set <entity_id> <item_id|allEquipment>       # 添加去除项
+/entityDropRemoval remove <entity_id> <item_id|allEquipment>    # 删除去除项
+/entityDropRemoval list                                         # 列出全部配置
+/entityDropRemoval list <entity_id>                             # 查看指定生物配置
+/fga entityDropRemoval ...                                      # 与 /entityDropRemoval ... 相同
 ```
-
-规则值为 `false` 时命令不可用；`true`、`ops` 或 `0-4` 按规则值控制权限。生物 ID 和物品 ID 支持完整命名空间、省略 `minecraft:` 和 Tab 补全。`set` 会在原配置上增加项目，`remove` 只删除指定项目，`allEquipment` 表示头盔、胸甲、护腿、靴子、主手和副手六个装备槽。`list` 显示已配置生物与去除项，红色减号可点击删除；`list <生物ID>` 显示默认战利品表和当前可识别的掉落配置。配置保存于 `world/config/carpetfgaaddition/entity-drop-removal.json`，使用原子替换；损坏文件会保留并拒绝本次运行的写入。
 
 <a id="cmd-piglin-barter-customization"></a>
 
@@ -196,15 +190,14 @@
 生效版本：`1.21.1`
 
 ```text
-/piglinBarterItemExclusions list
-/piglinBarterItemExclusions add <交易条目>
-/piglinBarterItemExclusions enable <交易条目>
-/piglinBarterItemExclusions disable <交易条目>
-/piglinBarterItemExclusions set <交易条目> <概率> <最小数量>-<最大数量>
-/piglinBarterItemExclusions reset <交易条目>
+/piglinBarterItemExclusions list                                          # 列出当前交易条目
+/piglinBarterItemExclusions add <entry>                                   # 添加交易条目
+/piglinBarterItemExclusions enable <entry>                                # 启用交易条目
+/piglinBarterItemExclusions disable <entry>                               # 禁用交易条目
+/piglinBarterItemExclusions set <entry> <概率> <min_count>-<max_count>    # 设置概率和数量范围
+/piglinBarterItemExclusions reset <entry>                                 # 重置概率和数量
+/fga piglinBarterItemExclusions ...                                       # 与直接命令相同
 ```
-
-`/fga piglinBarterItemExclusions ...` 与直接命令相同，规则关闭时命令不会出现在玩家命令树。`list` 显示当前战利品表中的具体变体、客户端语言名称、英文 ID、概率和数量范围；概率和数量可点击填入编辑命令，红色 `[-]` 禁用条目，绿色 `[+]` 重新启用条目，最后一行 `[+]` 打开带 Tab 补全的添加命令。当前战利品表已移除的默认条目仍显示在已删除区域。重置只恢复默认概率和数量，不改变启用状态。配置保存于 `world/config/carpetfgaaddition/piglin-barter-customization.json`。
 
 <a id="cmd-drop-pre-stack"></a>
 
@@ -217,20 +210,21 @@
 #### 语法
 
 ```text
-/dropPreStack help
-/dropPreStack status
-/dropPreStack entity add <实体ID> [范围]
-/dropPreStack entity remove <实体ID>
-/dropPreStack entity set <实体ID> [范围]
-/dropPreStack entity list [页码]
-/dropPreStack block add <物品ID> [范围]
-/dropPreStack block remove <物品ID>
-/dropPreStack block set <物品ID> [范围]
-/dropPreStack block list [页码]
-/dropPreStack container add <方块或实体ID> [范围]
-/dropPreStack container remove <方块或实体ID>
-/dropPreStack container set <方块或实体ID> [范围]
-/dropPreStack container list [页码]
+/dropPreStack help                                          # 查看帮助
+/dropPreStack status                                        # 查看当前配置
+/dropPreStack entity add <entity_id> [range]                # 添加生物掉落预堆叠
+/dropPreStack entity remove <entity_id>                     # 删除生物掉落预堆叠
+/dropPreStack entity set <entity_id> [range]                # 设置生物掉落预堆叠范围
+/dropPreStack entity list [page]                            # 列出生物配置
+/dropPreStack block add <item_id> [range]                   # 添加方块掉落预堆叠
+/dropPreStack block remove <item_id>                        # 删除方块掉落预堆叠
+/dropPreStack block set <item_id> [range]                   # 设置方块掉落预堆叠范围
+/dropPreStack block list [page]                             # 列出方块配置
+/dropPreStack container add <block_or_entity_id> [range]    # 添加容器掉落预堆叠
+/dropPreStack container remove <block_or_entity_id>         # 删除容器掉落预堆叠
+/dropPreStack container set <block_or_entity_id> [range]    # 设置容器掉落预堆叠范围
+/dropPreStack container list [page]                         # 列出容器配置
+/fga dropPreStack ...                                       # 与 /dropPreStack ... 相同
 ```
 
 范围为 `0-16`，省略时为 `1.0`。ID 支持 `minecraft:stone` 和 `stone`；物品侧也支持官方中文名称。`list` 显示中文名称、英文 ID 和范围，并提供可点击修改/删除命令。新配置仅在 `preStackDroppedItems=true` 时生效；旧版生物规则独立兼容。
@@ -246,20 +240,20 @@
 #### 语法
 
 ```text
-/villagerPerformance help
-/villagerPerformance status
-/villagerPerformance trade false|ai|static
-/villagerPerformance trade name add|remove <名称>
-/villagerPerformance trade name list [页码]
-/villagerPerformance trade block add|remove <方块ID>
-/villagerPerformance trade block list [页码]
-/villagerPerformance gift false|true
-/villagerPerformance gift name add|remove <名称>
-/villagerPerformance gift block add|remove <方块ID>
-/villagerPerformance gift list [页码]
-/villagerPerformance wanderingTrader false|true|controlled
-/villagerPerformance wanderingTrader name add|remove|list <名称>
-/villagerPerformance wanderingTrader block add|remove|list <方块ID>
+/villagerPerformance help                                                # 查看帮助
+/villagerPerformance status                                              # 查看当前状态
+/villagerPerformance trade false|ai|static                               # 设置交易性能模式
+/villagerPerformance trade name add|remove <name>                        # 修改交易名称名单
+/villagerPerformance trade name list [page]                              # 查看交易名称名单
+/villagerPerformance trade block add|remove <block_id>                   # 修改交易方块名单
+/villagerPerformance trade block list [page]                             # 查看交易方块名单
+/villagerPerformance gift false|true                                     # 设置赠礼功能
+/villagerPerformance gift name add|remove <name>                         # 修改赠礼名称名单
+/villagerPerformance gift block add|remove <block_id>                    # 修改赠礼方块名单
+/villagerPerformance gift list [page]                                    # 查看赠礼名单
+/villagerPerformance wanderingTrader false|true|controlled               # 设置流浪商人保护模式
+/villagerPerformance wanderingTrader name add|remove|list <name>         # 修改或查看名称名单
+/villagerPerformance wanderingTrader block add|remove|list <block_id>    # 修改或查看方块名单
 ```
 
 名单操作立即生效并保存到世界配置。`controlled` 使用名称或脚下一格方块的“或”匹配；名单为空时不保护流浪商人。列表命令支持分页。
@@ -272,27 +266,27 @@
 除查询类子命令（`status`、`whitelist list`、`name list`、`format status`、`dashboard status`、`bot_sort stop`）外，配置、白名单增删、排序启动等子命令均需要 OP 2 及以上权限
 
 ```text
-/fakePlayerItemSort status
-/fakePlayerItemSort help
-/fakePlayerItemSort mode summon|quickopen
-/fakePlayerItemSort setting <名称> <值>
-/fakePlayerItemSort whitelist add|remove <玩家>
-/fakePlayerItemSort whitelist list [页码]
-/fakePlayerItemSort format prefix|suffix <文本>
-/fakePlayerItemSort format status
-/fakePlayerItemSort name set <物品ID> <名称>
-/fakePlayerItemSort name remove <物品ID>
-/fakePlayerItemSort name list [页码]
-/fakePlayerItemSort name reload
-/fakePlayerItemSort workers <initial> <cached>  # 仅 1.21.1
-/fakePlayerItemSort dashboard status  # 仅 1.21.1
-/fakePlayerItemSort dashboard port <1024-65535>  # 仅 1.21.1
-/player <假人> bot_sort
-/player <假人> bot_sort continuous
-/player <假人> bot_sort stop
-/player <假人> bot_sort restart <物品名称>
-/player <假人> bot_sort restart all
-/player <假人> bot_sort restart all confirm
+/fakePlayerItemSort status                            # 查看当前状态
+/fakePlayerItemSort help                              # 查看帮助
+/fakePlayerItemSort mode summon|quickopen             # 设置运行模式
+/fakePlayerItemSort setting <name> <value>            # 修改分类设置
+/fakePlayerItemSort whitelist add|remove <player>     # 修改白名单
+/fakePlayerItemSort whitelist list [page]             # 查看白名单
+/fakePlayerItemSort format prefix|suffix <text>       # 设置名称格式
+/fakePlayerItemSort format status                     # 查看名称格式
+/fakePlayerItemSort name set <item_id> <name>         # 设置物品名称
+/fakePlayerItemSort name remove <item_id>             # 删除物品名称
+/fakePlayerItemSort name list [page]                  # 查看物品名称
+/fakePlayerItemSort name reload                       # 重新加载名称
+/fakePlayerItemSort workers <initial> <cached>        # 设置线程数，仅 1.21.1
+/fakePlayerItemSort dashboard status                  # 查看 Dashboard 状态，仅 1.21.1
+/fakePlayerItemSort dashboard port <1024-65535>       # 设置 Dashboard 端口，仅 1.21.1
+/player <fake_player> bot_sort                        # 开始分类
+/player <fake_player> bot_sort continuous             # 开始持续分类
+/player <fake_player> bot_sort stop                   # 停止分类
+/player <fake_player> bot_sort restart <item_name>    # 重启指定物品分类
+/player <fake_player> bot_sort restart all            # 请求重构全部分类
+/player <fake_player> bot_sort restart all confirm    # 确认重构全部分类
 ```
 
 `restart all` 必须在确认按钮或 `confirm` 子命令有效期内再次确认；`opall` 时全量重构仅 OP 可执行。`quickopen` 不召唤目标假人，`summon` 使用在线假人。装备栏始终不读写。
@@ -310,19 +304,16 @@
 #### 语法
 
 ```text
-/minecart help
-/minecart status
-/minecart firework set <最高速度> <每级持续gt> <减速度>
-/minecart firework reset
-/minecart chain set <最大距离>
-/minecart chain reset
+/minecart help                                                     # 查看帮助
+/minecart status                                                   # 查看当前配置
+/minecart firework set <max_speed> <duration_gt> <deceleration>    # 设置烟花加速参数
+/minecart firework reset                                           # 重置烟花加速参数
+/minecart chain set <max_distance>                                 # 设置锁链连接距离
+/minecart chain reset                                              # 重置锁链连接距离
+/fga minecart ...                                                  # 与 /minecart ... 相同
 ```
 
 默认烟花参数为 `1.2 10 0.02`。飞行等级 1/2/3 分别维持满速 10/20/30gt，随后线性减速。玩家乘坐普通矿车时使用烟花触发，生存模式消耗一枚；只生成声音和粒子，不生成烟花实体。
-
-默认锁链距离为 `1.0` 格。手持锁链依次右击两辆普通矿车可连接或解除；每辆最多两个连接，禁止闭环与分叉。连接超过 16 格、跨维度或矿车被破坏时断裂并返还已消耗的锁链。连接存档不会强加载区块。
-
-权限规则为 `false` 时命令隐藏；`true`/`0` 允许所有玩家，`ops` 允许 OP，`1-4` 对应权限等级。参数范围分别为速度 `0.1-4.0`、每级持续时间 `1-24000gt`、减速度 `0.001-1.0`、链距 `1.0-8.0`。
 
 <a id="cmd-vehicle-stop"></a>
 
@@ -335,13 +326,14 @@
 #### 语法
 
 ```text
-/vehicleStop help
-/vehicleStop status
-/vehicleStop set minecart|boat|all true|false
-/vehicleStop reset
-/vehicleStop player <在线玩家> status
-/vehicleStop player <在线玩家> set minecart|boat|all true|false
-/vehicleStop player <在线玩家> reset
+/vehicleStop help                                                # 查看帮助
+/vehicleStop status                                              # 查看当前配置
+/vehicleStop set minecart|boat|all true|false                    # 设置自己的急停模式
+/vehicleStop reset                                               # 重置自己的设置
+/vehicleStop player <player> status                              # 查看指定玩家设置
+/vehicleStop player <player> set minecart|boat|all true|false    # 设置指定玩家的急停模式
+/vehicleStop player <player> reset                               # 重置指定玩家设置
+/fga vehicleStop ...                                             # 与 /vehicleStop ... 相同
 ```
 
 普通玩家只能管理自己；OP 与控制台可管理在线玩家。个人设置始终保存，但只在规则为 `custom` 时决定实际行为，未配置默认关闭。驾驶者下车时只清除水平速度；普通乘客下车不触发。无人乘坐的锁链列车会整列停止，有其他玩家时整列不停。
@@ -359,7 +351,7 @@
 #### 语法
 
 ```text
-/log playerHealth
+/log playerHealth    # 订阅或取消 Tab 玩家生命值显示
 ```
 
 #### 行为
@@ -383,13 +375,12 @@
 相关规则：`playerLoadDistance`，仅 Minecraft `1.21.1`
 
 ```text
-/playerLoadDistance help
-/playerLoadDistance status <在线玩家>
-/playerLoadDistance set <在线玩家> <距离> [persistent]
-/playerLoadDistance reset <在线玩家> [persistent]
+/playerLoadDistance help                                    # 查看帮助
+/playerLoadDistance status <player>                         # 查看指定玩家区块加载距离
+/playerLoadDistance set <player> <distance> [persistent]    # 设置区块加载距离
+/playerLoadDistance reset <player> [persistent]             # 重置区块加载距离
+/fga playerLoadDistance ...                                 # 与 /playerLoadDistance ... 相同
 ```
-
-`<距离>` 支持 `-1`、`0`、`1-32` 和 `none`。临时设置在重启后失效，末尾加 `persistent` 需要 OP 并按 UUID 写入 `world/config/carpetfgaaddition/player-load-distance.json`。普通玩家只能修改自己，修改其他在线玩家或删除其他玩家持久记录需要 OP。玩家名和距离均支持 Tab 补全。帮助和状态会说明该功能只控制区块发送与跟踪，不改变模拟距离。当前覆盖会显示在多人游戏列表最左侧，每名玩家入服时会收到持久记录汇总
 
 ## 试炼刷怪笼指令 (trial)
 
@@ -404,21 +395,13 @@
 #### 语法
 
 ```text
-/trialStop help
-/trialStop range <半径> [none|reward|fast] [clear]
-/trialStop range from <起点XYZ> <终点XYZ> [none|reward|fast] [clear]
-/trialStop dimension <维度ID> range <半径> [none|reward|fast] [clear]
-/trialStop dimension <维度ID> range from <起点XYZ> <终点XYZ> [none|reward|fast] [clear]
-/fga trialStop help
-/fga trialStop range <半径> [none|reward|fast] [clear]
-/fga trialStop range from <起点XYZ> <终点XYZ> [none|reward|fast] [clear]
-/fga trialStop dimension <维度ID> range <半径> [none|reward|fast] [clear]
-/fga trialStop dimension <维度ID> range from <起点XYZ> <终点XYZ> [none|reward|fast] [clear]
+/trialStop help                                                                                 # 查看帮助
+/trialStop range <radius> [none|reward|fast] [clear]                                            # 按半径截停刷怪笼
+/trialStop range from <start_xyz> <end_xyz> [none|reward|fast] [clear]                          # 按方框截停刷怪笼
+/trialStop dimension <dimension> range <radius> [none|reward|fast] [clear]                      # 指定维度按半径截停
+/trialStop dimension <dimension> range from <start_xyz> <end_xyz> [none|reward|fast] [clear]    # 指定维度按方框截停
+/fga trialStop ...                                                                              # 与 /trialStop ... 相同
 ```
-
-`range <半径>` 以命令执行源位置为中心，按忽略 Y 的水平圆柱扫描，半径单位为格；Tab 提供 `16`、`32`、`64` 三个预设，也可手动输入其他合法数值。控制台可使用 `/execute positioned` 指定中心。`range from` 使用完整 XYZ 方框，坐标支持相对坐标、玩家自身位置和视线指向方块 Tab 补全。命令只遍历当前已经加载的区块，不强制加载
-
-奖励模式省略时默认为 `none`。`none` 不发奖励并立即刷新，`reward` 按原版开门及逐次喷出节奏发完后立即刷新，`fast` 立即发完奖励并刷新。`clear` 只清理该刷怪笼登记且当前已加载的怪物。省略 `dimension` 分支时使用当前维度；指定其他维度时使用前置的 `dimension <维度ID>`，维度 ID 支持 Tab 补全。`INACTIVE` 刷怪笼只清理残留数据并保持未激活，其他状态刷新为等待玩家且跳过完整冷却
 
 ## Carpet 规则入口 (carpet)
 
@@ -426,7 +409,11 @@
 
 ### 深板岩切石规则
 
-使用 `/carpet deepslateStonecuttingRecipes false|true` 控制，在 `1.21+` 注册，只过滤 FGA 自己的深板岩直接切石配方，不提供独立命令
+```text
+/carpet deepslateStonecuttingRecipes false|true    # 控制深板岩直接切石配方
+```
+
+在 `1.21+` 注册，只过滤 FGA 自己的深板岩直接切石配方，不提供独立命令
 
 ## FGA 指令入口 (fga)
 
@@ -435,13 +422,13 @@
 ### 其他命令
 
 ```text
-/fga help
-/fga status
-/fga droppedItemStackLimit <子命令>
-/fga dropPreStack <子命令>
-/fga villagerPerformance <子命令>
-/fga fakePlayerItemSort <子命令>
-/fga player <假人> <子命令>
+/fga help                                  # 查看 FGA 帮助
+/fga status                                # 查看 FGA 状态
+/fga droppedItemStackLimit <subcommand>    # 执行掉落物堆叠上限命令
+/fga dropPreStack <subcommand>             # 执行掉落物预堆叠命令
+/fga villagerPerformance <subcommand>      # 执行村民性能命令
+/fga fakePlayerItemSort <subcommand>       # 执行假人物品分类命令
+/fga player <fake_player> <subcommand>     # 转发到 Carpet /player 命令
 ```
 
 帮助消息中命令为灰色、说明为金色并支持点击填充。`/log playerHealth` 只切换当前玩家的 Tab 订阅，不向聊天栏周期输出。背包进度优化是隐藏内部功能，没有独立命令入口。

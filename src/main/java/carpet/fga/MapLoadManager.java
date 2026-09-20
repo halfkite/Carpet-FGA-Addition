@@ -1,11 +1,10 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
@@ -88,8 +87,19 @@ public final class MapLoadManager {
     /** Progress messages are throttled to this many ticks so a fast load cannot spam the action bar. */
     private static final int PROGRESS_REPORT_INTERVAL_TICKS = 5;
     private static final String MESSAGE_PREFIX = "carpet.fga.map_load.";
+    //#if MC >= 1.21.5
+    //#if MC >= 1.21.10
+    //$$ private static final TicketType LOAD_TICKET =
+    //$$         new TicketType(TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING);
+    //#else
+    //$$ private static final TicketType LOAD_TICKET =
+    //$$         new TicketType(TicketType.NO_TIMEOUT, false, TicketType.TicketUse.LOADING);
+    //#else
+    //#endif
+    //#else
     private static final TicketType<ChunkPos> LOAD_TICKET =
             TicketType.create("carpet_fga_map_load", (first, second) -> Long.compare(first.toLong(), second.toLong()));
+    //#endif
     /**
      * Player-facing text is resolved here instead of on the client: this is a server side feature,
      * so a client without FGA has none of our translation keys and would show the raw key. The
@@ -120,7 +130,7 @@ public final class MapLoadManager {
         if (TASKS.containsKey(player.getUUID())) return false;
         Task task = new Task(player, mapItem, mapId, data, mode);
         TASKS.put(player.getUUID(), task);
-        player.displayClientMessage(text("carpet.fga.map_load.progress", 0, mode.id(), 0, task.mapTotal), true);
+        FGACompat.displayClientMessage(player, text("carpet.fga.map_load.progress", 0, mode.id(), 0, task.mapTotal), true);
         return true;
     }
 
@@ -165,7 +175,7 @@ public final class MapLoadManager {
         if (task == null || task.paused) return false;
         task.paused = true;
         startDraining(task);
-        player.displayClientMessage(text("carpet.fga.map_load.paused", task.percent()), true);
+        FGACompat.displayClientMessage(player, text("carpet.fga.map_load.paused", task.percent()), true);
         return true;
     }
 
@@ -176,7 +186,7 @@ public final class MapLoadManager {
         task.paused = false;
         DRAINING.remove(task);
         task.countMapChunks();
-        player.displayClientMessage(text("carpet.fga.map_load.progress", task.percent(), task.mode.id(),
+        FGACompat.displayClientMessage(player, text("carpet.fga.map_load.progress", task.percent(), task.mode.id(),
                 task.mapReady, task.mapTotal), true);
         return true;
     }
@@ -303,8 +313,30 @@ public final class MapLoadManager {
     private static Component button(String labelKey, String hintKey, ChatFormatting color, String command) {
         return text(labelKey).copy().withStyle(Style.EMPTY
                 .withColor(color)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, text(hintKey))));
+                .withClickEvent(FgaClickEvents.runCommand(command))
+                .withHoverEvent(
+                        //#if MC >= 1.21.5
+                        //$$ new HoverEvent.ShowText(text(hintKey))
+                        //#else
+                        new HoverEvent(HoverEvent.Action.SHOW_TEXT, text(hintKey))
+                        //#endif
+                ));
+    }
+
+    private static void addLoadTicket(ServerChunkCache cache, ChunkPos pos) {
+        //#if MC >= 1.21.5
+        //$$ cache.addTicketWithRadius(LOAD_TICKET, pos, TICKET_RADIUS);
+        //#else
+        cache.addRegionTicket(LOAD_TICKET, pos, TICKET_RADIUS, pos);
+        //#endif
+    }
+
+    private static void removeLoadTicket(ServerChunkCache cache, ChunkPos pos) {
+        //#if MC >= 1.21.5
+        //$$ cache.removeTicketWithRadius(LOAD_TICKET, pos, TICKET_RADIUS);
+        //#else
+        cache.removeRegionTicket(LOAD_TICKET, pos, TICKET_RADIUS, pos);
+        //#endif
     }
 
     private static Map<String, String> loadMessages() {
@@ -432,7 +464,7 @@ public final class MapLoadManager {
             if (!valid()) {
                 startDraining(this);
                 if (!player.isRemoved()) {
-                    player.displayClientMessage(text("carpet.fga.map_load.cancelled"), true);
+                    FGACompat.displayClientMessage(player, text("carpet.fga.map_load.cancelled"), true);
                 }
                 return true;
             }
@@ -521,7 +553,7 @@ public final class MapLoadManager {
                 sampleChunkBounds(samples.get(i), scratch);
                 for (int chunkX = scratch[0]; chunkX <= scratch[1]; chunkX++) {
                     for (int chunkZ = scratch[2]; chunkZ <= scratch[3]; chunkZ++) {
-                        needed.add(ChunkPos.asLong(chunkX, chunkZ));
+                        needed.add(FGACompat.chunkKey(chunkX, chunkZ));
                     }
                 }
             }
@@ -537,10 +569,10 @@ public final class MapLoadManager {
                 for (int chunkX = scratch[0]; chunkX <= scratch[1] && budget > 0; chunkX++) {
                     for (int chunkZ = scratch[2]; chunkZ <= scratch[3] && budget > 0; chunkZ++) {
                         if (cache.getChunkNow(chunkX, chunkZ) != null) continue;
-                        long key = ChunkPos.asLong(chunkX, chunkZ);
+                        long key = FGACompat.chunkKey(chunkX, chunkZ);
                         if (ticketed.containsKey(key)) continue;
                         ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
-                        cache.addRegionTicket(LOAD_TICKET, chunkPos, TICKET_RADIUS, chunkPos);
+                        addLoadTicket(cache, chunkPos);
                         ticketed.put(key, System.nanoTime());
                         inFlight++;
                         budget--;
@@ -638,7 +670,7 @@ public final class MapLoadManager {
                 // point of showing it: a big map spends most of its time waiting for generation.
                 if (waitingTicks % WAITING_REPORT_INTERVAL_TICKS == 0) {
                     countMapChunks();
-                    player.displayClientMessage(text("carpet.fga.map_load.progress", percent, mode.id(),
+                    FGACompat.displayClientMessage(player, text("carpet.fga.map_load.progress", percent, mode.id(),
                             mapReady, mapTotal), true);
                 }
                 waitingTicks++;
@@ -648,7 +680,7 @@ public final class MapLoadManager {
             waitingTicks = 0;
             if (ticksSinceReport++ % PROGRESS_REPORT_INTERVAL_TICKS != 0) return;
             countMapChunks();
-            player.displayClientMessage(text("carpet.fga.map_load.progress", percent, mode.id(), mapReady, mapTotal), true);
+            FGACompat.displayClientMessage(player, text("carpet.fga.map_load.progress", percent, mode.id(), mapReady, mapTotal), true);
         }
 
         private void finish() {
@@ -663,7 +695,7 @@ public final class MapLoadManager {
                 player.sendSystemMessage(text("carpet.fga.map_load.skipped_unloaded", skipped));
             }
             countMapChunks();
-            player.displayClientMessage(text("carpet.fga.map_load.progress", 100, mode.id(), mapReady, mapTotal), true);
+            FGACompat.displayClientMessage(player, text("carpet.fga.map_load.progress", 100, mode.id(), mapReady, mapTotal), true);
         }
 
         /**
@@ -688,7 +720,7 @@ public final class MapLoadManager {
                 boolean loaded = cache.getChunkNow(chunkX, chunkZ) != null;
                 if (!loaded && now - entry.getValue() < TICKET_GIVE_UP_NANOS) continue;
                 ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
-                cache.removeRegionTicket(LOAD_TICKET, chunkPos, TICKET_RADIUS, chunkPos);
+                removeLoadTicket(cache, chunkPos);
                 iterator.remove();
                 inFlight--;
                 released++;

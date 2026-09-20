@@ -1,4 +1,4 @@
-//#if MC == 1.21.1
+//#if MC >= 1.21 && MC <= 26.3
 package carpet.fga;
 
 import net.minecraft.network.chat.contents.TranslatableContents;
@@ -30,9 +30,14 @@ public final class EnchantmentDurabilityManager {
 
     public static boolean suppressSoulSpeedDamage(ServerLevel level, ItemStack stack) {
         if (!FGASettings.soulSpeedNoDurability || stack.isEmpty()) return false;
-        Holder<Enchantment> soulSpeed = level.registryAccess()
-                .registryOrThrow(Registries.ENCHANTMENT)
-                .getHolderOrThrow(Enchantments.SOUL_SPEED);
+        Holder<Enchantment> soulSpeed =
+                //#if MC >= 1.21.3
+                //$$ level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
+                //$$         .getOrThrow(Enchantments.SOUL_SPEED);
+                //#else
+                level.registryAccess().registryOrThrow(Registries.ENCHANTMENT)
+                        .getHolderOrThrow(Enchantments.SOUL_SPEED);
+                //#endif
         return EnchantmentHelper.getItemEnchantmentLevel(soulSpeed, stack) > 0;
     }
 
