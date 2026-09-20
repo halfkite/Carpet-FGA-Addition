@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.11`
+> Documentation version: `1.5.12`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default
 

@@ -137,6 +137,13 @@ processResources {
                 recipe.ingredients = recipe.ingredients.collect { ingredient ->
                     ingredient instanceof Map && ingredient.item != null ? ingredient.item : ingredient
                 }
+                if (mcVersion >= 1_21_05 && mcVersion <= 26_02_00) {
+                    // 1.21.5-26.2 use the direct component codec, so custom_name must be a JSON object
+                    recipe.result.components['minecraft:custom_name'] = [text: '附魔金胡萝卜', italic: false]
+                } else {
+                    // 1.21.1-1.21.4 and 26.3 use the stringified component codec
+                    recipe.result.components['minecraft:custom_name'] = '{"text":"附魔金胡萝卜","italic":false}'
+                }
                 java.nio.file.Files.writeString(path,
                         groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(recipe)) + System.lineSeparator())
             }

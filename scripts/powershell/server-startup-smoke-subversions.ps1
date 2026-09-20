@@ -131,6 +131,8 @@ foreach ($variant in $selected) {
         'simulation-distance=2'
         "level-name=$levelName"
         'difficulty=peaceful'
+        'level-type=minecraft:flat'
+        'generate-structures=false'
     )
 
     try {

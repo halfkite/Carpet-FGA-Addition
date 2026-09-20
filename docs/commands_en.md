@@ -1,6 +1,6 @@
 # Carpet FGA Addition Commands
 
-> Documentation version: `1.5.9`
+> Documentation version: `1.5.12`
 
 ## Player status commands (food)
 
