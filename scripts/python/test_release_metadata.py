@@ -47,11 +47,11 @@ class ReleaseMetadataTest(unittest.TestCase):
 
     def test_repository_settings_have_no_independent_121_project(self):
         versions, publish_versions = release_metadata.load_release_settings(self.repo_root)
-        self.assertEqual(9, len(versions))
+        self.assertEqual(10, len(versions))
         self.assertNotIn("1.21", versions)
         self.assertNotIn("1.21", publish_versions)
         self.assertIn("1.21.1", publish_versions)
-        self.assertEqual(9, len(publish_versions))
+        self.assertEqual(10, len(publish_versions))
 
     def test_repository_has_no_independent_121_build_references(self):
         build_gradle = (self.repo_root / "build.gradle").read_text(encoding="utf-8")
@@ -161,6 +161,7 @@ class ReleaseMetadataTest(unittest.TestCase):
                 "1.21.11": ["1.21.11"],
                 "26.1.2": ["26.1", "26.1.1", "26.1.2"],
                 "26.2": ["26.2"],
+                "26.3": ["26.3"],
             },
             actual,
         )
