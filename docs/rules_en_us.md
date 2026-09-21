@@ -91,6 +91,17 @@ Enables area placement, right-click block interaction, area breaking, and relate
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.16.5+`
 
+### Unlimited Multiplayer Players(unlimitedMultiplayerPlayers)
+
+Allows a multiplayer server to accept players beyond `server.properties` `max-players` without changing ban, whitelist, or IP-ban checks<br>
+Automatically becomes effective when GCA is loaded and `fakePlayerResident` is enabled
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `feature`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+
 ### End Gateway Regeneration(endGatewayRegeneration)
 
 Allows destroyed End gateways to regenerate after the Ender Dragon is killed. Only the gateway block and its own data are restored; surrounding blocks are unchanged
@@ -298,7 +309,7 @@ Fully grows saplings, bamboo, sea pickles, and other plants that can grow throug
 
 ### Named Ender Pearl Player Teleport(namedEnderPearlTeleport)
 
-Named ender pearls teleport the online player with the matching custom name; when no matching player is online, vanilla pearl teleportation is unchanged
+Named ender pearls teleport the online player with the matching custom name; when no matching player is online, the named pearl does not teleport anyone
 
 - Type: `Boolean`
 - Default: `false`
@@ -673,7 +684,7 @@ Allows wood products to be crafted in the stonecutter
 
 ### Light Source Stonecutting Recipes(lightSourceStonecuttingRecipes)
 
-Allows beacons, glowstone, jack-o-lanterns, sea lanterns, frog lights, end rods, torches, candles, and other light-emitting blocks to be placed in the stonecutter and cut into `minecraft:light` blocks with light levels 1 through 15, producing 4 each time<br>
+Allows beacons, glowstone, jack-o-lanterns, sea lanterns, frog lights, end rods, torches, candles, and other light-emitting blocks to be placed in the stonecutter and cut into `minecraft:light` blocks with light levels 1 through 15, producing 4 each time; `1.21.9+` also supports copper torches and all oxidized and waxed copper lantern variants<br>
 `minecraft:light` blocks of any light level can also be converted between each other at a one-to-one rate
 
 - Type: `Boolean`

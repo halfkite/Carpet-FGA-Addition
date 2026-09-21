@@ -224,6 +224,13 @@ public class FGASettings {
     //#endif
     public static boolean fakePlayerRangeControl = false;
 
+    //#if MC >= 1.21 && MC <= 26.3
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean unlimitedMultiplayerPlayers = false;
+    //#endif
+
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         conditions = FGASettings.Minecraft1_16OrNewerCondition.class

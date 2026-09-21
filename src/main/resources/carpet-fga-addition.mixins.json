@@ -125,15 +125,22 @@
         //#if MC == 1.21.1
         ,"StonecutterMenuAccessor",
         "CarpetRuleDescriptionMixin",
-        "LightBlockBreakMixin",
-        "NamedEnderPearlTeleportMixin",
-        "EnchantmentFireAspectToolMixin",
-        "EnchantmentDurabilityMixin",
-        "DamageItemSoulSpeedMixin",
+        "LightBlockBreakMixin"
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.3
+        ,"EnchantmentFireAspectToolMixin",
         "BlockFireAspectSmeltingMixin"
         //#endif
+        //#if MC >= 1.21 && MC <= 26.3
+        ,"NamedEnderPearlTeleportMixin"
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.3
+        ,"EnchantmentDurabilityMixin",
+        "DamageItemSoulSpeedMixin"
+        //#endif
         //#if MC >= 1.21
-        ,"StonecutterMenuFullShulkerMixin",
+        ,"PlayerListUnlimitedPlayersMixin",
+        "StonecutterMenuFullShulkerMixin",
         "GrassBlockAnyFlowerMixin"
         //#endif
         //#if MC >= 1.21 && MC <= 26.3

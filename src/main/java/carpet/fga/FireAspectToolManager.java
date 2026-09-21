@@ -24,7 +24,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/** Handles Fire Aspect on mining tools and level-based furnace processing of block drops. */
+/**
+ * Handles Fire Aspect on mining tools and level-based furnace processing of block drops.
+ *
+ * <p>Upgrade smoke procedure: enable {@code fireAspectOnTools} on an isolated server;
+ * summon fake players {@code FGAFireOne}, {@code FGAFireTwo}, and
+ * {@code FGAFireFortune}; give them respectively a pickaxe with Fire Aspect I, a
+ * pickaxe with Fire Aspect II, and a pickaxe with Fire Aspect plus Fortune; make each
+ * fake player mine the prepared test block. The first tool must produce the first
+ * smelting result, the second must apply the chained recipe twice, and the third must
+ * produce smelted ore with the Fortune-enlarged drop count. Record the item stacks and
+ * server log, then repeat the same procedure for every build node listed in
+ * {@code scripts/powershell/fire-aspect-tool-smoke-all.ps1}.</p>
+ */
 public final class FireAspectToolManager {
     private FireAspectToolManager() {
     }

@@ -11,10 +11,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Makes a custom-named ender pearl teleport the matching online player. */
+/** Makes a named ender pearl teleport only its matching online player. */
 @Mixin(ThrownEnderpearl.class)
 public abstract class NamedEnderPearlTeleportMixin {
-    @Inject(method = "onHit", at = @At("HEAD"))
+    @Inject(method = "onHit", at = @At("HEAD"), cancellable = true)
     private void carpetFga$redirectNamedPearl(HitResult hitResult, CallbackInfo ci) {
         ThrownEnderpearl pearl = (ThrownEnderpearl) (Object) this;
         if (!(pearl.level() instanceof ServerLevel serverLevel)) {
@@ -23,7 +23,11 @@ public abstract class NamedEnderPearlTeleportMixin {
 
         ServerPlayer target = NamedEnderPearlTeleport.findTarget(pearl, serverLevel);
         if (target != null) {
-            pearl.setOwner(target);
+            NamedEnderPearlTeleport.teleportTarget(pearl, target);
+            ci.cancel();
+        } else if (NamedEnderPearlTeleport.shouldCancelVanillaTeleport(pearl, serverLevel)) {
+            pearl.discard();
+            ci.cancel();
         }
     }
 }

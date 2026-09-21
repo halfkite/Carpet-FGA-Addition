@@ -279,71 +279,86 @@ processResources {
     }
 }
 
-// The light-block conversion recipes are intentionally limited to the
-// 1.21.1 baseline until their item components and stonecutter menu APIs are
-// reviewed for later Minecraft versions.
-processResources {
+// Generate the light-block conversion recipes for every supported build
+// version. Ingredient syntax is selected below for each version family.
+// Keep these files in a declared generated-resource directory so both the
+// packaged JAR and Loom's development run classpath see the same resources.
+def generatedLightResourcesDir = file("${buildDir}/generated/resources/light-stonecutting")
+def generateLightStonecuttingResources = tasks.register('generateLightStonecuttingResources') {
+    outputs.dir(generatedLightResourcesDir)
     doLast {
-        if (mcVersion != 1_21_01) return
-    def lightSourceItems = [
-            'beacon', 'glowstone', 'jack_o_lantern', 'sea_lantern', 'sea_pickle',
-            'conduit', 'lantern', 'shroomlight', 'respawn_anchor',
-            'ochre_froglight', 'verdant_froglight', 'pearlescent_froglight',
-            'end_rod', 'torch', 'glow_berries', 'soul_torch', 'soul_lantern',
-            'crying_obsidian', 'soul_campfire', 'campfire', 'enchanting_table',
-            'ender_chest', 'redstone_torch', 'glow_lichen',
-            'candle', 'white_candle', 'orange_candle', 'magenta_candle',
-            'light_blue_candle', 'yellow_candle', 'lime_candle', 'pink_candle',
-            'gray_candle', 'light_gray_candle', 'cyan_candle', 'purple_candle',
-            'blue_candle', 'brown_candle', 'green_candle', 'red_candle', 'black_candle',
-            'sculk_catalyst', 'amethyst_cluster', 'large_amethyst_bud', 'medium_amethyst_bud', 'magma_block',
-            'brewing_stand', 'brown_mushroom', 'dragon_egg', 'small_amethyst_bud',
-            'sculk_sensor', 'calibrated_sculk_sensor'
-    ]
-    def lightLevels = (1..15).toList()
-    def recipeDirectory = destinationDir.toPath().resolve('data/carpet-fga-addition/recipe')
-    def itemTagDirectory = destinationDir.toPath().resolve('data/carpet-fga-addition/tags/item')
-    java.nio.file.Files.createDirectories(recipeDirectory)
-    java.nio.file.Files.createDirectories(itemTagDirectory)
-    try (def files = java.nio.file.Files.list(recipeDirectory)) {
-        files.filter {
-            def name = it.fileName.toString()
-            name.endsWith('_from_light_source_stonecutting.json')
-                    || name.endsWith('_from_light_block_stonecutting.json')
+        project.delete(generatedLightResourcesDir)
+        if (mcVersion < 1_21_00 || mcVersion > 26_03_00) return
+
+        def lightSourceItems = [
+                'beacon', 'glowstone', 'jack_o_lantern', 'sea_lantern', 'sea_pickle',
+                'conduit', 'lantern', 'shroomlight', 'respawn_anchor',
+                'ochre_froglight', 'verdant_froglight', 'pearlescent_froglight',
+                'end_rod', 'torch', 'glow_berries', 'soul_torch', 'soul_lantern',
+                'crying_obsidian', 'soul_campfire', 'campfire', 'enchanting_table',
+                'ender_chest', 'redstone_torch', 'glow_lichen',
+                'candle', 'white_candle', 'orange_candle', 'magenta_candle',
+                'light_blue_candle', 'yellow_candle', 'lime_candle', 'pink_candle',
+                'gray_candle', 'light_gray_candle', 'cyan_candle', 'purple_candle',
+                'blue_candle', 'brown_candle', 'green_candle', 'red_candle', 'black_candle',
+                'sculk_catalyst', 'amethyst_cluster', 'large_amethyst_bud', 'medium_amethyst_bud', 'magma_block',
+                'brewing_stand', 'brown_mushroom', 'dragon_egg', 'small_amethyst_bud',
+                'sculk_sensor', 'calibrated_sculk_sensor'
+        ]
+        if (mcVersion >= 1_21_09) {
+            lightSourceItems.addAll([
+                    'copper_torch',
+                    'copper_lantern', 'exposed_copper_lantern', 'weathered_copper_lantern', 'oxidized_copper_lantern',
+                    'waxed_copper_lantern', 'waxed_exposed_copper_lantern',
+                    'waxed_weathered_copper_lantern', 'waxed_oxidized_copper_lantern'
+            ])
         }
-                .forEach { java.nio.file.Files.deleteIfExists(it) }
-    }
+        def recipeDirectory = generatedLightResourcesDir.toPath().resolve('data/carpet-fga-addition/recipe')
+        def itemTagDirectory = generatedLightResourcesDir.toPath().resolve('data/carpet-fga-addition/tags/item')
+        java.nio.file.Files.createDirectories(recipeDirectory)
+        java.nio.file.Files.createDirectories(itemTagDirectory)
 
-    def tag = [replace: false, values: lightSourceItems.collect { "minecraft:${it}" }]
-    java.nio.file.Files.writeString(
-            itemTagDirectory.resolve('light_source_stonecutting_inputs.json'),
-            groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(tag)) + System.lineSeparator())
+        def tag = [replace: false, values: lightSourceItems.collect { "minecraft:${it}" }]
+        java.nio.file.Files.writeString(
+                itemTagDirectory.resolve('light_source_stonecutting_inputs.json'),
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(tag)) + System.lineSeparator())
 
-    lightLevels.reverse().eachWithIndex { level, index ->
-        def order = String.format('%02d', index + 1)
-        def lightBlockRecipe = [
-                type: 'minecraft:stonecutting',
-                group: 'light_block_stonecutting',
-                ingredient: [item: 'minecraft:light'],
-                result: [id: 'minecraft:light', count: 1,
-                         components: ['minecraft:block_state': [level: "${level}"]]]
-        ]
-        def lightBlockTarget = recipeDirectory.resolve("light_level_${order}_${level}_from_light_block_stonecutting.json")
-        java.nio.file.Files.writeString(lightBlockTarget,
-                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(lightBlockRecipe)) + System.lineSeparator())
+        (1..15).toList().reverse().eachWithIndex { level, index ->
+            def order = String.format('%02d', index + 1)
+            def lightBlockIngredient = mcVersion >= 1_21_02
+                    ? 'minecraft:light'
+                    : [item: 'minecraft:light']
+            def lightSourceIngredient = mcVersion >= 1_21_02
+                    ? '#carpet-fga-addition:light_source_stonecutting_inputs'
+                    : [tag: 'carpet-fga-addition:light_source_stonecutting_inputs']
+            def lightBlockRecipe = [
+                    type: 'minecraft:stonecutting',
+                    group: 'light_block_stonecutting',
+                    ingredient: lightBlockIngredient,
+                    result: [id: 'minecraft:light', count: 1,
+                             components: ['minecraft:block_state': [level: "${level}"]]]
+            ]
+            def lightBlockTarget = recipeDirectory.resolve("light_level_${order}_${level}_from_light_block_stonecutting.json")
+            java.nio.file.Files.writeString(lightBlockTarget,
+                    groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(lightBlockRecipe)) + System.lineSeparator())
 
-        def lightSourceRecipe = [
-                type: 'minecraft:stonecutting',
-                group: 'light_block_stonecutting',
-                ingredient: [tag: 'carpet-fga-addition:light_source_stonecutting_inputs'],
-                result: [id: 'minecraft:light', count: 4,
-                         components: ['minecraft:block_state': [level: "${level}"]]]
-        ]
-        def lightSourceTarget = recipeDirectory.resolve("light_level_${order}_${level}_from_light_source_stonecutting.json")
-        java.nio.file.Files.writeString(lightSourceTarget,
-                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(lightSourceRecipe)) + System.lineSeparator())
+            def lightSourceRecipe = [
+                    type: 'minecraft:stonecutting',
+                    group: 'light_block_stonecutting',
+                    ingredient: lightSourceIngredient,
+                    result: [id: 'minecraft:light', count: 4,
+                             components: ['minecraft:block_state': [level: "${level}"]]]
+            ]
+            def lightSourceTarget = recipeDirectory.resolve("light_level_${order}_${level}_from_light_source_stonecutting.json")
+            java.nio.file.Files.writeString(lightSourceTarget,
+                    groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(lightSourceRecipe)) + System.lineSeparator())
+        }
     }
-    }
+}
+
+processResources {
+    dependsOn(generateLightStonecuttingResources)
+    from(generatedLightResourcesDir)
 }
 
 tasks.withType(JavaCompile).configureEach {

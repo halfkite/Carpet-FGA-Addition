@@ -4,6 +4,7 @@ import carpet.CarpetExtension;
 import carpet.CarpetServer;
 //#if MC >= 1.21 && MC <= 26.3
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 //#endif
 //#if MC >= 1.19
 import carpet.utils.CommandHelper;
@@ -39,6 +40,9 @@ public class FGAExtension implements CarpetExtension {
     public void onGameStarted() {
         VillagerBreedingAnimalization.registerRuleObserver();
         registerFgaCommandTreeRefreshObserver();
+        //#if MC >= 1.21 && MC <= 26.3
+        registerCommandTreeJoinRefresh();
+        //#endif
         registerUnlimitedFillLegacyBridge();
         registerItemFrameBlockificationObserver();
         registerPlayerLoadDistanceObserver();
@@ -408,9 +412,30 @@ public class FGAExtension implements CarpetExtension {
                     PiglinBarterCustomizationManager.onRuleChanged(server);
                 }
                 //#endif
-                CommandHelper.notifyPlayersCommandsChanged(server);
+                refreshCommandTree(server);
             }
         });
+        //#endif
+    }
+
+    //#if MC >= 1.21 && MC <= 26.3
+    /**
+     * High-version clients can receive the initial command tree before a
+     * Carpet rule loaded from the server state has reached its final value.
+     * Defer the extra send until the normal join packet has completed, so
+     * the refresh is not immediately overwritten by vanilla's initial tree.
+     */
+    private static void registerCommandTreeJoinRefresh() {
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+                server.execute(() -> refreshCommandTree(server)));
+    }
+    //#endif
+
+    private static void refreshCommandTree(MinecraftServer server) {
+        //#if MC >= 1.21 && MC <= 26.3
+        server.getPlayerList().getPlayers().forEach(player -> server.getCommands().sendCommands(player));
+        //#else
+        CommandHelper.notifyPlayersCommandsChanged(server);
         //#endif
     }
 
