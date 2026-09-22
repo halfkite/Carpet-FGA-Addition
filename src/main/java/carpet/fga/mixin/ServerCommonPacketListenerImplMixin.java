@@ -90,7 +90,16 @@ public abstract class ServerCommonPacketListenerImplMixin {
                 : packetFactory.get();
         fga$sendingCustomizedPlayerInfo = true;
         try {
-            listener.send(customizedPacket);
+            if (sendFullNames) {
+                // Keep the wider UTF limit active while the packet is encoded,
+                // but never leak it into unrelated packets sent by the server.
+                FakePlayerNameAlias.withFullNames(() -> {
+                    listener.send(customizedPacket);
+                    return null;
+                });
+            } else {
+                listener.send(customizedPacket);
+            }
         } finally {
             fga$sendingCustomizedPlayerInfo = false;
         }

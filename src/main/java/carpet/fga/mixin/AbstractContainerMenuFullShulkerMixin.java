@@ -35,7 +35,7 @@ public abstract class AbstractContainerMenuFullShulkerMixin {
                                                   ClickType clickType, Player player,
                                                   //#endif
                                                   Operation<Void> original) {
-        if (!FullShulkerBoxCraftingManager.enabled()) {
+        if (!FullShulkerBoxCraftingManager.enabled(player)) {
             original.call(menu, slotId, button, clickType, player);
             return;
         }

@@ -4,8 +4,6 @@ package carpet.fga;
 //#if MC == 1.21.1
 import carpet.fga.mixin.StonecutterMenuAccessor;
 //#endif
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.NonNullList;
 //#if MC < 1.20.5
 import net.minecraft.nbt.CompoundTag;
@@ -102,29 +100,25 @@ public final class FullShulkerBoxCraftingManager {
 
     //#if MC >= 1.21
     /**
-     * The client never receives Carpet rule values, so it assumes the most permissive mode and lets
-     * the server refuse a take it does not allow. Reading the local value instead would hide the whole
-     * feature from every client whose own config still says false.
+     * The remote client never receives Carpet rule values, so it uses a permissive preview and lets
+     * the server refuse a take it does not allow. The logical side must come from the level: a physical
+     * client process may also host an integrated server, which must still obey the server rule.
      */
-    private static boolean clientSide() {
-        return FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT;
+    private static boolean ruleEnabled(Level level) {
+        return FullShulkerCraftingPolicy.ruleEnabled(
+                FGACompat.isClientSide(level), FGASettings.fullShulkerBoxCrafting);
     }
 
-    private static boolean ruleEnabled() {
-        if (clientSide()) return true;
-        return !"false".equals(FGASettings.fullShulkerBoxCrafting);
-    }
-
-    private static boolean only64Mode() {
-        if (clientSide()) return false;
-        return "only64".equals(FGASettings.fullShulkerBoxCrafting);
+    private static boolean only64Mode(Level level) {
+        return FullShulkerCraftingPolicy.only64Mode(
+                FGACompat.isClientSide(level), FGASettings.fullShulkerBoxCrafting);
     }
     //#endif
 
     /** Returns the authoritative rule state used by click wrappers and result updates. */
-    public static boolean enabled() {
+    public static boolean enabled(Player player) {
         //#if MC >= 1.21
-        return ruleEnabled();
+        return ruleEnabled(FGACompat.level(player));
         //#else
         //$$ return FGASettings.fullShulkerBoxCrafting;
         //#endif
@@ -137,7 +131,7 @@ public final class FullShulkerBoxCraftingManager {
                                     CraftingContainer crafting, ResultContainer result) {
         if (PROCESSING.contains(crafting)) return;
         //#if MC >= 1.21
-        if (FGACompat.isClientSide(level) || !ruleEnabled() || !result.getItem(0).isEmpty()) {
+        if (FGACompat.isClientSide(level) || !ruleEnabled(level) || !result.getItem(0).isEmpty()) {
             //#else
             //$$ if (FGACompat.isClientSide(level) || !FGASettings.fullShulkerBoxCrafting || !result.getItem(0).isEmpty()) {
             //#endif
@@ -166,7 +160,7 @@ public final class FullShulkerBoxCraftingManager {
 
     public static boolean mayTake(CraftingContainer crafting, Player player) {
         //#if MC >= 1.21
-        if (!ruleEnabled() || !PLANS.containsKey(crafting)) return false;
+        if (!ruleEnabled(FGACompat.level(player)) || !PLANS.containsKey(crafting)) return false;
         //#else
         //$$ if (!FGASettings.fullShulkerBoxCrafting || !PLANS.containsKey(crafting)) return false;
         //#endif
@@ -282,31 +276,35 @@ public final class FullShulkerBoxCraftingManager {
         //#endif
     }
 
+    //#if MC < 1.21
     /** How many content items one craft of this recipe consumes, taken from the recipe itself. */
-    private static int requiredCraftingInput(CraftingRecipe recipe, ItemStack content) {
-        int required = 0;
+    //$$ private static int requiredCraftingInput(CraftingRecipe recipe, ItemStack content) {
+    //$$     int required = 0;
         //#if MC >= 1.21.3
         //$$ for (var ingredient : recipe.placementInfo().ingredients()) {
             //#if MC == 1.21.3
-            //$$ if (ingredient.items().stream().anyMatch(item -> content.is(item.value()))) required++;
+            //$$     if (ingredient.items().stream().anyMatch(item -> content.is(item.value()))) required++;
             //#else
-            //$$ if (ingredient.items().anyMatch(item -> content.is(item.value()))) required++;
+            //$$     if (ingredient.items().anyMatch(item -> content.is(item.value()))) required++;
             //#endif
+        //$$ }
         //#else
-        for (var ingredient : recipe.getIngredients()) {
-            if (ingredient.isEmpty()) continue;
-            for (ItemStack stack : ingredient.getItems()) {
-                if (FGACompat.isSameItemSameTags(content, stack)) {
-                    required += Math.max(1, stack.getCount());
-                    break;
-                }
-            }
+        //$$ for (var ingredient : recipe.getIngredients()) {
+        //$$     if (ingredient.isEmpty()) continue;
+        //$$     for (ItemStack stack : ingredient.getItems()) {
+        //$$         if (FGACompat.isSameItemSameTags(content, stack)) {
+        //$$             required += Math.max(1, stack.getCount());
+        //$$             break;
+        //$$         }
+        //$$     }
+        //$$ }
         //#endif
-        }
-        return required;
-    }
+    //$$     return required;
+    //$$ }
+    //#endif
 
     private static Analysis analyze(CraftingContainer crafting, Player player) {
+        Level level = FGACompat.level(player);
         int shulkerSize = shulkerSize();
         List<Integer> sourceSlots = new ArrayList<>();
         List<ItemStack> sourceBoxes = new ArrayList<>();
@@ -324,7 +322,7 @@ public final class FullShulkerBoxCraftingManager {
             if (box.isEmpty()) continue;
             //#if MC >= 1.21
             long[] contentTotal = new long[1];
-            ItemStack content = singleContent(box, shulkerSize, contentTotal);
+            ItemStack content = singleContent(box, shulkerSize, contentTotal, only64Mode(level));
             if (content.isEmpty()) {
                 return isShulkerBox(box) ? Analysis.failure(Failure.INVALID_INPUT_BOX) : Analysis.NONE;
             }
@@ -392,8 +390,8 @@ public final class FullShulkerBoxCraftingManager {
         if (recipeOutput.getMaxStackSize() <= 1) return Analysis.failure(Failure.UNSTACKABLE_OUTPUT);
 
         //#if MC >= 1.21
-        boolean allowPartial = !only64Mode();
-        int outputStackLimit = only64Mode()
+        boolean allowPartial = !only64Mode(level);
+        int outputStackLimit = only64Mode(level)
                 ? recipeOutput.getMaxStackSize()
                 : FGASettings.effectiveContainerStackLimit(recipeOutput);
         //#else
@@ -401,22 +399,32 @@ public final class FullShulkerBoxCraftingManager {
         //$$ int outputStackLimit = FGASettings.effectiveContainerStackLimit(recipeOutput);
         //#endif
         long outputCapacity = (long) outputStackLimit * shulkerSize;
-        // How many content items one craft consumes: nine for nine quartz into a block, one for a log.
-        // Reading it from the recipe keeps mod and datapack recipes with any ratio working.
-        int requiredPerCraft = requiredCraftingInput(recipe, ingredients.isEmpty() ? ItemStack.EMPTY : ingredients.get(0));
-        if (requiredPerCraft <= 0) return Analysis.NONE;
         //#if MC >= 1.21
-        long totalContentItems = expectedCrafts * sourceBoxes.size();
+        // Every occupied grid slot holds the same number of content items. One vanilla craft consumes
+        // one item from each occupied slot, regardless of how many distinct ingredients the recipe has.
+        // Summing all boxes and dividing by only the first ingredient's occurrences overproduces mixed
+        // recipes (for example, a piston recipe was incorrectly multiplied by 9 / 3 = 3).
+        long crafts = expectedCrafts;
+        long totalOutputItems;
+        try {
+            totalOutputItems = FullShulkerCraftingPolicy.totalOutputItems(
+                    crafts, recipeOutput.getCount());
+        } catch (ArithmeticException exception) {
+            return Analysis.failure(Failure.TOO_MANY_OUTPUTS);
+        }
+        //#else
+        //$$ int requiredPerCraft = requiredCraftingInput(
+        //$$         recipe, ingredients.isEmpty() ? ItemStack.EMPTY : ingredients.get(0));
+        //$$ if (requiredPerCraft <= 0) return Analysis.NONE;
+        //#if MC >= 1.21
+        //$$ long totalContentItems = expectedCrafts * sourceBoxes.size();
         //#else
         //$$ long totalContentItems = craftsPerBox * sourceBoxes.size();
         //#endif
-        if (totalContentItems <= 0 || totalContentItems % requiredPerCraft != 0) {
-            return Analysis.failure(Failure.CONTENT_NOT_DIVISIBLE);
-        }
-        long crafts = totalContentItems / requiredPerCraft;
-        //#if MC >= 1.21
-        long totalOutputItems = crafts * recipeOutput.getCount();
-        //#else
+        //$$ if (totalContentItems <= 0 || totalContentItems % requiredPerCraft != 0) {
+        //$$     return Analysis.failure(Failure.CONTENT_NOT_DIVISIBLE);
+        //$$ }
+        //$$ long crafts = totalContentItems / requiredPerCraft;
         //$$ long totalOutputItems = crafts * recipeOutput.getCount();
         //#endif
         if (outputCapacity <= 0 || (!allowPartial && totalOutputItems % outputCapacity != 0)) {
@@ -450,7 +458,7 @@ public final class FullShulkerBoxCraftingManager {
         }
         for (RemainderTotal remainder : remainderTotals) {
             //#if MC >= 1.21
-            int stackLimit = only64Mode()
+            int stackLimit = only64Mode(level)
                     ? remainder.item().getMaxStackSize()
                     : FGASettings.effectiveContainerStackLimit(remainder.item());
             //#else
@@ -540,10 +548,10 @@ public final class FullShulkerBoxCraftingManager {
      * Mode-aware single-item content check. Returns the content representative (count 1) and writes
      * the total item count into totalOut[0]; EMPTY when the box does not qualify for the current mode.
      */
-    private static ItemStack singleContent(ItemStack box, int shulkerSize, long[] totalOut) {
+    private static ItemStack singleContent(ItemStack box, int shulkerSize, long[] totalOut,
+                                           boolean only64) {
         totalOut[0] = 0L;
         if (!isShulkerBox(box)) return ItemStack.EMPTY;
-        boolean only64 = only64Mode();
         NonNullList<ItemStack> contents = contents(box, shulkerSize);
         ItemStack first = ItemStack.EMPTY;
         long total = 0L;
@@ -616,19 +624,19 @@ public final class FullShulkerBoxCraftingManager {
     //#endif
 
     /** Content representative (count 1) when the input qualifies for the current mode, else EMPTY. */
-    public static ItemStack stonecutterBoxContent(ItemStack input) {
-        if (!ruleEnabled()) return ItemStack.EMPTY;
-        return singleContent(input, shulkerSize(), new long[1]);
+    public static ItemStack stonecutterBoxContent(Level level, ItemStack input) {
+        if (!ruleEnabled(level)) return ItemStack.EMPTY;
+        return singleContent(input, shulkerSize(), new long[1], only64Mode(level));
     }
 
     private static StonecutterAnalysis analyzeStonecutter(Level level, ItemStack input,
                                                           RecipeHolder<StonecutterRecipe> recipe,
                                                           Inventory inventory,
                                                           boolean allowPreviewPlaceholders) {
-        if (!ruleEnabled() || recipe == null || inventory == null) return null;
+        if (!ruleEnabled(level) || recipe == null || inventory == null) return null;
         int shulkerSize = shulkerSize();
         long[] totalIn = new long[1];
-        ItemStack content = singleContent(input, shulkerSize, totalIn);
+        ItemStack content = singleContent(input, shulkerSize, totalIn, only64Mode(level));
         if (content.isEmpty() || content.getMaxStackSize() <= 1) return null;
         int required = WoodStonecuttingRecipes.requiredInputCount(recipe);
         if (required <= 0) return null;
@@ -653,7 +661,7 @@ public final class FullShulkerBoxCraftingManager {
                 || !canFitInsideContainer(recipeOutput)) return null;
         if (recipeOutput.getMaxStackSize() <= 1) return null;
 
-        int outputStackLimit = only64Mode()
+        int outputStackLimit = only64Mode(level)
                 ? recipeOutput.getMaxStackSize()
                 : FGASettings.effectiveContainerStackLimit(recipeOutput);
         long outputCapacity = (long) outputStackLimit * shulkerSize;
@@ -665,7 +673,7 @@ public final class FullShulkerBoxCraftingManager {
         }
         if (outputCapacity <= 0 || totalOutputItems <= 0) return null;
         long boxCount;
-        if (only64Mode()) {
+        if (only64Mode(level)) {
             if (totalOutputItems % outputCapacity != 0) return null;
             boxCount = totalOutputItems / outputCapacity;
         } else {
@@ -770,7 +778,7 @@ public final class FullShulkerBoxCraftingManager {
             return StonecutterPrepareResult.BLOCKED;
         }
         ItemStack input = menu.container.getItem(0);
-        if (!ruleEnabled() || !isShulkerBox(input)) {
+        if (!ruleEnabled(FGACompat.level(player)) || !isShulkerBox(input)) {
             PREPARED_STONECUTTER.remove(menu);
             return StonecutterPrepareResult.NONE;
         }
@@ -811,7 +819,7 @@ public final class FullShulkerBoxCraftingManager {
         StonecutterMenu menu = STONECUTTER_INPUT_MENUS.get(inputSlot);
         if (menu == null) return StonecutterCommitResult.passThrough();
         PreparedStonecutterPlan prepared = PREPARED_STONECUTTER.remove(menu);
-        boolean activeBoxInput = ruleEnabled() && isShulkerBox(inputSlot.getItem());
+        boolean activeBoxInput = ruleEnabled(FGACompat.level(player)) && isShulkerBox(inputSlot.getItem());
         if (prepared == null) {
             if (!activeBoxInput) return StonecutterCommitResult.passThrough();
             return recoverStonecutterInvariant(menu, inputSlot, player, takenResult, null,

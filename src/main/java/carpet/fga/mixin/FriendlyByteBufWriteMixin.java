@@ -1,5 +1,6 @@
 package carpet.fga.mixin;
 
+import carpet.fga.FakePlayerNameAlias;
 import net.minecraft.network.FriendlyByteBuf;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,7 +25,10 @@ public abstract class FriendlyByteBufWriteMixin {
             index = 2
     )
     private int increasePlayerNameLimit(int maxLength) {
-        return maxLength == 16 ? 128 : maxLength;
+        // Only the explicitly scoped FGA long-name PlayerInfo payload may use
+        // the wider limit.  Other packets (notably scoreboard Team packets
+        // used by external prefix plugins) must retain vanilla encoding.
+        return maxLength == 16 && FakePlayerNameAlias.fullNamesActive() ? 128 : maxLength;
     }
     //#else
     //$$ @ModifyVariable(
@@ -34,7 +38,7 @@ public abstract class FriendlyByteBufWriteMixin {
     //$$         ordinal = 0
     //$$ )
     //$$ private int increasePlayerNameLimit(int maxLength) {
-    //$$     return maxLength == 16 ? 128 : maxLength;
+    //$$     return maxLength == 16 && FakePlayerNameAlias.fullNamesActive() ? 128 : maxLength;
     //$$ }
     //#endif
 }

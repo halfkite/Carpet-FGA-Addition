@@ -41,6 +41,15 @@ public final class FakePlayerNameAlias {
         }
     }
 
+    /**
+     * Returns whether the current network write is an explicitly scoped
+     * long-name PlayerInfo operation.  Unrelated packets must keep vanilla
+     * string limits, especially scoreboard Team packets from other plugins.
+     */
+    public static boolean fullNamesActive() {
+        return FULL_NAMES.get();
+    }
+
     public static String alias(String name) {
         if (name.length() <= NETWORK_NAME_LIMIT) {
             return name;

@@ -59,7 +59,7 @@ public abstract class StonecutterMenuFullShulkerMixin {
         Container container = menu.container;
         FullShulkerBoxCraftingManager.registerStonecutterMenu(menu);
         FullShulkerBoxCraftingManager.clearStonecutterPlan(menu);
-        ItemStack content = FullShulkerBoxCraftingManager.stonecutterBoxContent(stack);
+        ItemStack content = FullShulkerBoxCraftingManager.stonecutterBoxContent(this.level, stack);
         if (content.isEmpty()) {
             LIST_CONTENT.remove(menu);
             return;
@@ -88,7 +88,7 @@ public abstract class StonecutterMenuFullShulkerMixin {
         FullShulkerBoxCraftingManager.registerStonecutterMenu(menu);
         FullShulkerBoxCraftingManager.clearStonecutterPlan(menu);
         ItemStack stack = menu.container.getItem(0);
-        ItemStack content = FullShulkerBoxCraftingManager.stonecutterBoxContent(stack);
+        ItemStack content = FullShulkerBoxCraftingManager.stonecutterBoxContent(this.level, stack);
         if (content.isEmpty()) {
             LIST_CONTENT.remove(menu);
             return;
@@ -132,7 +132,7 @@ public abstract class StonecutterMenuFullShulkerMixin {
         ItemStack stored = LIST_CONTENT.get(menu);
         if (stored == null) return;
         ItemStack current = container.getItem(0);
-        ItemStack content = FullShulkerBoxCraftingManager.stonecutterBoxContent(current);
+        ItemStack content = FullShulkerBoxCraftingManager.stonecutterBoxContent(this.level, current);
         if (content.isEmpty() || !ItemStack.matches(stored, content)) {
             LIST_CONTENT.remove(menu);
             this.input = current.copy();
