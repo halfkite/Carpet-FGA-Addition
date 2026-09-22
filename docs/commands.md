@@ -1,19 +1,22 @@
 # Carpet FGA Addition 命令
 
-> 文档版本：`1.5.12`
+> 文档版本：`1.5.14`
+
+<a id="cmd-food"></a>
 
 ## 玩家状态指令 (food)
 
 ### `/food clear [玩家]` 与 `/fga food clear [玩家]`
 
-生效版本：`1.21.1`
+生效版本：`1.21+`
 
 ```text
 /food clear [player]        # 清空执行者或指定在线玩家的饱食度和饱和度
 /fga food clear [player]    # 与 /food clear [player] 相同
 ```
 
-- 入口权限沿用 Carpet `commandPlayer`
+- 相关规则：`foodCommandPermission`
+- 默认值为 `ops`；`false` 关闭命令，`true` 允许所有玩家清空自己或指定玩家，`onlyself` 允许非 OP 只清空自己，`ops` 需要 OP 2 及以上，`0-4` 设置最低权限等级
 
 <a id="cmd-map-load"></a>
 

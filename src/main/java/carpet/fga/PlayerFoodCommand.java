@@ -27,12 +27,40 @@ public final class PlayerFoodCommand {
 
     public static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> root(String name) {
         return Commands.literal(name)
-                .requires(source -> CommandHelper.canUseCommand(source, CarpetSettings.commandPlayer))
+                //#if MC >= 1.21 && MC <= 26.3
+                .requires(PlayerFoodCommand::canUseCommand)
+                //#else
+                //$$ .requires(source -> CommandHelper.canUseCommand(source, CarpetSettings.commandPlayer))
+                //#endif
                 .then(Commands.literal("clear")
                         .executes(PlayerFoodCommand::clearSelf)
                         .then(Commands.argument("targets", EntityArgument.players())
+                                //#if MC >= 1.21 && MC <= 26.3
+                                .requires(PlayerFoodCommand::canUseTargets)
+                                //#endif
                                 .executes(PlayerFoodCommand::clearTargets)));
     }
+
+    //#if MC >= 1.21 && MC <= 26.3
+    private static boolean canUseCommand(CommandSourceStack source) {
+        return PlayerFoodCommandPolicy.allowsRoot(
+                FGASettings.foodCommandPermission,
+                source.getEntity() instanceof ServerPlayer,
+                permissionLevel(source));
+    }
+
+    private static boolean canUseTargets(CommandSourceStack source) {
+        return PlayerFoodCommandPolicy.allowsTargets(
+                FGASettings.foodCommandPermission, permissionLevel(source));
+    }
+
+    private static int permissionLevel(CommandSourceStack source) {
+        for (int level = 4; level >= 0; level--) {
+            if (FGACompat.hasPermission(source, level)) return level;
+        }
+        return -1;
+    }
+    //#endif
 
     private static int clearSelf(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();

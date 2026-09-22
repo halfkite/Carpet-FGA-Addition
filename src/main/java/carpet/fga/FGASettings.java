@@ -1367,6 +1367,28 @@ public class FGASettings {
     //#endif
 
     //#if MC >= 1.21 && MC <= 26.3
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true", "onlyself", "ops", "0", "1", "2", "3", "4"},
+        strict = false,
+        validators = FGASettings.FoodCommandPermissionValidator.class
+    )
+    public static String foodCommandPermission = "ops";
+
+    public static class FoodCommandPermissionValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (Set.of("false", "true", "onlyself", "ops", "0", "1", "2", "3", "4").contains(value)) {
+                return value;
+            }
+            Messenger.m(source, "r foodCommandPermission must be false, true, onlyself, ops, or 0-4");
+            return null;
+        }
+    }
+    //#endif
+
+    //#if MC >= 1.21 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
         conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class

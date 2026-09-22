@@ -104,7 +104,19 @@ final class FeatureSmokeTestPlanTest {
                             + "record the resulting item stacks and the enchantment component before mining.",
                     "Fire Aspect I applies one smelting pass, Fire Aspect II applies two chained passes, and the "
                             + "Fire Aspect plus Fortune pickaxe produces smelted ore with the Fortune-enlarged count; "
-                            + "the server stops cleanly without a Mixin injection failure."));
+                            + "the server stops cleanly without a Mixin injection failure."),
+            new SmokePlan(
+                    "foodCommandPermission",
+                    "MC >= 1.21 && MC <= 26.3",
+                    "26.3",
+                    "MANUAL: isolated server command-permission smoke test",
+                    "Set /carpet foodCommandPermission to false, true, onlyself, ops, and each value from 0 through 4; "
+                            + "with a non-OP player run /food clear and /food clear <other>; with an OP repeat both commands; "
+                            + "also verify /fga food clear uses the same rule and reconnect after changing the rule if the client "
+                            + "does not refresh its command tree.",
+                    "false hides and rejects the commands; true allows self and target clearing; onlyself allows non-OP self "
+                            + "clearing but rejects non-OP targets while OPs can target; ops requires permission level 2; 0-4 "
+                            + "requires the configured minimum level; food and saturation are set to zero only for authorized targets."));
 
     @Test
     void everyPlanContainsAnExecutableUpgradeProcedure() {

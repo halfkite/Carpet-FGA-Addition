@@ -386,6 +386,9 @@ public class FGAExtension implements CarpetExtension {
                     //#if MC >= 1.21 && MC <= 26.3
                     && !"mapLoadCommandPermission".equals(rule.name())
                     //#endif
+                    //#if MC >= 1.21 && MC <= 26.3
+                    && !"foodCommandPermission".equals(rule.name())
+                    //#endif
                     && !"trialStopCommandPermission".equals(rule.name())
                     && !"entityDropRemoval".equals(rule.name())
                     //#if MC >= 1.21 && MC <= 26.3

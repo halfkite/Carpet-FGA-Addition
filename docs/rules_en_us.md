@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.12`
+> Documentation version: `1.5.14`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default
 
@@ -723,6 +723,18 @@ Controls access to `/mapLoad` and `/fga mapLoad`<br>`false`: disables the comman
 - Options: `false`, `true`, `ops`, `0-4`
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21+`
+- Client requirements: None (server-side only)
+- Relations to other rules: None
+
+### Food Clear Command Permission(foodCommandPermission) · [Related command](commands_en.md#cmd-food)
+
+Controls access to `/food clear` and `/fga food clear`<br>`false`: disables the commands<br>`true`: allows all players to clear their own or specified players' food and saturation<br>`onlyself`: non-OP players can clear only themselves, while OPs can target players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum permission level
+
+- Type: `Permission string`
+- Default: `ops`
+- Options: `false`, `true`, `onlyself`, `ops`, `0-4`
+- Categories: `FGA`, `Feature`, `Command`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
 - Client requirements: None (server-side only)
 - Relations to other rules: None
 

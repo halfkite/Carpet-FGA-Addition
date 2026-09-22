@@ -1,17 +1,20 @@
 # Carpet FGA Addition Commands
 
-> Documentation version: `1.5.12`
+> Documentation version: `1.5.14`
+
+<a id="cmd-food"></a>
 
 ## Player status commands (food)
 
 ### `/food clear [player]` and `/fga food clear [player]`
 
-Available in Minecraft `1.21.1`
+Available in Minecraft `1.21+`
 
 - `/food clear`: clears the executor's food and saturation
 - `/food clear <player>`: clears the food and saturation of one or more online players
 - `/fga food clear [player]`: same as `/food clear [player]`
-- Uses Carpet `commandPlayer` entry permission
+- Related rule: `foodCommandPermission`
+- Default: `ops`; `false` disables the commands, `true` allows all players to clear their own or specified players' food, `onlyself` lets non-OP players clear only themselves, `ops` requires OP level 2 or higher, and `0-4` sets the minimum permission level
 
 <a id="cmd-map-load"></a>
 
