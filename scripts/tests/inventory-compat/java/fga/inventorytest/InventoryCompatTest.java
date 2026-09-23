@@ -41,6 +41,7 @@ public class InventoryCompatTest implements ModInitializer {
                     @Override public int getMaxStackSize() { return 1; }
                 };
                 check(special.getMaxStackSize(stone) == 1, "active special slot remains limited");
+                checkScopedReturnTerminates(inventory);
                 System.out.println("FGA_INVENTORY_COMPAT_PASS checks=" + checks);
             } catch (Throwable failure) {
                 System.out.println("FGA_INVENTORY_COMPAT_FAIL " + failure);
@@ -50,6 +51,25 @@ public class InventoryCompatTest implements ModInitializer {
                 server.halt(false);
             }
         });
+    }
+
+    /**
+     * Regression: Inventory.placeItemBackInInventory sized its batch from the item level limit, so a
+     * slot already holding that many items produced a zero or negative batch and the vanilla loop
+     * never terminated. The call is bounded here because the broken path spins instead of failing.
+     */
+    private static void checkScopedReturnTerminates(Inventory inventory) throws Exception {
+        ItemStack seeded = new ItemStack(Items.STONE, 64);
+        inventory.setItem(0, seeded);
+        ItemStack returning = new ItemStack(Items.STONE, 100);
+        Thread worker = new Thread(() -> inventory.placeItemBackInInventory(returning, false), "fga-return-probe");
+        worker.setDaemon(true);
+        worker.start();
+        worker.join(10_000L);
+        check(!worker.isAlive(), "scoped return terminates");
+        check(returning.isEmpty(), "scoped return places the whole stack");
+        check(inventory.getItem(0).getCount() == 164, "scoped return fills past the vanilla limit");
+        inventory.setItem(0, ItemStack.EMPTY);
     }
     private static void check(boolean condition, String name) {
         if (!condition) throw new AssertionError(name);

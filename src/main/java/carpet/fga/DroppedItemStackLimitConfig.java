@@ -169,6 +169,30 @@ public final class DroppedItemStackLimitConfig {
         return scopedLimit(state.containerLimit(), stack);
     }
 
+    /**
+     * Largest capacity any menu slot may reach while the inventory or container
+     * scope is active. Vanilla menu code sizes carried and transferred stacks
+     * with the item level limit, which becomes a stale, too small bound once a
+     * scope raises a slot above it; every consumer of this value still clamps
+     * against the concrete slot, so the widest active scope is the safe bound.
+     */
+    public static int effectiveMenuCapacity(int vanillaLimit) {
+        //#if MC >= 1.21.1 && MC <= 26.3
+        if (!FGASettings.isDroppedItemStackLimitEnabled() || loadFailed) {
+            return vanillaLimit;
+        }
+        //#endif
+        State current = state;
+        int capacity = vanillaLimit;
+        if (current.inventoryLimit() > 0) {
+            capacity = Math.max(capacity, current.inventoryLimit());
+        }
+        if (current.containerLimit() > 0) {
+            capacity = Math.max(capacity, current.containerLimit());
+        }
+        return capacity;
+    }
+
     private static int scopedLimit(int configured, ItemStack stack) {
         int vanilla = stack.getMaxStackSize();
         //#if MC >= 1.21.1 && MC <= 26.3

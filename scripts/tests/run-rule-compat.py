@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--version', required=True, choices=['1.21.1', '26.2'])
+parser.add_argument('--version', required=True, choices=['1.21.1', '1.21.11', '26.2'])
 parser.add_argument('--suite', required=True)
 parser.add_argument('--world', help='Reuse a named test world to verify a real process restart')
 parser.add_argument('--priority', choices=['900', '1100'], default='1100')

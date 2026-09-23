@@ -65,6 +65,66 @@
 
 ## 当前变更
 
+### 背包/容器堆叠上限生效时的物品消失修复（`droppedItemStackLimit`）
+
+- 功能：修复背包或容器堆叠上限高于物品级上限（原版 64）后，原版菜单、创造模式槽位同步和背包归还逻辑仍按物品级上限计算容量，导致物品消失、重复或服务端死循环的问题；改为按作用域内真实槽位容量计算
+- 具体修复点：`Inventory.placeItemBackInInventory` 的归还批量（原先会 `split(0)`/`split(负数)`，造成关闭容器或配方书放置时服务端无限循环甚至堆叠增长）；`ServerGamePacketListenerImpl.handleSetCreativeModeSlot` 的创造模式槽位校验（原先数量超过物品级上限的更新被静默丢弃，客户端仍保留物品，重同步后表现为物品消失）；`AbstractContainerMenu` 的 `doClick`、`canItemQuickReplace`、`getQuickCraftPlaceCount`（携带堆叠、拖拽、双击收集、创造模式复制）；客户端 `AbstractContainerScreen` 的拖拽预览与余量显示
+- 源码预处理条件：新增 4 个 Mixin 均为 `MC >= 1.21.1 && MC <= 26.3`；`placeItemBackInInventory` 在 `MC >= 26.3` 使用 `(ItemStack, boolean, Prediction)` 描述符；客户端槽位方法在 `MC >= 26.0` 为 `extractSlot`，此前为 `renderSlot`
+- 容量取值：新增 `DroppedItemStackLimitConfig.effectiveMenuCapacity`，返回物品级上限与当前生效的背包/容器上限中的较大值；所有下游放置仍按具体槽位容量收口，地面掉落物上限不参与
+- 实际适配版本：当前 `settings.json` 中的 10 个构建版本 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2` 和 `26.3`
+- 已完成编译/构建版本：上述 10 个版本 `compileJava` 全部通过；`1.21.1` 的 `processResources` 已重新生成并确认 4 个新 Mixin 均已登记；未执行 `build` 打包
+- 注入目标核对：按各版本官方映射 JAR 用 `javap` 逐版本确认目标方法存在且调用点数量符合预期（`doClick` 在 `1.21.1` 至 `26.1.2` 为 6 处、`26.2`/`26.3` 为 5 处；`canItemQuickReplace`、`getQuickCraftPlaceCount` 各 1 处；`placeItemBackInInventory`、`handleSetCreativeModeSlot` 各 1 处）；`1.21.11` 的 refmap 已解析出全部目标中介名
+- 已完成服务端冒烟：`scripts/tests/run-rule-compat.py --suite inventory-compat` 在 `1.21.1`、`1.21.11` 和 `26.2` 均通过（`FGA_INVENTORY_COMPAT_PASS checks=46`，含新增的归还批量终止/整栈归还/超出原版上限三项断言），报告为 `scripts/logs/inventory-compat-1.21.1-20260923-193609-824743`、`scripts/logs/inventory-compat-1.21.11-20260923-193332-045740` 和 `scripts/logs/inventory-compat-26.2-20260923-193704-805229`
+- 客户端/服务端要求：不新增自定义 Payload、网络协议、配置格式、存档数据、规则默认值或权限变化；服务端仍为最终判定方；客户端 Mixin 只修正拖拽预览，未安装 FGA 的客户端仍按原有握手要求处理
+- 尚未完成验证：真实客户端中创造模式取物/复制、拖拽分发、双击收集、关闭容器归还，以及安装第三方堆叠模组（客户端改变物品级上限）时的跨端表现；`extractSlot`（`26.x` 客户端）与客户端拖拽预览 Mixin 只在服务端冒烟之外静态核对，未做真实客户端验证；容器作用域下漏斗仍按物品级上限停止合并（原版 `canMergeItems` 行为，不丢物品，本次未改动）
+
+### 1.5.14：生物掉落物全量开关与夺舍边界规则
+
+- 功能：`/entityDropRemoval list <entity>` 末尾新增“开启此生物所有掉落物”和“关闭此生物所有掉落物”两个点击按钮，并新增持久化 `allDrops` 配置；同时新增 `playerPossessionDistance` 与 `playerPossessionCrossDimension` 两个规则
+- 源码预处理条件：`MC >= 1.21 && MC <= 26.3`
+- 规则默认值：`playerPossessionDistance=-1`（同维度不限制距离），`playerPossessionCrossDimension=true`（保持旧版跨维度行为）
+- 实际适配版本：源码已写入当前矩阵节点；本轮基线先验证 `26.3`
+- 已完成编译/构建版本：`26.3` 的 `:26.3:compileJava :26.3:test` 与 `:26.3:build` 均通过，基线归档为 `mod-builds/20260921-185946`
+- 已完成服务端冒烟：`scripts/powershell/server-startup-smoke-all.ps1 -VersionList 26.3` 验证 `disableAllDrops`、`enableAllDrops`、`list <entity>`、`playerPossessionDistance` 和 `playerPossessionCrossDimension`，报告为 `scripts/logs/server-startup-smoke-20260921-190002/summary.json`
+- 尚未同步构建版本：其余 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2` 和 `26.2`，需基线确认后继续
+- 客户端/服务端要求：服务端安装 FGA，客户端不需要安装 FGA；配置文件版本保持兼容，旧 `entity-drop-removal.json` 缺少 `allDrops` 时按 `false` 读取；未新增网络协议或客户端 Mixin
+- 尚未完成验证：真实客户端点击两个全量掉落按钮、真实多人夺舍距离限制、跨维度限制和规则动态变更的多人表现
+
+### FGA 与 Team/Tab 前缀同步兼容
+
+- 功能：恢复长假人名字网络扩展的线程作用域；仅 FGA 明确发送的长名字玩家信息包使用 128 字符限制，原版 Team 包和其他模组的玩家前缀包继续使用原版编码
+- 源码预处理条件：`MC >= 1.19.3` 的玩家信息包处理；`MC >= 1.20.2` 使用 `ModifyArg`，更早版本使用 `ModifyVariable`；`MC >= 1.20.5` 的服务器包发送路径在写包期间启用作用域
+- 实际适配版本：源码覆盖当前 `settings.json` 中的 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2` 和 `26.3`
+- 本轮基线：`26.3`；已加入源码冒烟流程，覆盖 MCDR ZaiGanMa `!!zgm set` 前缀、`bot_` 假人标签、清除/再次设置以及无需重连的客户端观察；当前矩阵 10 个版本均完成构建与服务端启动冒烟
+- TAB 前缀刷新补充：`MC == 1.21.1 || MC == 26.2`；未启用 FGA 名称装饰时保留 vanilla 的空 `displayName`，启用血量显示时跟踪队伍名称组件变化并仅发送 `UPDATE_DISPLAY_NAME`
+- 本次修复编译：`26.2` 主工作区 `:26.2:compileJava --no-daemon --console=plain --max-workers=1` 通过；`1.21.1` 基线构建及源码冒烟此前已完成，但真实 MCDR/GCA 客户端 TAB 显示仍待验证
+- 回归步骤：健康显示关闭/开启、`nofake`、订阅 `playerHealth` 时，保持玩家不重连且血量不变，修改队伍前缀、后缀、颜色、成员并移除队伍；确认假人和真实玩家 TAB 名称即时更新
+- 客户端/服务端要求：保持现有要求；未新增自定义 Payload、配置格式、存档数据或权限变化；FGA 长名字兼容仍按原有客户端安装/别名路径处理
+- 尚未完成验证：真实 MCDR/ZaiGanMa 客户端冒烟及跨版本真实客户端行为
+
+### 满潜影盒合成规则门控与数量修复（`fullShulkerBoxCrafting`）
+
+- 功能：修复集成服务器把物理客户端环境误当成逻辑客户端、导致规则为 `false` 时仍可满盒合成的问题；修复普通工作台混合材料配方把所有输入盒数量除以第一种材料槽数、导致活塞等配方倍增产出的问题
+- 修复源码条件：已同步到当前构建矩阵 `MC >= 1.21 && MC <= 26.3`；规则原有实现范围仍为 `MC >= 1.16.5 && MC <= 26.3`
+- 数量行为：每个已占用配方槽提供相同数量材料时，批量合成次数就是单个输入盒的材料总数，不再乘以配方占用槽数；满盒活塞配方应只产出一盒活塞
+- 源码测试：`FullShulkerCraftingPolicyTest` 覆盖逻辑服务端关闭规则、客户端宽松预览、`only64` 服务端判断、活塞一盒产出和多产物配方倍率；`FeatureSmokeTestPlanTest` 记录集成服务器规则关闭与活塞数量的客户端操作流程
+- 已完成编译/测试版本：当前矩阵 10 个版本的 `buildAllVersions --no-daemon --configure-on-demand --max-workers=1` 均通过，构建脚本归档为 `build/libs/20260922-191913`；可安装 JAR 分别归档于 `mod-builds/20260922-194130`、`20260922-194132`、`20260922-194133`、`20260922-194134`、`20260922-194135`、`20260922-194137`、`20260922-194138`、`20260922-194139`、`20260922-194141` 和 `20260922-194142`
+- 已完成服务端启动冒烟：10/10 版本均启动到 `Done`，依次接受 `false`、`any`、`only64`、`false` 规则切换并干净停服；1.21.1 至 26.2 的报告为 `scripts/logs/server-startup-smoke-20260922-192122/summary.json`，26.3 补测报告为 `scripts/logs/server-startup-smoke-20260922-193739/summary.json`
+- 当前构建矩阵同步版本：`1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2` 和 `26.3`
+- 客户端/服务端要求：未新增网络协议、配置格式、存档数据、规则默认值或权限变化；服务端继续作为最终合成判定方
+- 尚未完成验证：真实客户端中规则关闭后的工作台结果、满盒活塞实际取出数量、快速合成/丢出路径及跨版本 GUI 行为
+
+### 生物掉落物列表点击删除资源 ID（`entityDropRemoval`）
+
+- 功能：修复 `/entityDropRemoval list` 与 `/entityDropRemoval list <entity>` 中点击物品或 `allEquipment` 删除按钮时，含命名空间的 ID 被错误解析为普通字符串、最终在 `allEquipment` 处报“参数后应有空格”的问题
+- 源码预处理条件：`MC >= 1.21 && MC <= 26.3`
+- 实际适配版本：当前 `settings.json` 中的 10 个构建版本 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2` 和 `26.3`
+- 已完成编译/构建版本：当前 `settings.json` 中的 10 个构建节点全部通过 `buildAllVersions --configure-on-demand`，并分别归档于 `mod-builds/20260921-180734`、`mod-builds/20260921-180734-2`、`mod-builds/20260921-180735`、`mod-builds/20260921-180735-2`、`mod-builds/20260921-180735-3`、`mod-builds/20260921-180735-4`、`mod-builds/20260921-180736`、`mod-builds/20260921-180736-2`、`mod-builds/20260921-180736-3` 和 `mod-builds/20260921-180736-4`
+- 尚未适配版本：无（当前构建矩阵内）
+- 客户端/服务端要求：服务端安装 FGA，客户端不需要安装 FGA；仅修复命令参数解析，不改变配置格式、存档数据、网络协议、规则默认值或权限模型
+- 已完成服务端冒烟：`scripts/powershell/server-startup-smoke-all.ps1` 对上述 10 个版本执行规则开启、命名空间实体/物品 `set`、`list`、`list <entity>`、`allEquipment` 删除、物品删除和 `status`，10/10 启动到 `Done` 并干净停服；报告为 `scripts/logs/server-startup-smoke-20260921-180745/summary.json`
+- 尚未完成验证：真实客户端中逐一点击物品删除、装备删除和 `/fga entityDropRemoval` 重定向入口；本次冒烟通过服务端命令序列覆盖了点击按钮所调用的同一删除解析路径
+
 ### 高版本夺舍命令树刷新（`playerPossession` / `/player ... possess`）
 
 - 功能：修复高版本客户端首次进入服务器后没有收到最新夺舍命令树、必须重进才显示 `/player <名字> possess` 或 `/controlPlayer` 的问题；相关 Carpet 规则变化时直接重发命令树，玩家 JOIN 完成后再排队重发一次，避免被原版首次命令树覆盖
