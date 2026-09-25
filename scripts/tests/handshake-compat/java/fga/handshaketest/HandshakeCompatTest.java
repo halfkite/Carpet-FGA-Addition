@@ -4,20 +4,25 @@ import carpet.fga.FGAPayloads;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.impl.networking.PayloadTypeRegistryImpl;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 /**
- * Regression for the reported client handshake encode failure.
+ * Regression for the reported client handshake failure (issue #24).
  *
- * The first check builds the payload codec the way the reporting client experienced it: the handshake id
- * resolves to DiscardedPayload instead of FGA's payload, which vanilla does whenever the payload list
- * reaches it without our entry. Encoding then threw
- * "ClassCastException: HandshakePayload cannot be cast to DiscardedPayload" and the client was disconnected
- * with "Failed to encode packet 'serverbound/minecraft:custom_payload'". The handshake must be answered by
- * the codec itself, independently of that list and of the fallback provider.
+ * The first check is the discriminating one: the handshake must be registered with Fabric's payload
+ * registry. FGA used to rely only on the payload list of CustomPacketPayload.codec; when another mod
+ * rebuilds that list from a copy (Carpet does, to add its own payload) the handshake id is missing,
+ * vanilla answers with DiscardedPayload and the client disconnects with
+ * "Failed to encode packet 'serverbound/minecraft:custom_payload' (carpet-fga-addition:handshake)".
+ * Fabric's codec asks its registry before vanilla's fallback provider, so a registered channel survives
+ * the list being rebuilt.
+ *
+ * Fabric's registry is queried through its implementation class because the public API only writes.
  */
 public class HandshakeCompatTest implements ModInitializer {
     private static int checks;
@@ -25,7 +30,7 @@ public class HandshakeCompatTest implements ModInitializer {
     public void onInitialize() {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             try {
-                checkSabotageActive();
+                checkFabricRegistration();
                 checkRealPacketRoundTrip(server);
                 System.out.println("FGA_HANDSHAKE_COMPAT_PASS checks=" + checks);
             } catch (Throwable failure) {
@@ -37,12 +42,9 @@ public class HandshakeCompatTest implements ModInitializer {
         });
     }
 
-    /**
-     * The interference mixin must really have removed the handshake from the vanilla payload list, otherwise
-     * the round trip below proves nothing.
-     */
-    private static void checkSabotageActive() {
-        check(HandshakeSabotage.stripped, "handshake was stripped from the vanilla payload list");
+    private static void checkFabricRegistration() {
+        Object registered = PayloadTypeRegistryImpl.PLAY_C2S.get(FGAPayloads.HANDSHAKE_CHANNEL);
+        check(registered != null, "handshake registered in Fabric play C2S registry");
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -58,6 +60,7 @@ public class HandshakeCompatTest implements ModInitializer {
         buffer.readerIndex(0);
         ServerboundCustomPayloadPacket decoded = codec.decode(buffer);
         check(decoded.payload() instanceof FGAPayloads.HandshakePayload, "handshake packet decoded as payload");
+        check(((FGAPayloads.HandshakePayload) decoded.payload()).version() == 1, "handshake version kept");
     }
 
     private static void check(boolean condition, String name) {
