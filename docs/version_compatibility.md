@@ -73,8 +73,9 @@
 - 版本号：`gradle.properties` 的 `mod_version` 由 `1.5.14` 提升为 `1.5.15`
 - 本地工具链：以后统一使用解压版 JDK 21 `D:\java\jdk-21_windows-x64_bin\jdk-21.0.12.1`（`scripts/tests/run-rule-compat.py` 已按该路径优先、并回退到其它候选）
 - 源码预处理条件：`InventoryStackLimitTransferMixin` 在 `MC < 1.17` 使用 `(Level, ItemStack)` 描述符、`MC >= 1.20.5` 才捕获 `ItemStack` 参数并使用槽位容量、更早版本按 `snapshot().inventoryLimit()` 计算；`AbstractContainerMenuStackLimitMixin` 的 `doClick`/`canItemQuickReplace` 覆盖 `MC >= 1.16.5`；`AbstractContainerScreenStackLimitMixin` 覆盖 `MC >= 1.16.5`（`MC >= 26.0` 用 `extractSlot`）
-- 注入目标核对：对 9 个历史源码集的官方映射 JAR 逐一 `javap` 确认（1.16.5 的 `placeItemBackInInventory(Level, ItemStack)`、`doClick` 6-9 处物品级读取；`handleSetCreativeModeSlot` 在 1.16.5 至 1.20.4 无该判断；`getQuickCraftPlaceCount` 在 1.16.5 至 1.19.4 不存在、1.20.1/1.20.4 存在但无该读取；`Slot.getMaxStackSize(ItemStack)` 自 1.16.5 起均存在）
-- 尚未完成验证：9 个历史源码集不在 `settings.json` 构建矩阵内（`settings.gradle` 只包含矩阵版本），因此只有静态 `javap` 核对，**没有**对它们做编译或游戏内验证；放宽条件后的矩阵外版本如需发布，必须先把版本加回构建矩阵并补做编译与服务端冒烟
+- 注入目标核对：对 9 个历史源码集的官方映射 JAR 逐一 `javap` 确认（1.16.5 的 `placeItemBackInInventory(Level, ItemStack)`、`doClick` 6-9 处物品级读取；`handleSetCreativeModeSlot` 在 1.16.5 至 1.20.4 无该判断；`getQuickCraftPlaceCount` 在 1.16.5 至 1.19.4 不存在、1.20.1/1.20.4 存在但无该读取；`Slot.getMaxStackSize(ItemStack)` 自 1.16.5 起均存在）；Fabric 的 `PayloadTypeRegistry.playC2S()` 在 Fabric API 4.x/5.x（1.20.5–1.21.x）存在、6.x（26.x）改名 `serverboundPlay()`，与 `MC >= 26.1.2` 分支一致
+- 历史源码集编译核对：用最小 `//#if` 预处理器按各版本渲染 4 个堆叠 Mixin，并用该版本的官方映射 JAR 直接 `javac` —— `1.16.5`、`1.17.1`、`1.18.2`、`1.19.2`、`1.19.4`、`1.20.1`、`1.20.4` 各 3 个文件通过（创造模式槽位 Mixin 被 `MC >= 1.20.6` 正确预处理掉），`1.20.6`、`1.21` 各 4 个文件通过，失败版本 0
+- 尚未完成验证：9 个历史源码集不在 `settings.json` 构建矩阵内（`settings.gradle` 只包含矩阵版本），因此无法做 Gradle 构建、打包或服务端冒烟（临时加回 `settings.json` 会在配置阶段因 `project.mcVersion` 未定义失败，`common.gradle` 对 <1.20.5 还要求本机不存在的 JDK 16）；如需发布这些版本，必须先把版本接入 preprocessor 版本图并补齐工具链
 - 客户端/服务端要求：握手仍是自定义 Payload，但改为同时注册到 Fabric 的 payload 注册表；配置格式、存档数据、规则默认值、权限模型均未改变；未安装 FGA 的客户端仍按原握手要求处理
 
 ### 背包/容器堆叠上限生效时的物品消失修复（`droppedItemStackLimit`）
@@ -84,7 +85,7 @@
 - 源码预处理条件：4 个 Mixin 在 1.5.15 起放宽为 `MC >= 1.16.5 && MC <= 26.3`（创造模式槽位校验与 `getQuickCraftPlaceCount` 为 `MC >= 1.20.6`）；`placeItemBackInInventory` 在 `MC < 1.17` 使用 `(Level, ItemStack)` 描述符、`MC >= 26.3` 使用 `(ItemStack, boolean, Prediction)` 描述符；客户端槽位方法在 `MC >= 26.0` 为 `extractSlot`，此前为 `renderSlot`
 - 容量取值：新增 `DroppedItemStackLimitConfig.effectiveMenuCapacity`，返回物品级上限与当前生效的背包/容器上限中的较大值；所有下游放置仍按具体槽位容量收口，地面掉落物上限不参与
 - 实际适配版本：当前 `settings.json` 中的 10 个构建版本 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2` 和 `26.3`
-- 未同步版本：`versions/` 中不在 `settings.json` 构建矩阵内的历史源码集 `1.16.5`、`1.17.1`、`1.18.2`、`1.19.2`、`1.19.4`、`1.20.1`、`1.20.4`、`1.20.6` 和 `1.21`（新 Mixin 被 `MC >= 1.21.1` 条件排除，这些源码集不参与当前构建与发布）；如需覆盖，目标方法在 `1.19.4`、`1.20.1`、`1.20.6`、`1.21` 均存在且签名兼容，但仍须补做各版本编译与注入校验后再放宽条件
+- 未同步版本：无（1.5.15 起 4 个 Mixin 的条件已覆盖 `versions/` 中全部 19 个源码集；其中 9 个非矩阵版本只有静态注入核对与 javac 编译核对，未做打包与服务端冒烟）
 - 已完成编译/构建版本：上述 10 个版本 `compileJava` 全部通过，`1.21.11` 另完成 `:1.21.11:build`（含 `test`、`jar`、`remapJar`）并归档于 `mod-builds/20260923-200507`；`1.21.1` 的 `processResources` 已重新生成并确认 4 个新 Mixin 均已登记
 - 注入目标核对：按各版本官方映射 JAR 用 `javap` 逐版本确认目标方法存在且调用点数量符合预期（`doClick` 在 `1.21.1` 至 `26.1.2` 为 6 处、`26.2`/`26.3` 为 5 处；`canItemQuickReplace`、`getQuickCraftPlaceCount` 各 1 处；`placeItemBackInInventory`、`handleSetCreativeModeSlot` 各 1 处）；`1.21.11` 的 refmap 已解析出全部目标中介名
 - 已完成服务端冒烟：`scripts/tests/run-rule-compat.py --suite inventory-compat` 在 `1.21.1`、`1.21.11` 和 `26.2` 均通过（`FGA_INVENTORY_COMPAT_PASS checks=46`，含新增的归还批量终止/整栈归还/超出原版上限三项断言），报告为 `scripts/logs/inventory-compat-1.21.1-20260923-193609-824743`、`scripts/logs/inventory-compat-1.21.11-20260923-193332-045740` 和 `scripts/logs/inventory-compat-26.2-20260923-193704-805229`
