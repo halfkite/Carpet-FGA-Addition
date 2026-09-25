@@ -108,6 +108,15 @@ public final class PlayerLoadDistanceCompat {
         //#endif
     }
 
+    public static boolean hasOverride(ServerPlayer player) {
+        //#if MC == 1.20.1
+        //$$ return LegacyPlayerLoadDistanceManager.enabled()
+        //$$         && LegacyPlayerLoadDistanceManager.configured(player) != Integer.MIN_VALUE;
+        //#else
+        return PlayerLoadDistanceManager.hasOverride(player);
+        //#endif
+    }
+
     public static int parseDistance(String raw) {
         String value = raw.trim().toLowerCase(java.util.Locale.ROOT);
         if ("none".equals(value) || "无".equals(value)) return NONE;
