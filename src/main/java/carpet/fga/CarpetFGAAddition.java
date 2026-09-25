@@ -5,8 +5,10 @@ import carpet.CarpetServer;
 import com.yiyihehe.quickcraft.litematica.QuickLitematicaEntityPlacementPayloads;
 //#endif
 import net.fabricmc.api.ModInitializer;
-//#if MC >= 1.21 && MC <= 26.3
+//#if MC >= 1.20.5
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+//#endif
+//#if MC >= 1.21 && MC <= 26.3
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 //#endif
 
@@ -18,6 +20,21 @@ public class CarpetFGAAddition implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        //#if MC >= 1.20.5
+        // The handshake also has to live in Fabric's payload registry. Vanilla only finds it through the
+        // payload list that CustomPacketPayload.codec receives, and another mod rebuilding that list from a
+        // copy drops our entry; vanilla then answers with DiscardedPayload, which disconnects the client
+        // with "Failed to encode packet 'serverbound/minecraft:custom_payload' (carpet-fga-addition:handshake)".
+        // Fabric answers registered channels before vanilla's fallback provider.
+        //#if MC >= 26.1.2
+        //$$ PayloadTypeRegistry.serverboundPlay().register(
+        //#else
+        PayloadTypeRegistry.playC2S().register(
+        //#endif
+                FGAPayloads.HandshakePayload.TYPE,
+                FGAPayloads.HandshakePayload.STREAM_CODEC
+        );
+        //#endif
         //#if MC >= 1.21 && MC <= 26.3
         //#if MC >= 26.1.2
         //$$ PayloadTypeRegistry.serverboundPlay().register(

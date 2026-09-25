@@ -1,0 +1,15 @@
+// Opt-in test mod: never included in the distributable main jar.
+// Run: python scripts/tests/run-rule-compat.py --version 1.21.1 --suite handshake-compat
+// The suite targets 1.21.1, the version from the reported disconnect.
+gradle.afterProject { p ->
+    if (p != p.rootProject && p.name == '1.21.1') {
+        def smoke = p.sourceSets.create('handshakeCompat')
+        smoke.java.srcDir p.rootProject.file('scripts/tests/handshake-compat/java')
+        smoke.resources.srcDir p.rootProject.file('scripts/tests/handshake-compat/resources')
+        smoke.compileClasspath += p.sourceSets.main.compileClasspath + p.sourceSets.main.output
+        smoke.runtimeClasspath += p.sourceSets.main.runtimeClasspath
+        p.loom.mods.create('fga_handshake_compat_test') { sourceSet smoke }
+        p.loom.runs.named('server') { source smoke }
+        p.tasks.named('runServer') { dependsOn p.tasks.named(smoke.classesTaskName) }
+    }
+}

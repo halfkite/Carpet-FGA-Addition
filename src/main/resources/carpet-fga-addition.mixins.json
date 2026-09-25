@@ -214,10 +214,12 @@
         //#endif
         "ContainerStackLimitMixin"
         //#endif
-        //#if MC >= 1.21.1 && MC <= 26.3
+        //#if MC >= 1.16.5 && MC <= 26.3
         ,"InventoryStackLimitTransferMixin",
-        "AbstractContainerMenuStackLimitMixin",
-        "ServerGamePacketListenerImplStackLimitMixin"
+        "AbstractContainerMenuStackLimitMixin"
+        //#endif
+        //#if MC >= 1.20.6 && MC <= 26.3
+        ,"ServerGamePacketListenerImplStackLimitMixin"
         //#endif
         //#if MC >= 1.20.5 && MC < 26.0
         ,"ItemStackCountCodecMixin"
@@ -296,7 +298,7 @@
         //#if MC >= 1.21 && MC <= 26.3
         ,"ClientPacketListenerEnchantedGoldenCarrotMixin"
         //#endif
-        //#if MC >= 1.21.1 && MC <= 26.3
+        //#if MC >= 1.16.5 && MC <= 26.3
         ,"AbstractContainerScreenStackLimitMixin"
         //#endif
         //#elseif MC >= 1.20.2

@@ -27,7 +27,17 @@ log = report / 'server.log'
 backups = {name: (run / name).read_bytes() if (run / name).exists() else None
            for name in ['eula.txt', 'server.properties']}
 env = dict(os.environ)
-env['JAVA_HOME'] = 'C:/Program Files/Java/' + ('jdk-25.0.3' if args.version == '26.2' else 'jdk-21.0.11')
+# First existing JDK wins. The extracted JDK 21 archive is the shared local install.
+jdk_candidates = (
+    ['C:/Program Files/Java/jdk-25.0.3', 'D:/java/jdk-25', 'D:/java/graalvm-jdk-25.0.3+9.1']
+    if args.version == '26.2' else
+    ['D:/java/jdk-21_windows-x64_bin/jdk-21.0.12.1', 'D:/java/jdk-21_windows-x64_bin',
+     'C:/Program Files/Java/jdk-21.0.11']
+)
+jdk_home = next((path for path in jdk_candidates if (Path(path) / 'bin' / 'java.exe').is_file()), None)
+if jdk_home is None:
+    raise SystemExit(f'no JDK found for {args.version}; tried {jdk_candidates}')
+env['JAVA_HOME'] = jdk_home
 try:
     (run / 'eula.txt').write_text('eula=true\n')
     (run / 'server.properties').write_text(

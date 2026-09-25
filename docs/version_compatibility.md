@@ -65,11 +65,23 @@
 
 ## 当前变更
 
+### 1.5.15：握手注册与堆叠修复覆盖全部 `versions/` 源码集
+
+- 功能一（issue #24，`carpet-fga-addition:handshake`）：客户端发送握手时 `Failed to encode packet 'serverbound/minecraft:custom_payload'` 并断开。原因是握手只通过 `CustomPacketPayload.codec` 的 payload 列表注册；只要列表在到达 vanilla codec 前缺少该条目（其它模组从副本重建列表，Carpet 为注册自己的 payload 正是这样做的），vanilla 就会回退到 `DiscardedPayload`，其写入器把 `HandshakePayload` 强转成 `DiscardedPayload` 抛 `ClassCastException`
+- 功能一修复：在 mod 初始化阶段把握手同时注册进 Fabric 的 `PayloadTypeRegistry`（`MC >= 1.20.5` 用 `playC2S()`，`MC >= 26.1.2` 用 `serverboundPlay()`）。Fabric 的 payload codec 会先询问已注册频道再走 vanilla 回退，因此该频道不再依赖 payload 列表；未改动 `CustomPacketPayloadMixin` 的列表注入，也未替换 `CustomPacketPayload.codec` 的返回对象（Fabric 会把该对象强转成自己的 codec 子类，替换会破坏 Fabric API）
+- 功能二：把背包/容器堆叠上限修复从 `MC >= 1.21.1` 放宽到全部 `versions/` 源码集（`MC >= 1.16.5 && MC <= 26.3`；创造模式槽位校验因原版在更早版本没有该物品级判断而限定 `MC >= 1.20.6`，`getQuickCraftPlaceCount` 同理）
+- 版本号：`gradle.properties` 的 `mod_version` 由 `1.5.14` 提升为 `1.5.15`
+- 本地工具链：以后统一使用解压版 JDK 21 `D:\java\jdk-21_windows-x64_bin\jdk-21.0.12.1`（`scripts/tests/run-rule-compat.py` 已按该路径优先、并回退到其它候选）
+- 源码预处理条件：`InventoryStackLimitTransferMixin` 在 `MC < 1.17` 使用 `(Level, ItemStack)` 描述符、`MC >= 1.20.5` 才捕获 `ItemStack` 参数并使用槽位容量、更早版本按 `snapshot().inventoryLimit()` 计算；`AbstractContainerMenuStackLimitMixin` 的 `doClick`/`canItemQuickReplace` 覆盖 `MC >= 1.16.5`；`AbstractContainerScreenStackLimitMixin` 覆盖 `MC >= 1.16.5`（`MC >= 26.0` 用 `extractSlot`）
+- 注入目标核对：对 9 个历史源码集的官方映射 JAR 逐一 `javap` 确认（1.16.5 的 `placeItemBackInInventory(Level, ItemStack)`、`doClick` 6-9 处物品级读取；`handleSetCreativeModeSlot` 在 1.16.5 至 1.20.4 无该判断；`getQuickCraftPlaceCount` 在 1.16.5 至 1.19.4 不存在、1.20.1/1.20.4 存在但无该读取；`Slot.getMaxStackSize(ItemStack)` 自 1.16.5 起均存在）
+- 尚未完成验证：9 个历史源码集不在 `settings.json` 构建矩阵内（`settings.gradle` 只包含矩阵版本），因此只有静态 `javap` 核对，**没有**对它们做编译或游戏内验证；放宽条件后的矩阵外版本如需发布，必须先把版本加回构建矩阵并补做编译与服务端冒烟
+- 客户端/服务端要求：握手仍是自定义 Payload，但改为同时注册到 Fabric 的 payload 注册表；配置格式、存档数据、规则默认值、权限模型均未改变；未安装 FGA 的客户端仍按原握手要求处理
+
 ### 背包/容器堆叠上限生效时的物品消失修复（`droppedItemStackLimit`）
 
 - 功能：修复背包或容器堆叠上限高于物品级上限（原版 64）后，原版菜单、创造模式槽位同步和背包归还逻辑仍按物品级上限计算容量，导致物品消失、重复或服务端死循环的问题；改为按作用域内真实槽位容量计算
 - 具体修复点：`Inventory.placeItemBackInInventory` 的归还批量（原先会 `split(0)`/`split(负数)`，造成关闭容器或配方书放置时服务端无限循环甚至堆叠增长）；`ServerGamePacketListenerImpl.handleSetCreativeModeSlot` 的创造模式槽位校验（原先数量超过物品级上限的更新被静默丢弃，客户端仍保留物品，重同步后表现为物品消失）；`AbstractContainerMenu` 的 `doClick`、`canItemQuickReplace`、`getQuickCraftPlaceCount`（携带堆叠、拖拽、双击收集、创造模式复制）；客户端 `AbstractContainerScreen` 的拖拽预览与余量显示
-- 源码预处理条件：新增 4 个 Mixin 均为 `MC >= 1.21.1 && MC <= 26.3`；`placeItemBackInInventory` 在 `MC >= 26.3` 使用 `(ItemStack, boolean, Prediction)` 描述符；客户端槽位方法在 `MC >= 26.0` 为 `extractSlot`，此前为 `renderSlot`
+- 源码预处理条件：4 个 Mixin 在 1.5.15 起放宽为 `MC >= 1.16.5 && MC <= 26.3`（创造模式槽位校验与 `getQuickCraftPlaceCount` 为 `MC >= 1.20.6`）；`placeItemBackInInventory` 在 `MC < 1.17` 使用 `(Level, ItemStack)` 描述符、`MC >= 26.3` 使用 `(ItemStack, boolean, Prediction)` 描述符；客户端槽位方法在 `MC >= 26.0` 为 `extractSlot`，此前为 `renderSlot`
 - 容量取值：新增 `DroppedItemStackLimitConfig.effectiveMenuCapacity`，返回物品级上限与当前生效的背包/容器上限中的较大值；所有下游放置仍按具体槽位容量收口，地面掉落物上限不参与
 - 实际适配版本：当前 `settings.json` 中的 10 个构建版本 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2` 和 `26.3`
 - 未同步版本：`versions/` 中不在 `settings.json` 构建矩阵内的历史源码集 `1.16.5`、`1.17.1`、`1.18.2`、`1.19.2`、`1.19.4`、`1.20.1`、`1.20.4`、`1.20.6` 和 `1.21`（新 Mixin 被 `MC >= 1.21.1` 条件排除，这些源码集不参与当前构建与发布）；如需覆盖，目标方法在 `1.19.4`、`1.20.1`、`1.20.6`、`1.21` 均存在且签名兼容，但仍须补做各版本编译与注入校验后再放宽条件

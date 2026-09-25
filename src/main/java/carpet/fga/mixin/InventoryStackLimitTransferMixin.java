@@ -1,6 +1,7 @@
-//#if MC >= 1.21.1 && MC <= 26.3
+//#if MC >= 1.16.5 && MC <= 26.3
 package carpet.fga.mixin;
 
+import carpet.fga.DroppedItemStackLimitConfig;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -19,16 +20,27 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class InventoryStackLimitTransferMixin {
     @ModifyExpressionValue(
             method =
-                    //#if MC >= 26.3
+                    //#if MC < 1.17
+                    //$$ "placeItemBackInInventory(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)V",
+                    //#elseif MC >= 26.3
                     //$$ "placeItemBackInInventory(Lnet/minecraft/world/item/ItemStack;ZLnet/minecraft/util/Prediction;)V",
                     //#else
                     "placeItemBackInInventory(Lnet/minecraft/world/item/ItemStack;Z)V",
                     //#endif
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I")
     )
-    private int carpetFga$scopedReturnBatch(int original, ItemStack stack) {
+    private int carpetFga$scopedReturnBatch(int original
+            //#if MC >= 1.20.5
+            , ItemStack stack
+            //#endif
+    ) {
+        //#if MC >= 1.20.5
         // The destination is always a slot of this player inventory.
         return Math.max(original, ((Inventory) (Object) this).getMaxStackSize(stack));
+        //#else
+        //$$ int configured = DroppedItemStackLimitConfig.snapshot().inventoryLimit();
+        //$$ return configured > 0 ? Math.max(original, configured) : original;
+        //#endif
     }
 }
 //#endif

@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "fga.handshaketest.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "HandshakeInterferenceMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

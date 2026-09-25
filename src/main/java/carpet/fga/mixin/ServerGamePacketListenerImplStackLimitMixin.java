@@ -1,4 +1,4 @@
-//#if MC >= 1.21.1 && MC <= 26.3
+//#if MC >= 1.20.6 && MC <= 26.3
 package carpet.fga.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
@@ -15,6 +15,8 @@ import org.spongepowered.asm.mixin.injection.At;
  * the real capacity of the receiving slot, so the client keeps stacks the
  * server never accepted and they are gone after the next resync. Validate
  * against the slot that will receive the stack instead.
+ *
+ * Earlier versions do not run that item level check at all, so no update is lost there.
  */
 @Mixin(ServerGamePacketListenerImpl.class)
 public abstract class ServerGamePacketListenerImplStackLimitMixin {

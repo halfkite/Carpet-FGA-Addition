@@ -1,4 +1,4 @@
-//#if MC >= 1.21.1 && MC <= 26.3
+//#if MC >= 1.16.5 && MC <= 26.3
 package carpet.fga.mixin;
 
 import carpet.fga.DroppedItemStackLimitConfig;
@@ -37,6 +37,8 @@ public abstract class AbstractContainerMenuStackLimitMixin {
         return slot == null ? original : Math.max(original, slot.getMaxStackSize(stack));
     }
 
+    //#if MC >= 1.20.6
+    // Vanilla only reads the item level limit inside getQuickCraftPlaceCount from 1.20.6 on.
     @ModifyExpressionValue(
             method = "getQuickCraftPlaceCount",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I")
@@ -44,5 +46,6 @@ public abstract class AbstractContainerMenuStackLimitMixin {
     private static int carpetFga$scopedQuickCraftCount(int original) {
         return DroppedItemStackLimitConfig.effectiveMenuCapacity(original);
     }
+    //#endif
 }
 //#endif

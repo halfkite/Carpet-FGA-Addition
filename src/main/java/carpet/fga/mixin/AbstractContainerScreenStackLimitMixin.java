@@ -1,4 +1,4 @@
-//#if MC >= 1.21.1 && MC <= 26.3
+//#if MC >= 1.16.5 && MC <= 26.3
 package carpet.fga.mixin;
 
 import carpet.fga.DroppedItemStackLimitConfig;
