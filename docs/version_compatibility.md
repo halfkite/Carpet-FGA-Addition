@@ -76,6 +76,8 @@
 - 注入目标核对：对 9 个历史源码集的官方映射 JAR 逐一 `javap` 确认（1.16.5 的 `placeItemBackInInventory(Level, ItemStack)`、`doClick` 6-9 处物品级读取；`handleSetCreativeModeSlot` 在 1.16.5 至 1.20.4 无该判断；`getQuickCraftPlaceCount` 在 1.16.5 至 1.19.4 不存在、1.20.1/1.20.4 存在但无该读取；`Slot.getMaxStackSize(ItemStack)` 自 1.16.5 起均存在）；Fabric 的 `PayloadTypeRegistry.playC2S()` 在 Fabric API 4.x/5.x（1.20.5–1.21.x）存在、6.x（26.x）改名 `serverboundPlay()`，与 `MC >= 26.1.2` 分支一致
 - 历史源码集编译核对：用最小 `//#if` 预处理器按各版本渲染 4 个堆叠 Mixin，并用该版本的官方映射 JAR 直接 `javac` —— `1.16.5`、`1.17.1`、`1.18.2`、`1.19.2`、`1.19.4`、`1.20.1`、`1.20.4` 各 3 个文件通过（创造模式槽位 Mixin 被 `MC >= 1.20.6` 正确预处理掉），`1.20.6`、`1.21` 各 4 个文件通过，失败版本 0
 - 尚未完成验证：9 个历史源码集不在 `settings.json` 构建矩阵内（`settings.gradle` 只包含矩阵版本），因此无法做 Gradle 构建、打包或服务端冒烟（临时加回 `settings.json` 会在配置阶段因 `project.mcVersion` 未定义失败，`common.gradle` 对 <1.20.5 还要求本机不存在的 JDK 16）；如需发布这些版本，必须先把版本接入 preprocessor 版本图并补齐工具链
+- issue #24 对照实验：`handshake-compat` 套件的第一个断言（握手已进入 Fabric play C2S 注册表）具备判别力 —— 临时删掉 `CarpetFGAAddition` 的注册块后同一套件失败并输出 `FGA_HANDSHAKE_COMPAT_FAIL java.lang.AssertionError: handshake registered in Fabric play C2S registry`，恢复注册后同一套件通过；两次运行的服务器日志分别为 `scripts/logs/handshake-compat-1.21.1-20260925-185129-377997`（对照，失败）与 `scripts/logs/handshake-compat-1.21.1-20260925-183954-336944`（修复后，通过）
+- issue #24 尚未验证：报错者那套约 200 模组客户端的实际崩溃**没有**在本地复现（要同时满足"Fabric 注册表缺条目"与"payload 列表条目被丢弃"；测试内的列表破坏尝试因注入顺序未生效），也**没有**做真实客户端经网络的登录握手验证；`1.21.1` 是 preprocessor 根节点，其源码按原样编译，因此不能用改 `//#if` 条件的方式构造对照
 - 客户端/服务端要求：握手仍是自定义 Payload，但改为同时注册到 Fabric 的 payload 注册表；配置格式、存档数据、规则默认值、权限模型均未改变；未安装 FGA 的客户端仍按原握手要求处理
 
 ### 背包/容器堆叠上限生效时的物品消失修复（`droppedItemStackLimit`）
