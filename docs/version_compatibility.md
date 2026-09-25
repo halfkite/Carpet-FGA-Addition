@@ -72,7 +72,8 @@
 - 源码预处理条件：新增 4 个 Mixin 均为 `MC >= 1.21.1 && MC <= 26.3`；`placeItemBackInInventory` 在 `MC >= 26.3` 使用 `(ItemStack, boolean, Prediction)` 描述符；客户端槽位方法在 `MC >= 26.0` 为 `extractSlot`，此前为 `renderSlot`
 - 容量取值：新增 `DroppedItemStackLimitConfig.effectiveMenuCapacity`，返回物品级上限与当前生效的背包/容器上限中的较大值；所有下游放置仍按具体槽位容量收口，地面掉落物上限不参与
 - 实际适配版本：当前 `settings.json` 中的 10 个构建版本 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2` 和 `26.3`
-- 已完成编译/构建版本：上述 10 个版本 `compileJava` 全部通过；`1.21.1` 的 `processResources` 已重新生成并确认 4 个新 Mixin 均已登记；未执行 `build` 打包
+- 未同步版本：`versions/` 中不在 `settings.json` 构建矩阵内的历史源码集 `1.16.5`、`1.17.1`、`1.18.2`、`1.19.2`、`1.19.4`、`1.20.1`、`1.20.4`、`1.20.6` 和 `1.21`（新 Mixin 被 `MC >= 1.21.1` 条件排除，这些源码集不参与当前构建与发布）；如需覆盖，目标方法在 `1.19.4`、`1.20.1`、`1.20.6`、`1.21` 均存在且签名兼容，但仍须补做各版本编译与注入校验后再放宽条件
+- 已完成编译/构建版本：上述 10 个版本 `compileJava` 全部通过，`1.21.11` 另完成 `:1.21.11:build`（含 `test`、`jar`、`remapJar`）并归档于 `mod-builds/20260923-200507`；`1.21.1` 的 `processResources` 已重新生成并确认 4 个新 Mixin 均已登记
 - 注入目标核对：按各版本官方映射 JAR 用 `javap` 逐版本确认目标方法存在且调用点数量符合预期（`doClick` 在 `1.21.1` 至 `26.1.2` 为 6 处、`26.2`/`26.3` 为 5 处；`canItemQuickReplace`、`getQuickCraftPlaceCount` 各 1 处；`placeItemBackInInventory`、`handleSetCreativeModeSlot` 各 1 处）；`1.21.11` 的 refmap 已解析出全部目标中介名
 - 已完成服务端冒烟：`scripts/tests/run-rule-compat.py --suite inventory-compat` 在 `1.21.1`、`1.21.11` 和 `26.2` 均通过（`FGA_INVENTORY_COMPAT_PASS checks=46`，含新增的归还批量终止/整栈归还/超出原版上限三项断言），报告为 `scripts/logs/inventory-compat-1.21.1-20260923-193609-824743`、`scripts/logs/inventory-compat-1.21.11-20260923-193332-045740` 和 `scripts/logs/inventory-compat-26.2-20260923-193704-805229`
 - 客户端/服务端要求：不新增自定义 Payload、网络协议、配置格式、存档数据、规则默认值或权限变化；服务端仍为最终判定方；客户端 Mixin 只修正拖拽预览，未安装 FGA 的客户端仍按原有握手要求处理
