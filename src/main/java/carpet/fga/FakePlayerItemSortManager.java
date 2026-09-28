@@ -66,6 +66,11 @@ public final class FakePlayerItemSortManager {
     private static final Map<String, String> ROUTES = new ConcurrentHashMap<>();
     // Never call Minecraft's profile cache lookup from a server tick: it may synchronously query Mojang.
     private static final Map<String, UUID> LOCAL_PROFILE_UUIDS = new ConcurrentHashMap<>();
+    //#if MC >= 1.21.1 && MC <= 26.3
+    // Carpet FGA profile preloading can finish asynchronously. Keep a single in-flight spawn per name.
+    private static final Map<String, Long> PENDING_SORTER_SPAWNS = new HashMap<>();
+    private static final long SORTER_SPAWN_RETRY_TICKS = 1_800L;
+    //#endif
     private static final Map<String, Set<String>> AUTO_SPAWNED_BY_BATCH = new HashMap<>();
     private static final Set<UUID> AUTO_SPAWNED_DEPOTS = new HashSet<>();
     private static final Map<String, Long> NOTICE_TIMES = new HashMap<>();
@@ -150,6 +155,9 @@ public final class FakePlayerItemSortManager {
         REBUILD_QUEUE.clear();
         AUTO_SPAWNED_BY_BATCH.clear();
         AUTO_SPAWNED_DEPOTS.clear();
+        //#if MC >= 1.21.1 && MC <= 26.3
+        PENDING_SORTER_SPAWNS.clear();
+        //#endif
         LOCAL_PROFILE_UUIDS.clear();
         dashboardDirty = true;
         if (workers != null) workers.shutdownNow();
@@ -458,6 +466,14 @@ public final class FakePlayerItemSortManager {
         //#endif
     }
 
+    //#if MC >= 1.21.1 && MC <= 26.3
+    private static void resolvePendingSorterSpawn(String name, String batch) {
+        if (PENDING_SORTER_SPAWNS.remove(name.toLowerCase(Locale.ROOT)) != null) {
+            AUTO_SPAWNED_BY_BATCH.computeIfAbsent(batch, ignored -> new LinkedHashSet<>()).add(name);
+        }
+    }
+    //#endif
+
     private static String cleanItemKey(String key) {
         int separator = key.indexOf('|');
         String id = separator < 0 ? key : key.substring(0, separator);
@@ -485,10 +501,30 @@ public final class FakePlayerItemSortManager {
     private static boolean createFake(String name, MinecraftServer minecraftServer, net.minecraft.world.phys.Vec3 position,
                                       float yaw, float pitch, ResourceKey<Level> dimension,
                                       GameType gameMode, boolean flying) {
+        //#if MC >= 1.21.1 && MC <= 26.3
+        String key = name.toLowerCase(Locale.ROOT);
+        ServerPlayer online = minecraftServer.getPlayerList().getPlayerByName(name);
+        if (online != null) {
+            PENDING_SORTER_SPAWNS.remove(key);
+            return online instanceof EntityPlayerMPFake;
+        }
+        Long retryAt = PENDING_SORTER_SPAWNS.get(key);
+        if (retryAt != null && dashboardRefreshTicks < retryAt) return true;
+        PENDING_SORTER_SPAWNS.remove(key);
+        //#endif
         //#if MC >= 1.20.2
-        return EntityPlayerMPFake.createFake(name, minecraftServer, position, yaw, pitch, dimension, gameMode, flying);
+        boolean created = EntityPlayerMPFake.createFake(name, minecraftServer, position, yaw, pitch, dimension, gameMode, flying);
         //#else
-        //$$ return EntityPlayerMPFake.createFake(name, minecraftServer, position, yaw, pitch, dimension, gameMode, flying) != null;
+        //$$ boolean created = EntityPlayerMPFake.createFake(name, minecraftServer, position, yaw, pitch, dimension, gameMode, flying) != null;
+        //#endif
+        //#if MC >= 1.21.1 && MC <= 26.3
+        if (!created) return false;
+        ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(name);
+        if (spawned instanceof EntityPlayerMPFake) return true;
+        PENDING_SORTER_SPAWNS.put(key, dashboardRefreshTicks + SORTER_SPAWN_RETRY_TICKS);
+        return true;
+        //#else
+        //$$ return created;
         //#endif
     }
 
@@ -843,13 +879,24 @@ public final class FakePlayerItemSortManager {
             ServerPlayer existing = minecraftServer.getPlayerList().getPlayerByName(name);
             if (existing != null) {
                 if (!(existing instanceof EntityPlayerMPFake) || skipped(minecraftServer, name)) continue;
-                stopFake(existing);
+                //#if MC >= 1.21.1 && MC <= 26.3
+                resolvePendingSorterSpawn(name, batch);
+                OnlineInventory inventory = new OnlineInventory(existing);
+                if (hasLooseRoom(inventory, itemKey)) return inventory;
+                continue;
+                //#else
+                //$$ stopFake(existing);
+                //#endif
             }
             if (skipped(minecraftServer, name)) continue;
             if (!createFake(name, minecraftServer, source.position(), source.getYRot(), source.getXRot(),
                     source.serverLevel().dimension(), GameType.SURVIVAL, false)) continue;
             ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(name);
-            if (!(spawned instanceof EntityPlayerMPFake)) continue;
+            //#if MC >= 1.21.1 && MC <= 26.3
+            if (!(spawned instanceof EntityPlayerMPFake)) return null;
+            //#else
+            //$$ if (!(spawned instanceof EntityPlayerMPFake)) continue;
+            //#endif
             AUTO_SPAWNED_BY_BATCH.computeIfAbsent(batch, ignored -> new LinkedHashSet<>()).add(name);
             OnlineInventory inventory = new OnlineInventory(spawned);
             if (hasLooseRoom(inventory, itemKey)) return inventory;
@@ -864,12 +911,21 @@ public final class FakePlayerItemSortManager {
         ServerPlayer existing = minecraftServer.getPlayerList().getPlayerByName(base);
         if (existing != null) {
             if (!(existing instanceof EntityPlayerMPFake)) return null;
-            stopFake(existing);
+            //#if MC >= 1.21.1 && MC <= 26.3
+            resolvePendingSorterSpawn(base, batch);
+            return new OnlineInventory(existing);
+            //#else
+            //$$ stopFake(existing);
+            //#endif
         }
         if (!createFake(base, minecraftServer, source.position(), source.getYRot(), source.getXRot(),
                 source.serverLevel().dimension(), GameType.SURVIVAL, false)) return null;
         ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(base);
+        //#if MC >= 1.21.1 && MC <= 26.3
         if (!(spawned instanceof EntityPlayerMPFake)) return null;
+        //#else
+        //$$ if (!(spawned instanceof EntityPlayerMPFake)) return null;
+        //#endif
         AUTO_SPAWNED_BY_BATCH.computeIfAbsent(batch, ignored -> new LinkedHashSet<>()).add(base);
         return new OnlineInventory(spawned);
     }
@@ -1143,6 +1199,9 @@ public final class FakePlayerItemSortManager {
      */
     private static boolean willSpawnFake(OverflowContext context, String baseTarget, int index) {
         if (context.source() == null) return false;
+        //#if MC >= 1.21.1 && MC <= 26.3
+        if (PENDING_SORTER_SPAWNS.containsKey((baseTarget + "_" + index).toLowerCase(Locale.ROOT))) return true;
+        //#endif
         Set<String> spawned = AUTO_SPAWNED_BY_BATCH.get(context.batch());
         return spawned == null || !spawned.contains(baseTarget + "_" + index);
     }
@@ -1159,7 +1218,12 @@ public final class FakePlayerItemSortManager {
         }
         if (existing != null) {
             if (!(existing instanceof EntityPlayerMPFake)) return null;
-            stopFake(existing);
+            //#if MC >= 1.21.1 && MC <= 26.3
+            resolvePendingSorterSpawn(name, context.batch());
+            return new OnlineInventory(existing);
+            //#else
+            //$$ stopFake(existing);
+            //#endif
         }
         if (!createFake(name, minecraftServer, context.source().position(), context.source().getYRot(),
                 context.source().getXRot(),
@@ -1170,7 +1234,11 @@ public final class FakePlayerItemSortManager {
                 //#endif
                 GameType.SURVIVAL, false)) return null;
         ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(name);
+        //#if MC >= 1.21.1 && MC <= 26.3
         if (!(spawned instanceof EntityPlayerMPFake)) return null;
+        //#else
+        //$$ if (!(spawned instanceof EntityPlayerMPFake)) return null;
+        //#endif
         AUTO_SPAWNED_BY_BATCH.computeIfAbsent(context.batch(), ignored -> new LinkedHashSet<>()).add(name);
         return new OnlineInventory(spawned);
     }

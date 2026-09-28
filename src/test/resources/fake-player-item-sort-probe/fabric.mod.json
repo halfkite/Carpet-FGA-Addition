@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "fga_fake_player_item_sort_probe",
+  "version": "1.0.0",
+  "name": "FGA Fake Player Item Sort Smoke Probe",
+  "environment": "server",
+  "entrypoints": {
+    "server": ["carpet.fga.smoke.FakePlayerItemSortProbe"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "=26.3",
+    "fabric-api": "*",
+    "carpet": ">=26.3",
+    "carpet-fga-addition": "*"
+  }
+}

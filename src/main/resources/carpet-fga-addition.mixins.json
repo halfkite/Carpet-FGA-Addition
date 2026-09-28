@@ -9,6 +9,9 @@
         "PossessionStatsCounterAccessor",
         "PossessionPlayerAccessor",
         "PossessionFakePlayerMixin",
+        //#if MC >= 26.1 && MC <= 26.3
+        //$$ "FakePlayerRejoinVehicleMixin",
+        //#endif
         "PossessionPermissionMixin",
         //#if MC >= 1.21 && MC <= 26.3
         "PossessionLogoutMixin",
@@ -25,13 +28,23 @@
         //#if MC >= 1.19.3
         "ClientboundPlayerInfoUpdatePacketMixin",
         //#endif
+        //#if MC == 26.3
+        //$$ "ClientboundOpenScreenPacketUnicodeProfileMixin",
+        //#endif
         "EntitySelectorParserMixin",
-        //#if MC >= 1.18
+        //#if MC >= 1.18 && MC < 26.3
         "FriendlyByteBufWriteMixin",
+        //#endif
+        //#if MC >= 26.3
+        //$$ "ModernLongNameUtf8CodecMixin",
+        //$$ "ModernLongNamePlayerInfoEncodeMixin",
+        //$$ "ModernLongNameServerHandshakeMixin",
         //#endif
         //#if MC >= 1.20.5
         "CustomPacketPayloadMixin",
+        //#if MC < 26.3
         "ServerGamePacketListenerImplMixin",
+        //#endif
         //#endif
         //#if MC >= 1.20.2
         "ServerCommonPacketListenerAccessor",
@@ -293,8 +306,13 @@
     ],
     "client": [
         //#if MC >= 1.20.5
+        //#if MC >= 26.3
+        //$$ "ModernLongNameClientHandshakeMixin",
+        //$$ "ModernLongNamePlayerInfoDecodeMixin"
+        //#else
         "FriendlyByteBufMixin",
         "ClientPacketListenerMixin"
+        //#endif
         //#if MC >= 1.21 && MC <= 26.3
         ,"ClientPacketListenerEnchantedGoldenCarrotMixin"
         //#endif

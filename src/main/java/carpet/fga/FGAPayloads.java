@@ -25,6 +25,9 @@ public final class FGAPayloads {
     }
 
 //#if MC >= 1.20.5
+    // Shared wire format only; client/server handshake entry points and name codecs are
+    // selected independently for MC < 26.3 and MC >= 26.3 in the Mixin configuration.
+    // This integer is a payload protocol value, not the installed FGA release version.
     public record HandshakePayload(int version) implements CustomPacketPayload {
         public static final Type<HandshakePayload> TYPE = new Type<>(HANDSHAKE_CHANNEL);
         public static final StreamCodec<FriendlyByteBuf, HandshakePayload> STREAM_CODEC =

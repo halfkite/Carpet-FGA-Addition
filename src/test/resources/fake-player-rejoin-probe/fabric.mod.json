@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "fga_fake_player_rejoin_probe",
+  "version": "1.0.0",
+  "name": "FGA Fake Player Rejoin Smoke Probe",
+  "environment": "server",
+  "entrypoints": {
+    "server": ["carpet.fga.smoke.FakePlayerRejoinProbe"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "=26.3",
+    "fabric-api": "*",
+    "carpet": ">=26.3",
+    "carpet-fga-addition": "*",
+    "carpet-tis-addition": "*"
+  }
+}

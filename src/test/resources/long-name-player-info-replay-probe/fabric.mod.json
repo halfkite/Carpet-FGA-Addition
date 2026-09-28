@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "fga_long_name_replay_probe",
+  "version": "1.0.0",
+  "name": "FGA Long Name Replay Codec Smoke Probe",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["carpet.fga.smoke.LongNamePlayerInfoReplayProbe"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "=26.3",
+    "fabric-api": "*",
+    "carpet-fga-addition": "*"
+  }
+}

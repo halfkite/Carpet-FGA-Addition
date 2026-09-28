@@ -1,6 +1,8 @@
 param(
     [string] $VersionList = '',
-    [string] $CommandList = ''
+    [string] $CommandList = '',
+    [string] $GradleJdk21 = '',
+    [switch] $Offline
 )
 
 $ErrorActionPreference = 'Stop'
@@ -12,6 +14,15 @@ $summaryPath = Join-Path $reportDir 'summary.json'
 $progressPath = Join-Path $reportDir 'progress.log'
 $jdk21 = 'C:\Program Files\Java\jdk-21.0.11'
 $jdk25 = 'C:\Program Files\Java\jdk-25.0.3'
+$toolchainArgument = ''
+$offlineArgument = if ($Offline) { ' --offline' } else { '' }
+if (-not [string]::IsNullOrWhiteSpace($GradleJdk21)) {
+    $jdk21 = (Resolve-Path -LiteralPath $GradleJdk21).Path
+    if (-not (Test-Path -LiteralPath (Join-Path $jdk21 'bin\javac.exe'))) {
+        throw "Not a JDK path: $jdk21"
+    }
+    $toolchainArgument = ' "-Dorg.gradle.java.installations.paths=' + $jdk21 + '"'
+}
 $allVersions = @(
     '1.21.1', '1.21.3', '1.21.4', '1.21.5',
     '1.21.8', '1.21.10', '1.21.11', '26.1.2', '26.2', '26.3'
@@ -97,7 +108,7 @@ foreach ($version in $versions) {
         $serverInfo = [System.Diagnostics.ProcessStartInfo]::new()
         $serverInfo.FileName = 'cmd.exe'
         $serverInfo.Arguments = '/d /s /c ""' + (Join-Path $root 'gradlew.bat') +
-            '" :' + $version + ':runServer --no-daemon --configure-on-demand --max-workers=1 > "' +
+            '" :' + $version + ':runServer --no-daemon --configure-on-demand --max-workers=1' + $toolchainArgument + $offlineArgument + ' > "' +
             $serverLog + '" 2>&1"'
         $serverInfo.WorkingDirectory = $root
         $serverInfo.UseShellExecute = $false

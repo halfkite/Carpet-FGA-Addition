@@ -82,7 +82,8 @@ public final class EntityDropRemovalConfig {
         if (!enabled() || stack.isEmpty()) return false;
         ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        return entry(entityId).items().contains(itemId);
+        Entry configured = entry(entityId);
+        return configured.allDrops() || configured.items().contains(itemId);
     }
 
     public static boolean shouldRemoveEquipment(LivingEntity entity, ItemStack stack) {
@@ -90,7 +91,7 @@ public final class EntityDropRemovalConfig {
         ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         Entry configured = entry(entityId);
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        return configured.allEquipment() || configured.items().contains(itemId);
+        return configured.allDrops() || configured.allEquipment() || configured.items().contains(itemId);
     }
 
     public static boolean enabled() {
@@ -115,7 +116,7 @@ public final class EntityDropRemovalConfig {
         Entry current = next.getOrDefault(entityId, Entry.EMPTY);
         Set<ResourceLocation> items = new LinkedHashSet<>(current.items());
         if (!items.add(itemId)) throw new IllegalArgumentException("item already configured: " + itemId);
-        next.put(entityId, new Entry(items, current.allEquipment()));
+        next.put(entityId, new Entry(items, current.allEquipment(), false));
         update(next);
     }
 
@@ -124,7 +125,24 @@ public final class EntityDropRemovalConfig {
         Map<ResourceLocation, Entry> next = new LinkedHashMap<>(state.entities());
         Entry current = next.getOrDefault(entityId, Entry.EMPTY);
         if (current.allEquipment()) throw new IllegalArgumentException("allEquipment already configured: " + entityId);
-        next.put(entityId, new Entry(current.items(), true));
+        next.put(entityId, new Entry(current.items(), true, false));
+        update(next);
+    }
+
+    /** Enables every item and equipment drop for an entity by clearing its filter. */
+    public static synchronized void enableAllDrops(ResourceLocation entityId) throws IOException {
+        requireLoaded();
+        if (!state.entities().containsKey(entityId)) return;
+        Map<ResourceLocation, Entry> next = new LinkedHashMap<>(state.entities());
+        next.remove(entityId);
+        update(next);
+    }
+
+    /** Disables every item and equipment drop for an entity. */
+    public static synchronized void disableAllDrops(ResourceLocation entityId) throws IOException {
+        requireLoaded();
+        Map<ResourceLocation, Entry> next = new LinkedHashMap<>(state.entities());
+        next.put(entityId, new Entry(Set.of(), false, true));
         update(next);
     }
 
@@ -135,8 +153,8 @@ public final class EntityDropRemovalConfig {
         Map<ResourceLocation, Entry> next = new LinkedHashMap<>(state.entities());
         Set<ResourceLocation> items = new LinkedHashSet<>(current.items());
         items.remove(itemId);
-        if (items.isEmpty() && !current.allEquipment()) next.remove(entityId);
-        else next.put(entityId, new Entry(items, current.allEquipment()));
+        if (items.isEmpty() && !current.allEquipment() && !current.allDrops()) next.remove(entityId);
+        else next.put(entityId, new Entry(items, current.allEquipment(), current.allDrops()));
         update(next);
         return true;
     }
@@ -146,8 +164,8 @@ public final class EntityDropRemovalConfig {
         Entry current = state.entities().get(entityId);
         if (current == null || !current.allEquipment()) return false;
         Map<ResourceLocation, Entry> next = new LinkedHashMap<>(state.entities());
-        if (current.items().isEmpty()) next.remove(entityId);
-        else next.put(entityId, new Entry(current.items(), false));
+        if (current.items().isEmpty() && !current.allDrops()) next.remove(entityId);
+        else next.put(entityId, new Entry(current.items(), false, current.allDrops()));
         update(next);
         return true;
     }
@@ -194,8 +212,11 @@ public final class EntityDropRemovalConfig {
                 }
             }
             boolean allEquipment = value.has("allEquipment") && value.get("allEquipment").getAsBoolean();
-            if (items.isEmpty() && !allEquipment) throw new IllegalArgumentException("empty entity configuration: " + entityId);
-            result.put(entityId, new Entry(items, allEquipment));
+            boolean allDrops = value.has("allDrops") && value.get("allDrops").getAsBoolean();
+            if (items.isEmpty() && !allEquipment && !allDrops) {
+                throw new IllegalArgumentException("empty entity configuration: " + entityId);
+            }
+            result.put(entityId, new Entry(items, allEquipment, allDrops));
         }
         return new State(result);
     }
@@ -212,6 +233,7 @@ public final class EntityDropRemovalConfig {
                             .forEach(item -> items.add(item.toString()));
                     value.add("items", items);
                     value.addProperty("allEquipment", entry.getValue().allEquipment());
+                    value.addProperty("allDrops", entry.getValue().allDrops());
                     entities.add(entry.getKey().toString(), value);
                 });
         root.add("entities", entities);
@@ -257,8 +279,8 @@ public final class EntityDropRemovalConfig {
         }
     }
 
-    public record Entry(Set<ResourceLocation> items, boolean allEquipment) {
-        private static final Entry EMPTY = new Entry(Set.of(), false);
+    public record Entry(Set<ResourceLocation> items, boolean allEquipment, boolean allDrops) {
+        private static final Entry EMPTY = new Entry(Set.of(), false, false);
 
         public Entry {
             items = Set.copyOf(items);

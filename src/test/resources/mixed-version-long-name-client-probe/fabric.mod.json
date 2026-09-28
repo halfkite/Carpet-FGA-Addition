@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "fga_mixed_version_client_probe",
+  "version": "1.0.0",
+  "name": "FGA Mixed-Version Long Name Client Smoke Probe",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["carpet.fga.smoke.MixedVersionLongNameClientProbe"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "=26.3",
+    "fabric-api": "*"
+  }
+}

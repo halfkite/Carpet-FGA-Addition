@@ -10,12 +10,21 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Runtime selector permission bypass for free-teleport spectators, including @s.
+ * Runtime selector permission bypass for free-teleport players, including @s.
  * Low priority so this remains effective above other anti-cheat mixins.
  */
 @Mixin(value = EntitySelector.class, priority = 50)
 public abstract class EntitySelectorSpectatorTeleportMixin {
-    @Inject(method = "checkPermissions", at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(
+            method = "checkPermissions",
+            at = @At("HEAD"),
+            cancellable = true,
+            //#if MC < 26.3
+            require = 0
+            //#else
+            //$$ require = 1
+            //#endif
+    )
     private void carpetFga$bypassSpectatorSelectorPermission(CommandSourceStack source, CallbackInfo ci) {
         if (SpectatorFreeTeleport.bypassSelectorPermissionCheck(source)) {
             ci.cancel();

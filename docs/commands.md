@@ -1,6 +1,85 @@
 # Carpet FGA Addition 命令
 
-> 文档版本：`1.5.14`
+> 文档版本：`1.5.16`
+
+## 旁观者跨维度传送
+
+`/carpet spectatorFreeTeleport true` 保持旁观者自身传送行为；设置为 `full` 后，所有游戏模式的玩家都可使用完整 `/tp` 与 `/teleport` 命令，包括传送其他玩家或实体和跨维传送。`full` 仅对这两个命令覆盖 TIS 与 AMS 权限拦截；服务端安装 FGA 即可，客户端无需安装
+
+```text
+/tp in <维度> <x> <y> <z>
+/teleport in <维度> <x> <y> <z>
+```
+
+示例：`/tp in minecraft:the_nether 100 64 -20`。此 FGA 扩展语法传送命令执行者自身，目标位置仍受世界边界限制；`full` 下也可在任意模式使用。原版 `/tp <目标> <玩家>` 可将目标跨维传送到指定在线玩家
+
+当前支持的构建版本也支持把维度放在坐标末尾，传送命令执行者自身：
+
+```text
+/tp <x> <y> <z> <维度>
+/teleport <x> <y> <z> <维度>
+```
+
+例如 `/tp 1 1 1 minecraft:overworld`。此写法沿用 `/tp` 的现有权限：原版有权限的玩家可用，`spectatorFreeTeleport=true` 的旁观者可传送自己，`full` 下所有模式的玩家可用；相对坐标以执行者原位置为准，目标受世界边界限制
+
+<a id="cmd-join-notice"></a>
+
+## 进服提示指令 (joinNotice)
+
+适用于当前全部十个构建版本，服务端安装 FGA 即可，客户端无需安装
+
+```text
+/carpet customJoinNotice true|false     # 进服提示总开关，默认 false
+/fga joinNotice status                  # 查看当前配置
+/fga joinNotice preview                 # 给自己预览当前欢迎语和日期提示
+/fga joinNotice welcome set <文字>       # 设置欢迎语
+/fga joinNotice welcome clear          # 清空欢迎语
+/fga joinNotice date set YYYY-MM-DD     # 设置开服日期
+/fga joinNotice date enabled true|false # 开启或关闭日期提示
+/fga joinNotice date clear             # 清除日期并关闭日期提示
+```
+
+修改配置需要 OP 2 及以上；`status` 和 `preview` 可由普通玩家使用，`preview` 只能由玩家执行
+
+欢迎语支持 `{player}` 替换玩家名、`&#RRGGBB` 指定 RGB 颜色、`&r` 重置颜色，以及 `\n` 换行，例如 `/fga joinNotice welcome set &#55AAFF欢迎 {player}&r！`
+
+日期按服务器本地日期计算，开服当天显示 `0` 天；配置保存在当前存档的 `config/carpetfgaaddition/join-notice.json`
+
+<a id="cmd-announcements"></a>
+
+## 服务器公告指令 (announcement)
+
+适用于当前全部十个构建版本，服务端安装 FGA 即可，客户端无需安装
+
+```text
+/carpet serverAnnouncements true|false
+/fga announcement help
+/fga announcement status
+/fga announcement list
+/fga announcement info <编号>
+/fga announcement create <内容>                         # 创建永久公告并自动编号
+/fga announcement create id <编号> <内容>               # 创建并指定编号
+/fga announcement header set <题头>
+/fga announcement header clear                          # 恢复“服务器公告如下”
+/fga announcement content set <编号> <内容>
+/fga announcement expiry set <编号> forever|<数字>h|<数字>d
+/fga announcement enable <编号>
+/fga announcement disable <编号>
+/fga announcement hide <编号>
+/fga announcement show <编号>
+/fga announcement delete <编号>
+/fga announcement trigger join <编号>
+/fga announcement trigger region <编号> <维度> <x1> <y1> <z1> <x2> <y2> <z2>
+/fga announcement reload
+```
+
+更改公告需要 OP 2 及以上；`help`、`status`、`list` 和 `info` 可供有 `/fga` 命令权限的玩家查看。`create` 默认自动分配编号并永久有效，内容中的 `/n` 会显示为换行。设置时效后从执行时开始倒计时；`forever` 清除时效
+
+默认触发方式为玩家进服。设置 `trigger region` 后，公告改为玩家进入指定维度的三维坐标长方体时触发，每次进入发送一次，离开后再次进入可以再次触发。维度可按 Tab 选择当前服务器已加载的维度，例如 `minecraft:overworld`
+
+`list` 每条公告单独一行，点击行可查看详情；详情页的删除、启用/停用和隐藏/显示按钮会直接执行，内容、时效和范围按钮会将命令填入聊天栏。玩家进服时只发送总规则已开启、单条公告已启用、未隐藏且未过期的公告
+
+公告保存在当前存档的 `config/carpetfgaaddition/announcements.json`。可以编辑 JSON 中的 `header` 和公告 `content` 字段，再执行 `/fga announcement reload`；损坏的文件会被保留且拒绝覆盖，需先人工修复或备份
 
 <a id="cmd-food"></a>
 
@@ -115,6 +194,20 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 
 ## 玩家与假人区域操作 (player)
 
+<a id="cmd-player-rejoin"></a>
+
+### `/player <名字> rejoin` 增强
+
+需服务端安装 Carpet TIS；`enhancedFakePlayerRejoin=true` 时生效，权限沿用 Carpet 的 `commandPlayer`
+
+```text
+/player <名字> rejoin
+/player <名字> rejoin at <x> <y> <z> [in <维度>]
+/player <名字> rejoin at <x> <y> <z> facing <水平角> <俯仰角> [in <维度>]
+```
+
+无参数命令在原存档位置上线，连同存档中的载具及非玩家乘客恢复；`at` 分支在完成存档恢复后将整个载具及乘客移到目标位置。未指定维度时使用命令执行者所在维度，未指定朝向时保留存档朝向。关闭规则时，TIS 原有无参数命令仍可使用。
+
 <a id="cmd-player-range"></a>
 
 ### `/player` 区域操作
@@ -179,6 +272,8 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 /entityDropRemoval status                                       # 查看当前配置
 /entityDropRemoval set <entity_id> <item_id|allEquipment>       # 添加去除项
 /entityDropRemoval remove <entity_id> <item_id|allEquipment>    # 删除去除项
+/entityDropRemoval enableAllDrops <entity_id>                  # 开启此生物所有掉落物
+/entityDropRemoval disableAllDrops <entity_id>                 # 关闭此生物所有掉落物
 /entityDropRemoval list                                         # 列出全部配置
 /entityDropRemoval list <entity_id>                             # 查看指定生物配置
 /fga entityDropRemoval ...                                      # 与 /entityDropRemoval ... 相同
@@ -292,7 +387,7 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 /player <fake_player> bot_sort restart all confirm    # 确认重构全部分类
 ```
 
-`restart all` 必须在确认按钮或 `confirm` 子命令有效期内再次确认；`opall` 时全量重构仅 OP 可执行。`quickopen` 不召唤目标假人，`summon` 使用在线假人。装备栏始终不读写。
+`restart all` 必须在确认按钮或 `confirm` 子命令有效期内再次确认；`opall` 时全量重构仅 OP 可执行。`quickopen` 不召唤目标假人，直接读写离线 playerdata；`summon` 会短暂登录在线分类假人，当前批次完成后自动下线，物品保存在该假人的 playerdata 中，下次上线仍可取回。装备栏始终不读写。
 
 ## 矿车与载具指令 (vehicle)
 

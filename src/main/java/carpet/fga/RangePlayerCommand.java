@@ -43,6 +43,9 @@ public final class RangePlayerCommand {
                             ;
                 })
                 .then(Commands.argument("player", StringArgumentType.word())
+                        //#if MC == 26.3
+                        //$$ .then(FakePlayerRejoinCommand.node())
+                        //#endif
                         //#if MC >= 1.21 && MC <= 26.3
                         .then(PlayerPossessionCommand.node())
                         //#endif

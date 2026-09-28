@@ -5,7 +5,6 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.network.chat.RemoteChatSession;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
@@ -41,7 +40,6 @@ public final class SwapSnapshot {
     //#endif
     private final List<UUID> passengers;
     private final UUID vehicle;
-    private final RemoteChatSession chatSession;
     private final ListTag attributes;
     private final AbilitiesState abilities;
     private final ServerLevel level;
@@ -82,7 +80,6 @@ public final class SwapSnapshot {
         //#if MC == 1.21.1
         this.noCulling = player.noCulling;
         //#endif
-        this.chatSession = player.getChatSession();
         this.abilities = AbilitiesState.capture(player.getAbilities());
         //#if MC >= 1.21.8
         //$$ this.attributes = new ListTag();
@@ -219,7 +216,9 @@ public final class SwapSnapshot {
         //#if MC == 1.21.1
         player.noCulling = noCulling;
         //#endif
-        if (chatSession != null) player.setChatSession(chatSession);
+        // A chat session belongs to the network connection, not to the body being
+        // possessed. Swapping it makes the server verify signed chat with the
+        // other player's public key, so messages are rejected as invalid.
         abilities.applyTo(player.getAbilities());
         player.onUpdateAbilities();
 

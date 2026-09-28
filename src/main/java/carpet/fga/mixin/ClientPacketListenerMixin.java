@@ -1,4 +1,4 @@
-//#if MC >= 1.20.2
+//#if MC >= 1.20.2 && MC < 26.3
 package carpet.fga.mixin;
 
 import carpet.fga.FGAPayloads;

@@ -1,10 +1,38 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.14`
+> Documentation version: `1.5.16`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default
 
 Tip: use `Ctrl+F` to quickly find a rule
+
+### Custom Join Notice(customJoinNotice) · [Related command](commands_en.md#cmd-join-notice)
+
+Sends a configurable welcome message when a player joins and can show the server opening date and elapsed days<br>
+The welcome message supports `{player}`, `&#RRGGBB` colors, `&r` to reset the color, and `\n` for a line break<br>
+The opening date counts as day `0`; calendar days use the server's local time zone<br>
+Manage the content with `/fga joinNotice`
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only
+
+### Server Announcements(serverAnnouncements) · [Related command](commands_en.md#cmd-announcements)
+
+Sends enabled, unexpired announcements when players join; an announcement can instead trigger when a player enters a 3D coordinate cuboid in a selected dimension<br>
+Each announcement includes a header, publication time to the minute, publisher and content; `/n` creates a line break<br>
+New announcements are permanent by default and can be managed by ID, including expiry, enablement, visibility and trigger scope<br>
+Manage announcements with `/fga announcement`
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only
 
 ### Player Possession(playerPossession) · [Related command](commands_en.md#cmd-player-possession)
 
@@ -46,6 +74,27 @@ This only changes command permissions and does not change possession entry permi
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
 
+### Possession Distance(playerPossessionDistance) · [Related command](commands_en.md#cmd-player-possession)
+
+Limits the maximum distance between the controller and target when starting or keeping a same-dimension possession session; `-1` disables the limit, while cross-dimension sessions are controlled separately by `playerPossessionCrossDimension`
+
+- Type: `Number`
+- Default: `-1`
+- Options: `-1`, `16`, `32`, `64`, `128`, `256`, `1024`
+- Valid range: `-1` or `0-1024`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21+`
+
+### Cross-Dimension Possession(playerPossessionCrossDimension) · [Related command](commands_en.md#cmd-player-possession)
+
+Controls whether a possession session may start or remain active while the controller and target are in different dimensions; defaults to `true` to preserve previous behavior
+
+- Type: `Boolean`
+- Default: `true`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21+`
+
 ## Fake players and general features
 
 ### QuickCraft Easy Place Entities(quickCraftEasyPlaceEntities)
@@ -60,7 +109,9 @@ Allows [QuickCraft](https://modrinth.com/mod/quickcraft-yiyihehe) clients to req
 
 ### Fake Player Name Length(fakePlayerNameLength)
 
-Vanilla player names are limited to 16 characters. This rule changes the limit to 1-128; the client is optional, and names longer than 16 characters are sent to clients without FGA using a compatible alias such as `half...`
+Sets the maximum fake-player name length to 1-128; clients without FGA receive compatible aliases<br>
+From Minecraft 26.3, full names use a separate UTF codec and connection path and require the matching fix on both client and server; old FGA 1.5.15 clients cannot receive full long names<br>
+Minecraft versions before 26.3 keep the legacy FriendlyByteBuf codec and connection path; later Minecraft releases still require individual verification
 
 - Type: `Integer`
 - Default: `-1`
@@ -90,6 +141,18 @@ Enables area placement, right-click block interaction, area breaking, and relate
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.16.5+`
+
+### Enhanced Fake Player Rejoin(enhancedFakePlayerRejoin) · [Related command](commands_en.md#cmd-player-rejoin)
+
+When enabled, Carpet TIS `/player <name> rejoin` restores the vehicle and non-player passengers saved with the fake player and accepts a target position, facing and dimension via `rejoin at`; when disabled, TIS's original no-argument `rejoin` remains available
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1` through `26.3`
+- Requires Carpet TIS on the server; no FGA client required
+- Uses vanilla single-player vehicle persistence: with multiple players riding, the vehicle is saved only when the last player logs out
 
 ### Unlimited Multiplayer Players(unlimitedMultiplayerPlayers)
 
@@ -255,7 +318,7 @@ Controls permission for terrain regeneration and terrain clearing commands<br>`f
 
 ### Full Shulker Box Crafting(fullShulkerBoxCrafting)
 
-Allows shulker boxes containing one item type to craft directly through matching crafting or stonecutter recipes<br>`false`: disables the feature<br>`only64`: input boxes must be full at the vanilla stack limit, and outputs and recipe returns must form whole full boxes<br>`any`: input boxes may contain the same amount from 1 to the container stack limit; the total is crafted in one operation, a final output box may be partial, and leftovers remain in the input boxes<br>All input boxes must contain the same stackable item type and amount and have the same capacity<br>The legacy value `true` is treated as `any`
+Allows shulker boxes containing one item type to craft directly through matching crafting or stonecutter recipes<br>`false`: disables the feature<br>`only64`: input boxes must be full at the vanilla stack limit, and outputs and recipe returns must form whole full boxes<br>`any`: input boxes may contain the same amount from 1 to the container stack limit; the total is crafted in one operation, a final output box may be partial, and leftovers remain in the input boxes<br>Each input box must internally contain one stackable item type; different boxes may contain different recipe-slot ingredients, but every input box must have the same item count and capacity<br>The legacy value `true` is treated as `any`
 
 - Type: `String`
 - Default: `false`
@@ -263,13 +326,13 @@ Allows shulker boxes containing one item type to craft directly through matching
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
 
-### Spectator Free Teleport(spectatorFreeTeleport)
+### Free Teleport Access(spectatorFreeTeleport)
 
-Allows spectators to use `/tp` and `/teleport`, but only to control their own teleportation; when TIS or AMS administrator-cheat prevention is disabled, operators retain full teleport permission<br>`false`: keeps vanilla spectator teleport permission<br>`true`: spectators can teleport only themselves and cannot use this to teleport other entities; when TIS or AMS administrator-cheat prevention is enabled, operators are restricted in the same way
+Controls permission-free `/tp` and `/teleport` access<br>`false`: keeps vanilla permission requirements<br>`true`: spectators may teleport themselves, including across dimensions by following a player or choosing a dimension and position; they cannot teleport other entities, and TIS or AMS cheat prevention also restricts OP spectators<br>`full`: players in every game mode can use complete teleport commands, including cross-dimension teleports, multiple targets, and teleporting other players or entities; bypasses TIS/AMS permission wrappers only for these commands
 
-- Type: `Boolean`
+- Type: `String`
 - Default: `false`
-- Options: `false`, `true`
+- Options: `false`, `true`, `full`
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21+`
 
@@ -641,7 +704,7 @@ Customizes removal of selected zombified piglin drops<br>`false`: keeps vanilla 
 
 ### Custom Entity Drop Removal(entityDropRemoval) · [Related command](commands_en.md#cmd-entity-drop-removal)
 
-Configures death drops to remove per entity<br>`false`: disables the command<br>`true`: lets all players configure it<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum configuration-command permission level<br>Use `/entityDropRemoval set <entity ID> <item ID>` to add an item, or `allEquipment` to remove drops from six equipment slots<br>A selected item filters loot-table and equipment drops; `allEquipment` filters only the six equipment slots and does not remove an identically named item from the loot table
+Configures death drops to remove per entity<br>`false`: disables the command<br>`true`: lets all players configure it<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum configuration-command permission level<br>Use `/entityDropRemoval set <entity ID> <item ID>` to add an item, or `allEquipment` to remove drops from six equipment slots<br>A selected item filters loot-table and equipment drops; `allEquipment` filters only the six equipment slots and does not remove an identically named item from the loot table<br>`/entityDropRemoval list <entity id>` also provides buttons to enable all drops for the entity (clearing its removal configuration) or disable all item and equipment drops for the entity
 
 - Type: `Permission`
 - Default: `false`

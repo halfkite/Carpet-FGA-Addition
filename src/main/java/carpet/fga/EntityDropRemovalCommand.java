@@ -13,6 +13,7 @@ import com.google.gson.JsonParser;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -50,25 +51,31 @@ public final class EntityDropRemovalCommand {
                 .then(Commands.literal("remove")
                         .then(entityArgument()
                                 .then(dropArgument().executes(EntityDropRemovalCommand::remove))))
+                .then(Commands.literal("enableAllDrops")
+                        .then(entityArgument().executes(EntityDropRemovalCommand::enableAllDrops)))
+                .then(Commands.literal("disableAllDrops")
+                        .then(entityArgument().executes(EntityDropRemovalCommand::disableAllDrops)))
                 .then(Commands.literal("list")
                         .executes(EntityDropRemovalCommand::listAll)
                         .then(entityArgument().executes(EntityDropRemovalCommand::listEntity)));
     }
 
-    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> entityArgument() {
-        return Commands.argument("entity", StringArgumentType.word())
+    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, ResourceLocation> entityArgument() {
+        return Commands.argument("entity", ResourceLocationArgument.id())
                 .suggests(EntityDropRemovalCommand::entitySuggestions);
     }
 
     private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> dropArgument() {
-        return Commands.argument("drop", StringArgumentType.word())
+        // ResourceLocation IDs contain ':' and must use Minecraft's identifier
+        // parser. Keep this argument greedy because it also accepts allEquipment.
+        return Commands.argument("drop", StringArgumentType.greedyString())
                 .suggests(EntityDropRemovalCommand::dropSuggestions);
     }
 
     private static int set(CommandContext<CommandSourceStack> context) {
         try {
             ResourceLocation entityId = entityId(context);
-            String drop = StringArgumentType.getString(context, "drop");
+            String drop = StringArgumentType.getString(context, "drop").trim();
             if (EntityDropRemovalConfig.ALL_EQUIPMENT.equals(drop)) {
                 EntityDropRemovalConfig.setAllEquipment(entityId);
             } else {
@@ -84,7 +91,7 @@ public final class EntityDropRemovalCommand {
     private static int remove(CommandContext<CommandSourceStack> context) {
         try {
             ResourceLocation entityId = entityId(context);
-            String drop = StringArgumentType.getString(context, "drop");
+            String drop = StringArgumentType.getString(context, "drop").trim();
             boolean removed = EntityDropRemovalConfig.ALL_EQUIPMENT.equals(drop)
                     ? EntityDropRemovalConfig.removeAllEquipment(entityId)
                     : EntityDropRemovalConfig.removeItem(entityId, EntityDropRemovalConfig.parseItemId(drop));
@@ -113,6 +120,11 @@ public final class EntityDropRemovalCommand {
     private static void appendConfiguredEntry(MutableComponent message, ResourceLocation entityId,
                                                EntityDropRemovalConfig.Entry entry) {
         message.append(FGACompat.literal("\n" + entityId + "  ").withStyle(ChatFormatting.GRAY));
+        if (entry.allDrops()) {
+            appendActionButton(message, "开启全部掉落物",
+                    "/entityDropRemoval enableAllDrops " + entityId, ChatFormatting.GREEN);
+            return;
+        }
         for (ResourceLocation itemId : sorted(entry.items())) {
             appendRemoveButton(message, "/entityDropRemoval remove " + entityId + " " + itemId,
                     itemId.toString());
@@ -151,7 +163,10 @@ public final class EntityDropRemovalCommand {
                     : lootTableItems(context, lootTableId);
             message.append(FGACompat.literal("原版战利品表 / Vanilla loot table drops:\n")
                     .withStyle(ChatFormatting.YELLOW));
-            if (lootItems.isEmpty()) {
+            if (entry.allDrops()) {
+                message.append(FGACompat.literal("已关闭此生物所有掉落物 / All drops disabled\n")
+                        .withStyle(ChatFormatting.RED));
+            } else if (lootItems.isEmpty()) {
                 message.append(FGACompat.literal("未解析到物品项 / No item entries found\n")
                         .withStyle(ChatFormatting.GRAY));
             } else {
@@ -159,13 +174,13 @@ public final class EntityDropRemovalCommand {
                     if (!entry.items().contains(itemId)) appendDropLine(message, entityId, itemId, false);
                 }
             }
-            if (!entry.allEquipment()) {
+            if (!entry.allDrops() && !entry.allEquipment()) {
                 appendEquipmentLine(message, entityId, false);
             }
-            if (entry.items().isEmpty() && !entry.allEquipment()) {
+            if (!entry.allDrops() && entry.items().isEmpty() && !entry.allEquipment()) {
                 message.append(FGACompat.literal("暂无去除配置 / No removal configured")
                         .withStyle(ChatFormatting.GRAY));
-            } else {
+            } else if (!entry.allDrops()) {
                 message.append(FGACompat.literal("已去除的掉落物 / Removed drops:\n")
                         .withStyle(ChatFormatting.YELLOW));
                 for (ResourceLocation itemId : sorted(entry.items())) {
@@ -175,6 +190,7 @@ public final class EntityDropRemovalCommand {
                     appendEquipmentLine(message, entityId, true);
                 }
             }
+            appendGlobalDropButtons(message, entityId);
             FGACompat.sendSuccess(context.getSource(), message, false);
             return 1;
         } catch (Exception exception) {
@@ -196,6 +212,8 @@ public final class EntityDropRemovalCommand {
         line(message, "/entityDropRemoval set <entity> <item>", "去除指定物品 / remove an item");
         line(message, "/entityDropRemoval set <entity> allEquipment", "去除六个装备槽 / remove six equipment slots");
         line(message, "/entityDropRemoval remove <entity> <item|allEquipment>", "删除配置 / delete a setting");
+        line(message, "/entityDropRemoval enableAllDrops <entity>", "开启此生物所有掉落物 / enable all drops");
+        line(message, "/entityDropRemoval disableAllDrops <entity>", "关闭此生物所有掉落物 / disable all drops");
         line(message, "/entityDropRemoval list", "查看全部配置 / list configured entities");
         line(message, "/entityDropRemoval list <entity>", "查看指定生物 / inspect one entity");
         FGACompat.sendSuccess(context.getSource(), message, false);
@@ -203,7 +221,28 @@ public final class EntityDropRemovalCommand {
     }
 
     private static ResourceLocation entityId(CommandContext<CommandSourceStack> context) {
-        return EntityDropRemovalConfig.parseEntityId(StringArgumentType.getString(context, "entity"));
+        return EntityDropRemovalConfig.parseEntityId(
+                ResourceLocationArgument.getId(context, "entity").toString());
+    }
+
+    private static int enableAllDrops(CommandContext<CommandSourceStack> context) {
+        try {
+            ResourceLocation entityId = entityId(context);
+            EntityDropRemovalConfig.enableAllDrops(entityId);
+            return success(context, "已开启此生物所有掉落物 / Enabled all drops: " + entityId);
+        } catch (Exception exception) {
+            return failure(context, exception.getMessage());
+        }
+    }
+
+    private static int disableAllDrops(CommandContext<CommandSourceStack> context) {
+        try {
+            ResourceLocation entityId = entityId(context);
+            EntityDropRemovalConfig.disableAllDrops(entityId);
+            return success(context, "已关闭此生物所有掉落物 / Disabled all drops: " + entityId);
+        } catch (Exception exception) {
+            return failure(context, exception.getMessage());
+        }
     }
 
     private static CompletableFuture<Suggestions> entitySuggestions(CommandContext<CommandSourceStack> context,
@@ -312,6 +351,22 @@ public final class EntityDropRemovalCommand {
         message.append(FGACompat.literal("[" + text + "]").withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)))
                 .append(FGACompat.literal(" [-]\n").withStyle(Style.EMPTY.withColor(ChatFormatting.RED)
                         .withClickEvent(FgaClickEvents.runCommand(command))));
+    }
+
+    private static void appendGlobalDropButtons(MutableComponent message, ResourceLocation entityId) {
+        message.append(FGACompat.literal("\n操作 / Actions: ").withStyle(ChatFormatting.GOLD));
+        appendActionButton(message, "开启此生物所有掉落物",
+                "/entityDropRemoval enableAllDrops " + entityId, ChatFormatting.GREEN);
+        message.append(FGACompat.literal(" "));
+        appendActionButton(message, "关闭此生物所有掉落物",
+                "/entityDropRemoval disableAllDrops " + entityId, ChatFormatting.RED);
+        message.append(FGACompat.literal("\n"));
+    }
+
+    private static void appendActionButton(MutableComponent message, String text,
+                                           String command, ChatFormatting color) {
+        message.append(FGACompat.literal("[" + text + "]").withStyle(Style.EMPTY.withColor(color)
+                .withClickEvent(FgaClickEvents.runCommand(command))));
     }
 
     private static void line(MutableComponent message, String command, String description) {

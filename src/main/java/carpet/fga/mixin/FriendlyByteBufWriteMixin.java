@@ -1,3 +1,4 @@
+//#if MC < 26.3
 package carpet.fga.mixin;
 
 import carpet.fga.FakePlayerNameAlias;
@@ -42,3 +43,4 @@ public abstract class FriendlyByteBufWriteMixin {
     //$$ }
     //#endif
 }
+//#endif
