@@ -102,14 +102,26 @@ processResources {
     filesMatching('carpet-fga-addition.mixins.json') {
         filter { line -> line.replace('{{COMPATIBILITY_LEVEL}}', properties.compatibility_level) }
     }
+    filesMatching('carpet-fga-addition.org-experience.mixins.json') {
+        filter { line -> line.replace('{{COMPATIBILITY_LEVEL}}', properties.compatibility_level) }
+    }
     doLast {
-        if (mcVersion < 1_21_00 || mcVersion > 26_03_00) {
-            def descriptor = destinationDir.toPath().resolve('fabric.mod.json')
-            if (java.nio.file.Files.isRegularFile(descriptor)) {
-                def text = java.nio.file.Files.readString(descriptor)
-                text = text.replaceFirst(/(?m)^\s*"fabric-api": "__FGA_NO_FABRIC_API__",\r?\n/, '')
-                java.nio.file.Files.writeString(descriptor, text)
+        def descriptor = destinationDir.toPath().resolve('fabric.mod.json')
+        if (java.nio.file.Files.isRegularFile(descriptor)) {
+            def text = java.nio.file.Files.readString(descriptor)
+            def optionalMixinMarker = '"__FGA_OPTIONAL_ORG_EXPERIENCE_MIXIN__"'
+            if (!text.contains(optionalMixinMarker)) {
+                throw new GradleException('Missing optional ORG experience mixin marker in fabric.mod.json')
             }
+            if (mcVersion >= 1_21_00 && mcVersion <= 26_03_00) {
+                text = text.replace(optionalMixinMarker, '"carpet-fga-addition.org-experience.mixins.json"')
+            } else {
+                text = text.replaceFirst(/,\s*"__FGA_OPTIONAL_ORG_EXPERIENCE_MIXIN__"/, '')
+            }
+            if (mcVersion < 1_21_00 || mcVersion > 26_03_00) {
+                text = text.replaceFirst(/(?m)^\s*"fabric-api": "__FGA_NO_FABRIC_API__",\r?\n/, '')
+            }
+            java.nio.file.Files.writeString(descriptor, text)
         }
     }
     doLast {

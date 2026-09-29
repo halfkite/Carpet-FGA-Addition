@@ -443,6 +443,16 @@ Prevents baby mobs from growing, including tadpoles<br>`false`: disabled<br>`tru
 - Categories: `FGA`, `Survival`
 - Effective versions: `1.21+`
 
+### Sulfur Cube Growth Time(sulfurCubeGrowthTime)
+
+Sets the game time in seconds for a small Sulfur Cube to grow into a medium one; `-1` keeps the vanilla 20-minute duration, while a positive integer sets the requested number of seconds<br>Only small Sulfur Cubes initialized after the rule is changed use the new duration; existing age countdowns are not reset, and feeding acceleration remains vanilla
+
+- Type: `Integer`
+- Default: `-1`
+- Options: `-1` or `1–107374182` seconds
+- Categories: `FGA`, `Survival`
+- Effective versions: `26.2`, `26.3`
+
 ### Resilient Plants(resilientPlants)
 
 Makes matching plants ignore vanilla survival restrictions and allows them to be placed in air or on any block<br>`false`: disabled<br>`true`: matches all supported plant candidates<br>`[]`: clears the matching list<br>Block ID list: matches only listed blocks; namespaces may be omitted
@@ -567,6 +577,8 @@ Thorns no longer damages armor when its retaliation effect triggers
 - Client requirements: None (server-side only)
 
 ### Flat Experience Level Costs(experienceLevelCost)
+
+Fixed-cost modes use bounded integer arithmetic on all current build versions; 29-30 keeps the vanilla XP curve below level 30 and costs 107 points per level from level 30 onward, while 0-1 costs 7 points per level at every level; checked ORG experience-transfer implementations are also adapted
 
 `false` uses the vanilla experience curve; `29-30` makes every level after 30 cost the same as levels 29 to 30; `0-1` makes every level cost the same as levels 0 to 1
 

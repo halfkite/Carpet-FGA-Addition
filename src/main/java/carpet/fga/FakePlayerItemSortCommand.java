@@ -29,7 +29,7 @@ public final class FakePlayerItemSortCommand {
         com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(name).requires(s->CommandHelper.canUseCommand(s,CarpetSettings.commandPlayer))
             .executes(FakePlayerItemSortCommand::status).then(Commands.literal("help").executes(FakePlayerItemSortCommand::help)).then(Commands.literal("status").executes(FakePlayerItemSortCommand::status))
             .then(Commands.literal("mode").then(Commands.literal("summon").executes(c->mode(c,"summon"))).then(Commands.literal("quickopen").executes(c->mode(c,"quickopen"))))
-            .then(Commands.literal("setting").then(Commands.argument("key",StringArgumentType.word()).suggests((c,b)->SharedSuggestionProvider.suggest(settingKeys(),b)).then(Commands.argument("value",StringArgumentType.word()).suggests((c,b)->SharedSuggestionProvider.suggest(settingValues(),b)).executes(FakePlayerItemSortCommand::setting))))
+            .then(Commands.literal("setting").then(Commands.argument("key",StringArgumentType.word()).suggests((c,b)->SharedSuggestionProvider.suggest(settingKeys(),b)).then(Commands.argument("value",StringArgumentType.word()).suggests((c,b)->SharedSuggestionProvider.suggest(settingValues(StringArgumentType.getString(c,"key")),b)).executes(FakePlayerItemSortCommand::setting))))
             .then(Commands.literal("whitelist").then(Commands.literal("add").then(Commands.argument("player",StringArgumentType.word()).executes(c->whitelist(c,true))))
                     .then(Commands.literal("remove").then(Commands.argument("player",StringArgumentType.word()).executes(c->whitelist(c,false))))
                     .then(Commands.literal("list").executes(c->whitelistList(c,1)).then(Commands.argument("page",IntegerArgumentType.integer(1)).executes(c->whitelistList(c,IntegerArgumentType.getInteger(c,"page"))))))
@@ -40,7 +40,7 @@ public final class FakePlayerItemSortCommand {
                     .then(Commands.literal("remove").then(Commands.argument("item",ResourceLocationArgument.id()).executes(FakePlayerItemSortCommand::nameRemove)))
                     .then(Commands.literal("list").executes(c->nameList(c,1)).then(Commands.argument("page",IntegerArgumentType.integer(1)).executes(c->nameList(c,IntegerArgumentType.getInteger(c,"page")))))
                     .then(Commands.literal("reload").executes(FakePlayerItemSortCommand::reload)));
-        //#if MC == 1.21.1
+        //#if MC == 1.21.1 || MC == 26.3
         root.then(Commands.literal("workers").then(Commands.argument("initial",IntegerArgumentType.integer(1)).then(Commands.argument("cached",IntegerArgumentType.integer(1)).executes(FakePlayerItemSortCommand::workers))))
                 .then(Commands.literal("dashboard").then(Commands.literal("status").executes(FakePlayerItemSortCommand::dashboard)).then(Commands.literal("port").then(Commands.argument("port",IntegerArgumentType.integer(1024,65535)).executes(FakePlayerItemSortCommand::port))));
         //#endif
@@ -48,61 +48,87 @@ public final class FakePlayerItemSortCommand {
     }
     public static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> playerSort(){
         com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("bot_sort").executes(c->sort(c,false)).then(Commands.literal("continuous").executes(c->sort(c,true))).then(Commands.literal("stop").executes(FakePlayerItemSortCommand::stop));
-        //#if MC == 1.21.1
+        //#if MC == 1.21.1 || MC == 26.3
         root.then(Commands.literal("restart").then(Commands.literal("all").executes(FakePlayerItemSortCommand::prepareRebuildAll).then(Commands.literal("confirm").executes(FakePlayerItemSortCommand::confirmRebuildAll))).then(Commands.argument("item",StringArgumentType.greedyString()).executes(FakePlayerItemSortCommand::rebuildOne)));
         //#endif
         return root;
     }
+    private static final String TEXT_PREFIX = "carpet.fga.fake_player_item_sort.";
+
     private static ServerPlayer target(CommandContext<CommandSourceStack> c){return c.getSource().getServer().getPlayerList().getPlayerByName(StringArgumentType.getString(c,"player"));}
     // Config changes, worker/dashboard control and sorting jobs touch world config files and
     // offline playerdata, so they stay behind the commandPlayer gate AND require OP permission.
     private static boolean opOnly(CommandContext<CommandSourceStack> c){return FGACompat.hasPermission(c.getSource(),2);}
-    private static int sort(CommandContext<CommandSourceStack> c,boolean continuous){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");ServerPlayer p=target(c);if(p==null){c.getSource().sendFailure(Component.literal("target fake player is not online"));return 0;}if(!(p instanceof carpet.patches.EntityPlayerMPFake)){c.getSource().sendFailure(Component.literal("target must be a fake player"));return 0;}StringBuilder error=new StringBuilder();ServerPlayer initiator=c.getSource().getPlayer();if(!FakePlayerItemSortManager.start(p,continuous,initiator==null?null:initiator.getUUID(),error)){c.getSource().sendFailure(Component.literal(error.toString()));return 0;}ok(c,continuous?"continuous item sorting started":"item sorting started");return 1;}
-    private static int stop(CommandContext<CommandSourceStack> c){ServerPlayer p=target(c);if(p==null)return fail(c,"target fake player is not online");return FakePlayerItemSortManager.stop(p)?ok(c,"item sorting stopped"):fail(c,"no active sorting job");}
-    private static int rebuildOne(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");ServerPlayer p=target(c);if(!(p instanceof carpet.patches.EntityPlayerMPFake))return fail(c,"target must be an online fake player");StringBuilder error=new StringBuilder();ServerPlayer actor=c.getSource().getPlayer();int queued=FakePlayerItemSortManager.queueRebuild(p,StringArgumentType.getString(c,"item"),actor==null?null:actor.getUUID(),error);return queued>0?ok(c,"sorter rebuild queued"):fail(c,error.toString());}
-    private static int prepareRebuildAll(CommandContext<CommandSourceStack> c){ServerPlayer p=target(c);if(!(p instanceof carpet.patches.EntityPlayerMPFake))return fail(c,"target must be an online fake player");if(!FakePlayerItemSortManager.canRebuildAll(FGACompat.hasPermission(c.getSource(),2)))return fail(c,"restart all is disabled or requires OP permission");String key=actorKey(c);PENDING_REBUILDS.put(key,new PendingRebuild(p.getUUID(),System.currentTimeMillis()+REBUILD_CONFIRM_MS));String command="/player "+StringArgumentType.getString(c,"player")+" bot_sort restart all confirm";MutableComponent message=Component.literal(chinese()?"将重构全部已缓存分类库存，任务会限速执行。":"Rebuild every cached sorter inventory. Tasks run at a limited rate.").withStyle(ChatFormatting.YELLOW).append(Component.literal(" ")).append(Component.literal(chinese()?"[确认执行]":"[CONFIRM]").withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withClickEvent(FgaClickEvents.runCommand(command))));c.getSource().sendSuccess(()->message,false);return 1;}
-    private static int confirmRebuildAll(CommandContext<CommandSourceStack> c){ServerPlayer p=target(c);if(!(p instanceof carpet.patches.EntityPlayerMPFake))return fail(c,"target must be an online fake player");if(!FakePlayerItemSortManager.canRebuildAll(FGACompat.hasPermission(c.getSource(),2)))return fail(c,"restart all is disabled or requires OP permission");PendingRebuild pending=PENDING_REBUILDS.remove(actorKey(c));if(pending==null||!pending.target().equals(p.getUUID())||pending.expiresAt()<System.currentTimeMillis())return fail(c,chinese()?"重构确认已过期。":"rebuild confirmation expired");StringBuilder error=new StringBuilder();ServerPlayer actor=c.getSource().getPlayer();int queued=FakePlayerItemSortManager.queueRebuildAll(p,actor==null?null:actor.getUUID(),error);return queued>0?ok(c,chinese()?"已将 "+queued+" 个分类路由加入限速重构队列。":"queued rebuild for "+queued+" sorter routes"):fail(c,error.toString());}
+    private static MutableComponent text(String key,Object...args){return FGAText.text(TEXT_PREFIX+key,args);}
+    private static int sort(CommandContext<CommandSourceStack> c,boolean continuous){if(!opOnly(c))return fail(c,"permission_required");ServerPlayer p=target(c);if(p==null)return fail(c,"target_offline");if(!(p instanceof carpet.patches.EntityPlayerMPFake))return fail(c,"fake_player_required");if(isPossessionParticipant(p))return fail(c,"target_busy");StringBuilder error=new StringBuilder();ServerPlayer initiator=c.getSource().getPlayer();if(!FakePlayerItemSortManager.start(p,continuous,initiator==null?null:initiator.getUUID(),error))return fail(c,sortFailureKey(error.toString()));return ok(c,continuous?"continuous_started":"started");}
+    private static boolean isPossessionParticipant(ServerPlayer player){
+        //#if MC >= 1.21 && MC <= 26.3
+        return PlayerPossessionManager.isParticipant(player);
+        //#else
+        //$$ return false;
+        //#endif
+    }
+    private static String sortFailureKey(String error){return switch(error){case "enable /carpet fakePlayerItemSort true"->"sort_rule_disabled";case "set /carpet fakePlayerNameLength 64 or higher"->"sort_name_length";case "set /carpet fakePlayerProfilePreload always or adaptive"->"sort_profile_preload";case "set /carpet fgaUnicodeArgumentsSupport true for Chinese/custom target names"->"sort_unicode_required";default->"operation_failed";};}
+    private static int stop(CommandContext<CommandSourceStack> c){ServerPlayer p=target(c);if(p==null)return fail(c,"target_offline");return FakePlayerItemSortManager.stop(p)?ok(c,"stopped"):fail(c,"no_active_job");}
+    private static int rebuildOne(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"permission_required");ServerPlayer p=target(c);if(!(p instanceof carpet.patches.EntityPlayerMPFake))return fail(c,"fake_player_required");StringBuilder error=new StringBuilder();ServerPlayer actor=c.getSource().getPlayer();int queued=FakePlayerItemSortManager.queueRebuild(p,StringArgumentType.getString(c,"item"),actor==null?null:actor.getUUID(),error);return queued>0?ok(c,"rebuild_queued"):rebuildFailure(c,error.toString());}
+    private static int prepareRebuildAll(CommandContext<CommandSourceStack> c){ServerPlayer p=target(c);if(!(p instanceof carpet.patches.EntityPlayerMPFake))return fail(c,"fake_player_required");if(!FakePlayerItemSortManager.canRebuildAll(FGACompat.hasPermission(c.getSource(),2)))return fail(c,"rebuild_all_disabled");String key=actorKey(c);PENDING_REBUILDS.put(key,new PendingRebuild(p.getUUID(),System.currentTimeMillis()+REBUILD_CONFIRM_MS));String command="/player "+StringArgumentType.getString(c,"player")+" bot_sort restart all confirm";MutableComponent message=text("rebuild_all_prompt").withStyle(ChatFormatting.YELLOW).append(Component.literal(" ")).append(text("confirm_button").withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withClickEvent(FgaClickEvents.runCommand(command))));return sendSuccess(c,message);}
+    private static int confirmRebuildAll(CommandContext<CommandSourceStack> c){ServerPlayer p=target(c);if(!(p instanceof carpet.patches.EntityPlayerMPFake))return fail(c,"fake_player_required");if(!FakePlayerItemSortManager.canRebuildAll(FGACompat.hasPermission(c.getSource(),2)))return fail(c,"rebuild_all_disabled");PendingRebuild pending=PENDING_REBUILDS.remove(actorKey(c));if(pending==null||!pending.target().equals(p.getUUID())||pending.expiresAt()<System.currentTimeMillis())return fail(c,"rebuild_expired");StringBuilder error=new StringBuilder();ServerPlayer actor=c.getSource().getPlayer();int queued=FakePlayerItemSortManager.queueRebuildAll(p,actor==null?null:actor.getUUID(),error);return queued>0?ok(c,"rebuild_all_queued",queued):rebuildFailure(c,error.toString());}
+    private static int rebuildFailure(CommandContext<CommandSourceStack> c,String error){if(error.equals("set inventoryRebuild to true or opall with /fakePlayerItemSort"))return fail(c,"rebuild_disabled");if(error.startsWith("no cached sorter item named "))return fail(c,"rebuild_item_missing",error.substring("no cached sorter item named ".length()));if(error.startsWith("ambiguous item: "))return fail(c,"rebuild_item_ambiguous");return fail(c,"operation_failed");}
     private static String actorKey(CommandContext<CommandSourceStack> c){ServerPlayer actor=c.getSource().getPlayer();return actor==null?"console":actor.getUUID().toString();}
-    private static boolean chinese(){return "chinese".equals(FakePlayerItemSortConfig.snapshot().targetLanguage());}
-    private static int whitelist(CommandContext<CommandSourceStack> c,boolean add){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");try{boolean changed=add?FakePlayerItemSortConfig.addWhitelist(StringArgumentType.getString(c,"player")):FakePlayerItemSortConfig.removeWhitelist(StringArgumentType.getString(c,"player"));return changed?ok(c,add?"whitelist entry added":"whitelist entry removed"):fail(c,add?"already in whitelist":"not in whitelist");}catch(IOException e){return fail(c,e.getMessage());}}
-    private static int whitelistList(CommandContext<CommandSourceStack> c,int page){return list(c,"sort whitelist",new ArrayList<>(FakePlayerItemSortConfig.snapshot().whitelist()),page,"/fakePlayerItemSort whitelist remove ");}
-    private static int format(CommandContext<CommandSourceStack> c,boolean prefix){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");try{FakePlayerItemSortConfig.setFormat(prefix,StringArgumentType.getString(c,"text"));return ok(c,(prefix?"prefix":"suffix")+" updated");}catch(IOException e){return fail(c,e.getMessage());}}
-    private static int nameSet(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");ResourceLocation id=ResourceLocationArgument.getId(c,"item");if(!net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id))return fail(c,"unknown item: "+id);try{FakePlayerItemSortConfig.setName(id.toString(),StringArgumentType.getString(c,"text"));return ok(c,"custom name updated");}catch(IOException e){return fail(c,e.getMessage());}}
-    private static int nameRemove(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");try{return FakePlayerItemSortConfig.removeName(ResourceLocationArgument.getId(c,"item").toString())?ok(c,"custom name removed"):fail(c,"custom name not found");}catch(IOException e){return fail(c,e.getMessage());}}
-    private static int nameList(CommandContext<CommandSourceStack> c,int page){return list(c,"custom item names",new ArrayList<>(FakePlayerItemSortConfig.snapshot().names().entrySet().stream().map(e->e.getKey()+" = "+e.getValue()).toList()),page,"/fakePlayerItemSort name remove ");}
-    private static int reload(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");try{FakePlayerItemSortConfig.reload();FakePlayerItemSortManager.recreateWorkers();return ok(c,"sort configuration reloaded");}catch(IOException e){return fail(c,e.getMessage());}}
-    private static int workers(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");try{FakePlayerItemSortConfig.setWorkers(IntegerArgumentType.getInteger(c,"initial"),IntegerArgumentType.getInteger(c,"cached"));FakePlayerItemSortManager.recreateWorkers();return ok(c,"worker limits updated");}catch(Exception e){return fail(c,e.getMessage());}}
-    private static int dashboard(CommandContext<CommandSourceStack> c){return ok(c,FakePlayerItemSortDashboard.status()+"; "+FakePlayerItemSortManager.status());}
-    private static int port(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");try{FakePlayerItemSortConfig.setDashboardPort(IntegerArgumentType.getInteger(c,"port"));return ok(c,"dashboard port saved; restart the server to bind it");}catch(IOException e){return fail(c,e.getMessage());}}
-    private static int mode(CommandContext<CommandSourceStack> c,String value){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");try{FakePlayerItemSortConfig.setMode(value);return ok(c,"sorter mode set to "+value);}catch(IOException e){return fail(c,e.getMessage());}}
-    private static int setting(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"requires OP permission / 需要 OP 权限");try{String key=StringArgumentType.getString(c,"key");if(!settingKeys().contains(key))return fail(c,"sorter setting is not supported in this Minecraft version: "+key);String value=StringArgumentType.getString(c,"value");FakePlayerItemSortConfig.setOption(key,value);if("cpuThreads".equals(key))FakePlayerItemSortManager.recreateWorkers();return ok(c,"sorter setting "+key+" set to "+value);}catch(IOException e){return fail(c,e.getMessage());}}
-    private static List<String> settingKeys(){
-        //#if MC == 1.21.1
+    private static int whitelist(CommandContext<CommandSourceStack> c,boolean add){if(!opOnly(c))return fail(c,"permission_required");try{boolean changed=add?FakePlayerItemSortConfig.addWhitelist(StringArgumentType.getString(c,"player")):FakePlayerItemSortConfig.removeWhitelist(StringArgumentType.getString(c,"player"));return changed?ok(c,add?"whitelist_added":"whitelist_removed"):fail(c,add?"already_whitelisted":"not_whitelisted");}catch(IOException|IllegalArgumentException e){return fail(c,"invalid_value");}}
+    private static int whitelistList(CommandContext<CommandSourceStack> c,int page){return list(c,"whitelist_title",new ArrayList<>(FakePlayerItemSortConfig.snapshot().whitelist()),page,"/fakePlayerItemSort whitelist remove ");}
+    private static int format(CommandContext<CommandSourceStack> c,boolean prefix){if(!opOnly(c))return fail(c,"permission_required");try{FakePlayerItemSortConfig.setFormat(prefix,StringArgumentType.getString(c,"text"));return ok(c,prefix?"prefix_updated":"suffix_updated");}catch(IOException|IllegalArgumentException e){return fail(c,"invalid_value");}}
+    private static int nameSet(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"permission_required");ResourceLocation id=ResourceLocationArgument.getId(c,"item");if(!net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id))return fail(c,"unknown_item",id);try{FakePlayerItemSortConfig.setName(id.toString(),StringArgumentType.getString(c,"text"));return ok(c,"name_updated");}catch(IOException|IllegalArgumentException e){return fail(c,"invalid_value");}}
+    private static int nameRemove(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"permission_required");try{return FakePlayerItemSortConfig.removeName(ResourceLocationArgument.getId(c,"item").toString())?ok(c,"name_removed"):fail(c,"name_not_found");}catch(IOException|IllegalArgumentException e){return fail(c,"invalid_value");}}
+    private static int nameList(CommandContext<CommandSourceStack> c,int page){return list(c,"names_title",new ArrayList<>(FakePlayerItemSortConfig.snapshot().names().entrySet().stream().map(e->e.getKey()+" = "+e.getValue()).toList()),page,"/fakePlayerItemSort name remove ");}
+    private static int reload(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"permission_required");try{FakePlayerItemSortConfig.reload();FakePlayerItemSortManager.recreateWorkers();return ok(c,"configuration_reloaded");}catch(IOException e){return fail(c,"operation_failed");}}
+    private static int workers(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"permission_required");int initial=IntegerArgumentType.getInteger(c,"initial"),cached=IntegerArgumentType.getInteger(c,"cached");try{FakePlayerItemSortConfig.setWorkers(initial,cached);FakePlayerItemSortManager.recreateWorkers();return ok(c,"workers_updated",initial,cached);}catch(Exception e){return fail(c,"invalid_value");}}
+    private static int dashboard(CommandContext<CommandSourceStack> c){String dashboard=FakePlayerItemSortDashboard.status();MutableComponent message=dashboard.equals("stopped")?text("dashboard_stopped"):text("dashboard_running",dashboard);message.append(Component.literal("\n")).append(FakePlayerItemSortManager.statusText());return sendSuccess(c,message);}
+    private static int port(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"permission_required");int port=IntegerArgumentType.getInteger(c,"port");try{FakePlayerItemSortConfig.setDashboardPort(port);return ok(c,"dashboard_port_saved",port);}catch(IOException e){return fail(c,"operation_failed");}}
+    private static int mode(CommandContext<CommandSourceStack> c,String value){if(!opOnly(c))return fail(c,"permission_required");try{FakePlayerItemSortConfig.setMode(value);return ok(c,"mode_set",value);}catch(IOException|IllegalArgumentException e){return fail(c,"invalid_value");}}
+    private static int setting(CommandContext<CommandSourceStack> c){if(!opOnly(c))return fail(c,"permission_required");String key=StringArgumentType.getString(c,"key");if(!settingKeys().contains(key))return fail(c,"setting_unsupported",key);String value=StringArgumentType.getString(c,"value");try{FakePlayerItemSortConfig.setOption(key,value);if("cpuThreads".equals(key))FakePlayerItemSortManager.recreateWorkers();return ok(c,"setting_set",key,value);}catch(IOException|IllegalArgumentException e){return fail(c,"invalid_value");}}
+    static List<String> settingKeys(){
+        //#if MC == 1.21.1 || MC == 26.3
         return List.of("whitelistMode","quickShulker","targetLanguage","shulkerRestock","cleanOpenedTarget","inventoryRebuild","dashboard","cpuThreads","speed");
         //#else
         //$$ return List.of("whitelistMode","quickShulker","targetLanguage","cleanOpenedTarget");
         //#endif
     }
-    private static List<String> settingValues(){
-        //#if MC == 1.21.1
-        return List.of("false","true","english","chinese","custom","vanillaWhitelist","modWhitelist","opall","0","1","2","4","8","16");
-        //#else
-        //$$ return List.of("false","true","english","chinese","custom","vanillaWhitelist","modWhitelist");
-        //#endif
+    static List<String> settingValues(String key){
+        return switch(key){
+            case "whitelistMode"->List.of("false","vanillaWhitelist","modWhitelist");
+            case "quickShulker","cleanOpenedTarget","shulkerRestock","dashboard"->List.of("false","true");
+            case "targetLanguage"->List.of("english","chinese","custom");
+            case "inventoryRebuild"->List.of("false","true","opall");
+            case "cpuThreads"->List.of("0","1","2");
+            case "speed"->List.of("4","8","16");
+            default->List.of();
+        };
     }
     private static int help(CommandContext<CommandSourceStack> c){
-        MutableComponent out=Component.literal("Fake Player Item Sort / 假人物品分类\n").withStyle(ChatFormatting.GOLD);
-        out.append(Component.literal("/fakePlayerItemSort status\n").withStyle(ChatFormatting.GRAY));
-        out.append(Component.literal("  # show the merged rule and JSON settings / 查看总开关和配置\n").withStyle(ChatFormatting.GOLD));
-        out.append(Component.literal("/fakePlayerItemSort mode summon|quickopen\n").withStyle(ChatFormatting.GRAY));
-        out.append(Component.literal("  # choose online or offline inventory access / 选择在线或离线背包访问\n").withStyle(ChatFormatting.GOLD));
-        out.append(Component.literal("/fakePlayerItemSort setting <name> <value>\n").withStyle(ChatFormatting.GRAY));
-        out.append(Component.literal("  # manage migrated sorter settings / 管理迁移后的分类配置\n").withStyle(ChatFormatting.GOLD));
-        c.getSource().sendSuccess(()->out,false); return 1;
+        MutableComponent out=text("help_title").withStyle(ChatFormatting.GOLD).append(Component.literal("\n"));
+        helpLine(out,"/fakePlayerItemSort status","help_status");
+        helpLine(out,"/fakePlayerItemSort mode summon|quickopen","help_mode");
+        helpLine(out,"/fakePlayerItemSort setting <name> <value>","help_setting");
+        helpLine(out,"/fakePlayerItemSort whitelist add|remove <player>","help_whitelist");
+        helpLine(out,"/fakePlayerItemSort whitelist list [page]","help_whitelist_list");
+        helpLine(out,"/fakePlayerItemSort format prefix|suffix <text>","help_format");
+        helpLine(out,"/fakePlayerItemSort name set|remove|list|reload ...","help_names");
+        helpLine(out,"/player <fake> bot_sort [continuous|stop]","help_sort");
+        //#if MC == 1.21.1 || MC == 26.3
+        helpLine(out,"/fakePlayerItemSort workers <initial> <cached>","help_workers");
+        helpLine(out,"/fakePlayerItemSort dashboard status|port <port>","help_dashboard");
+        helpLine(out,"/player <fake> bot_sort restart <item|all>","help_rebuild");
+        //#endif
+        return sendSuccess(c,out);
     }
-    private static int status(CommandContext<CommandSourceStack> c){FakePlayerItemSortConfig.State s=FakePlayerItemSortConfig.snapshot();return ok(c,"enabled="+FGASettings.fakePlayerItemSort+", mode="+s.mode()+", whitelistMode="+s.whitelistMode()+", whitelist="+s.whitelist().size()+", language="+s.targetLanguage()+", quickShulker="+s.quickShulker()+", restock="+s.shulkerRestock()+", cleanOpenedTarget="+s.cleanOpenedTarget()+", rebuild="+s.inventoryRebuild()+", dashboard="+s.dashboard()+", cpuThreads="+s.cpuThreads()+", speed="+s.speed()+", names="+s.names().size()+", "+FakePlayerItemSortManager.status());}
-    private static int list(CommandContext<CommandSourceStack> c,String title,List<String> values,int page,String remove){Collections.sort(values);int pages=Math.max(1,(values.size()+PAGE-1)/PAGE);if(page>pages)return fail(c,"page out of range");MutableComponent out=Component.literal(title+" "+page+"/"+pages+"\n").withStyle(ChatFormatting.GOLD);for(int i=(page-1)*PAGE;i<Math.min(values.size(),page*PAGE);i++){String v=values.get(i);out.append(Component.literal(v+" ").withStyle(ChatFormatting.GRAY)).append(Component.literal("[-]").withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withClickEvent(FgaClickEvents.runCommand(remove+v)))).append("\n");}c.getSource().sendSuccess(()->out,false);return 1;}
-    private static int ok(CommandContext<CommandSourceStack> c,String m){c.getSource().sendSuccess(()->Component.literal(m).withStyle(ChatFormatting.GREEN),false);return 1;}private static int fail(CommandContext<CommandSourceStack> c,String m){c.getSource().sendFailure(Component.literal(m));return 0;}
+    private static void helpLine(MutableComponent out,String command,String descriptionKey){out.append(Component.literal(command+"\n").withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withClickEvent(FgaClickEvents.suggestCommand(command))));out.append(text(descriptionKey).withStyle(ChatFormatting.GOLD).append(Component.literal("\n")));}
+    private static int status(CommandContext<CommandSourceStack> c){FakePlayerItemSortConfig.State s=FakePlayerItemSortConfig.snapshot();MutableComponent out=text("status",FGASettings.fakePlayerItemSort,s.mode(),s.whitelistMode(),s.whitelist().size(),s.targetLanguage(),s.quickShulker(),s.shulkerRestock(),s.cleanOpenedTarget(),s.inventoryRebuild(),s.dashboard(),s.cpuThreads(),s.speed(),s.names().size()).append(Component.literal("\n")).append(FakePlayerItemSortManager.statusText());return sendSuccess(c,out);}
+    private static int list(CommandContext<CommandSourceStack> c,String titleKey,List<String> values,int page,String remove){Collections.sort(values);int pages=Math.max(1,(values.size()+PAGE-1)/PAGE);if(page>pages)return fail(c,"page_out_of_range");MutableComponent out=text(titleKey,page,pages).withStyle(ChatFormatting.GOLD).append(Component.literal("\n"));for(int i=(page-1)*PAGE;i<Math.min(values.size(),page*PAGE);i++){String v=values.get(i);out.append(Component.literal(v+" ").withStyle(ChatFormatting.GRAY)).append(Component.literal("[-]").withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withClickEvent(FgaClickEvents.runCommand(remove+v)))).append("\n");}return sendSuccess(c,out);}
+    private static int ok(CommandContext<CommandSourceStack> c,String key,Object...args){return sendSuccess(c,text(key,args).withStyle(ChatFormatting.GREEN));}
+    private static int fail(CommandContext<CommandSourceStack> c,String key,Object...args){return sendFailure(c,text(key,args));}
+    private static int sendSuccess(CommandContext<CommandSourceStack> c,Component component){c.getSource().sendSuccess(()->component,false);return 1;}
+    private static int sendFailure(CommandContext<CommandSourceStack> c,Component component){c.getSource().sendFailure(component);return 0;}
     private record PendingRebuild(UUID target,long expiresAt) {}
 }
 //#endif

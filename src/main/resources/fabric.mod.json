@@ -15,7 +15,8 @@
         ]
     },
     "mixins": [
-        "carpet-fga-addition.mixins.json"
+        "carpet-fga-addition.mixins.json",
+        "__FGA_OPTIONAL_ORG_EXPERIENCE_MIXIN__"
     ],
     "depends": {
         "fabricloader": ">=0.15.11",

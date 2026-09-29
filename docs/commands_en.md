@@ -368,7 +368,7 @@ Changes apply immediately and are saved to the world configuration. In `controll
 
 ### `/fakePlayerItemSort` and `bot_sort`
 
-The sorter core is registered on Minecraft `1.21+`. Dashboard/API, disk route cache, inventory rebuild, automatic restock, and worker tuning remain `1.21.1` only.<br>
+The sorter core is registered on Minecraft `1.21+`. The data paths for Dashboard/API, disk route cache, inventory rebuild, automatic restock, and worker tuning support `1.21+`; their management commands are currently exposed on `1.21.1` and `26.3`, with other versions pending synchronization.<br>
 Besides the read-only subcommands (`status`, `whitelist list`, `name list`, `format status`, `dashboard status`, `bot_sort stop`), configuration, whitelist changes, and sort start all require OP level 2 or higher.
 
 ```text
@@ -384,9 +384,9 @@ Besides the read-only subcommands (`status`, `whitelist list`, `name list`, `for
 /fakePlayerItemSort name remove <item id>
 /fakePlayerItemSort name list [page]
 /fakePlayerItemSort name reload
-/fakePlayerItemSort workers <initial> <cached>  # 1.21.1 only
-/fakePlayerItemSort dashboard status  # 1.21.1 only
-/fakePlayerItemSort dashboard port <1024-65535>  # 1.21.1 only
+/fakePlayerItemSort workers <initial> <cached>  # 1.21.1 and 26.3
+/fakePlayerItemSort dashboard status  # 1.21.1 and 26.3
+/fakePlayerItemSort dashboard port <1024-65535>  # 1.21.1 and 26.3
 /player <fake> bot_sort
 /player <fake> bot_sort continuous
 /player <fake> bot_sort stop
@@ -394,6 +394,10 @@ Besides the read-only subcommands (`status`, `whitelist list`, `name list`, `for
 /player <fake> bot_sort restart all
 /player <fake> bot_sort restart all confirm
 ```
+
+`setting` suggestions are filtered by key: `whitelistMode` offers `false|vanillaWhitelist|modWhitelist`; `quickShulker` and `cleanOpenedTarget` offer `false|true`; `targetLanguage` offers `english|chinese|custom`. On `1.21.1` and `26.3`, `shulkerRestock` and `dashboard` offer `false|true`, `inventoryRebuild` offers `false|true|opall`, `cpuThreads` offers `0|1|2`, and `speed` offers `4|8|16`.
+
+Command responses and sorter notifications use the FGA client's language when that client has FGA installed. Clients without FGA see the server language selected by `/carpet language`. Commands in `help` are clickable and only inserted into chat; they are not executed.
 
 `restart all` requires a second confirmation through the clickable button or the `confirm` subcommand. With `opall`, the all-inventory rebuild is OP-only. `quickopen` does not summon target fake players and writes their offline playerdata directly; `summon` logs target fake players in temporarily and logs them out after the current batch, saving their items to playerdata for their next login. Armor slots are never read or written.
 

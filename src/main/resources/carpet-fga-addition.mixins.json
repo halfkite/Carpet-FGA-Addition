@@ -106,7 +106,8 @@
         //#endif
         //#if MC >= 1.21 && MC <= 26.3
         ,"AnvilMenuNoPriorWorkPenaltyMixin",
-        "PlayerExperienceLevelCostMixin"
+        "PlayerExperienceLevelCostMixin",
+        "FlatExperienceAwardMixin"
         //#endif
         //#if MC >= 1.21 && MC <= 26.3
         ,"EnchantmentMaxLevelMixin",
@@ -302,6 +303,9 @@
         "ServerPlayerSpectatorTeleportMixin",
         "EntitySelectorParserSpectatorTeleportMixin",
         "EntitySelectorSpectatorTeleportMixin"
+        //#endif
+        //#if MC >= 26.2 && MC <= 26.3
+        //$$ ,"SulfurCubeGrowthMixin"
         //#endif
     ],
     "client": [

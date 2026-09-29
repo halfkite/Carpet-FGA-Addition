@@ -157,7 +157,7 @@ public final class FGACommand {
 
     private static int status(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context) {
         //#if MC >= 1.20.1 && MC <= 26.3
-        FGACompat.sendSuccess(context.getSource(), FGACompat.literal(FakePlayerItemSortManager.status()).withStyle(ChatFormatting.GRAY), false);
+        FGACompat.sendSuccess(context.getSource(), FakePlayerItemSortManager.statusText().withStyle(ChatFormatting.GRAY), false);
         //#else
         //$$ FGACompat.sendSuccess(context.getSource(), FGACompat.literal("Carpet FGA Addition").withStyle(ChatFormatting.GRAY), false);
         //#endif

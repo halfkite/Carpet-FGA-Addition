@@ -37,6 +37,25 @@ final class FeatureSmokeTestPlanTest {
      */
     private static final List<SmokePlan> PLANS = List.of(
             new SmokePlan(
+                    "fakePlayerItemSort26_3CommandPortAndLocalizedFeedback",
+                    "MC == 26.3; 1.21.1 retains the existing command set",
+                    "26.3",
+                    "MANUAL: isolated 26.3 server with an FGA client, a client without FGA, and different client languages",
+                    "On 26.3, enable fakePlayerItemSort and inspect `/fakePlayerItemSort setting cleanOpenedTarget <TAB>`; "
+                            + "verify that only false and true are suggested. Check targetLanguage, whitelistMode, "
+                            + "inventoryRebuild, cpuThreads, speed, shulkerRestock, and dashboard and compare each "
+                            + "suggestion list with its accepted values. Verify `/fakePlayerItemSort workers`, "
+                            + "`/fakePlayerItemSort dashboard`, and `/player <fake> bot_sort restart` are registered. "
+                            + "Set Carpet language to zh_cn: a client without FGA must receive Chinese feedback, while "
+                            + "FGA clients set to English and Chinese must receive their own client-language feedback. "
+                            + "Change Carpet language to en_us and confirm the no-FGA fallback changes to English without "
+                            + "changing either FGA client's selected language. Click a help command and confirm it is "
+                            + "inserted into chat without executing immediately.",
+                    "Every setting key suggests only its valid values; the former 1.21.1-only sorter subcommands appear "
+                            + "in the 26.3 command tree; command feedback and delayed sorter notices use the FGA client's "
+                            + "language when FGA is installed, otherwise the current Carpet server language; clickable help "
+                            + "entries only suggest the command."),
+            new SmokePlan(
                     "fakePlayerItemSortAsyncSummonInventoryConservation",
                     "MC >= 1.21.1 && MC <= 26.3; isolated service smoke baseline 26.3",
                     "26.3",
@@ -285,7 +304,23 @@ final class FeatureSmokeTestPlanTest {
                             + "then summon a bot_ fake player and confirm its 假人 label appears immediately. Repeat after "
                             + "clearing the status and after changing it again; inspect the server log for packet or Mixin errors.",
                     "ZaiGanMa Team prefixes and bot labels update immediately for the existing client, FGA long-name support "
-                            + "does not alter unrelated Team packets, and reconnecting is not required."));
+                            + "does not alter unrelated Team packets, and reconnecting is not required."),
+            new SmokePlan(
+                    "sulfurCubeGrowthTime",
+                    "MC >= 26.2 && MC <= 26.3",
+                    "26.3",
+                    "MANUAL: isolated 26.2 and 26.3 servers, each with a disposable test world",
+                    "Repeat independently on 26.2 and 26.3. Set /carpet sulfurCubeGrowthTime to 5 and spawn a small "
+                            + "Sulfur Cube; confirm it remains small "
+                            + "before five game seconds and grows to medium after about five game seconds at 20 TPS. "
+                            + "Spawn a second small cube, change the rule to 1, and confirm the already-growing cube "
+                            + "keeps its existing age countdown while a newly spawned or split small cube uses the new "
+                            + "duration. Feed a small cube and confirm vanilla feeding acceleration still works. "
+                            + "Set the rule to -1 and confirm a newly spawned small cube uses the vanilla 20-minute "
+                            + "duration; save and reload a world with a small cube to confirm its age remains persisted.",
+                    "Only newly initialized small Sulfur Cubes use the configured positive duration; existing age data "
+                            + "is not rewritten when the rule changes, -1 preserves vanilla timing, and feeding retains "
+                            + "vanilla acceleration."));
 
     @Test
     void everyPlanContainsAnExecutableUpgradeProcedure() {

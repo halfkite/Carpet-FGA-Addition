@@ -1,0 +1,10 @@
+String runDirectory = System.getenv('FGA_XP_SMOKE_RUN_DIR')
+if (runDirectory == null || runDirectory.isBlank()) {
+    throw new GradleException('FGA_XP_SMOKE_RUN_DIR must point to an isolated test directory')
+}
+String projectPath = System.getenv('FGA_XP_SMOKE_PROJECT') ?: ':26.3'
+gradle.afterProject { project ->
+    if (project.path == projectPath) {
+        project.loom.runs.named('server') { runDir runDirectory }
+    }
+}

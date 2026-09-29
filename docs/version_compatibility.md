@@ -1,5 +1,39 @@
 # Minecraft 版本适配记录
 
+## 硫方怪小型成长为中型的时间（26.2、26.3）
+
+- 规则：`sulfurCubeGrowthTime`，默认 `-1`；`-1` 保持原版 20 分钟（24000 游戏刻），正整数设置成长时间秒数，允许范围为 `1–107374182`。只在新小型硫方怪初始化幼年年龄时应用；改规则不会重置已存在幼体的存档年龄计时，喂食加速仍由原版处理
+- 源码预处理条件：`MC >= 26.2 && MC <= 26.3`；规则、计时换算类、Mixin 和测试类使用 `//$$` 分支，保证原始根节点 1.21.1 不会编译或注册此功能
+- 实际适配版本：`26.2`、`26.3`；更早构建节点不启用该规则或 Mixin
+- 自动验证：`:26.2:build` 与 `:26.3:build` 均成功；每个版本 33 项自动测试全部通过。Preprocessor 依赖链也完成了当前 10 个节点的 `compileJava`；1.21.10/1.21.11 编译期间出现现有 End Gateway/Portal Mixin 目标方法警告，未导致失败
+- 资源检查：26.2 和 26.3 的生成 Mixin 配置均注册 `SulfurCubeGrowthMixin`；1.21.x 与 26.1.2 不注册
+- 产物：`mod-builds/20260929-110737/`，包含 `carpet-fga-addition-1.5.16+v2609291104-mc26.2.jar` 与 `carpet-fga-addition-1.5.16+v2609291104-mc26.3.jar`；SHA-256 与构建命令见同目录 `build-manifest.json`
+- 客户端/服务端要求：服务端规则；不新增客户端依赖、网络协议、配置格式或存档字段，沿用原版 `Age` 保存年龄
+- 游戏内验证：尚未启动客户端或服务端；实际成长时长、分裂个体、喂养加速和重进存档流程待人工冒烟，步骤见 `FeatureSmokeTestPlanTest` 中 `sulfurCubeGrowthTime`
+
+## 假人物品分类命令补全、语言反馈与 26.3 扩展命令
+
+- 行为：`/fakePlayerItemSort setting <key> <value>` 的值建议现在根据已输入的 `key` 过滤；反馈、帮助、确认按钮、分页标题及分类运行通知使用翻译组件。安装 FGA 的客户端由客户端语言解析；无 FGA 客户端使用当前 `CarpetSettings.language` 作为 fallback。帮助里的命令可点击后仅补入聊天栏
+- 命令移植：原仅在 `1.21.1` 注册的 `workers`、`dashboard`、`bot_sort restart` 和扩展设置键现也在 `26.3` 注册；其他节点仍待后续同步。`cleanOpenedTarget` 只建议 `false|true`；分类设置的完整可选值以 `docs/commands.md` 为准
+- 源码范围：`FakePlayerItemSortCommand` 命令门控为 `MC == 1.21.1 || MC == 26.3`；按键过滤、文本 fallback 及 Manager 运行通知位于共用源码。`FGAText` 从 Carpet 当前语言动态生成无 FGA 客户端 fallback
+- 实际适配版本：命令入口及扩展键为 `1.21.1`、`26.3`；分类器核心反馈与按键值补全覆盖本构建矩阵：`1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3`
+- 构建/自动测试：`:26.3:build` 成功；该任务的预处理依赖图编译了上述 10 个节点的主源码，测试仅在 `26.3` 执行。`FakePlayerItemSortCommandLocalizationTest` 与其余套件合计 30 项测试通过。测试覆盖每个设置键对应的值、扩展键可见性、三种语言 fallback 和翻译键占位符
+- 产物：`mod-builds/20260929-093021/carpet-fga-addition-1.5.16+v2609290925-mc26.3.jar`
+- 客户端/服务端要求：不新增客户端依赖、网络协议、配置格式或存档字段；命令仍受原 `commandPlayer` 与 OP 权限约束，仅将 26.3 的命令树扩展到与 1.21.1 一致
+- 游戏内验证：未启动客户端/服务端；真实 Tab 建议、FGA 英中客户端及无 FGA 客户端的聊天显示仍待手动冒烟。步骤见 `FeatureSmokeTestPlanTest` 中 `fakePlayerItemSort26_3CommandPortAndLocalizedFeedback`
+
+## 经验扁平化快速加减与 ORG 转移兼容（全构建矩阵）
+
+- 规则：`experienceLevelCost`；默认值 `false`、选项 `false` / `29-30` / `0-1` 均不变。启用固定消耗模式后，经验总量按整数点数计算；`29-30` 在30级以下保留原版曲线、30级及以上每级107点，`0-1` 则每级7点。30级以上的经验等级换算为有界常数时间；30级以下最多处理30个等级，不再对高等级执行逐级换算
+- ORG 经验转移为可选适配：1.21.x 构建分支识别 `org.carpetorgaddition.wheel.ExperienceTransfer`，允许 ORG `1.41.5` / `1.41.6`；26.1.2 对应 `boat.carpetorgaddition.wheel.ExperienceTransfer` / ORG `1.44.0`；26.2 对应 `boat.carpetorgaddition.wheel.misc.ExperienceTransfer` / ORG `1.45.1`；26.3 对应 `boat.carpetorgaddition.command.XpTransferCommand$ExperienceTransfer` / ORG `1.46.0`。其他 ORG 版本不会启用此适配，并会记录警告
+- ORG 转移使用扁平化后的整数经验总量并沿用玩家原生加减经验入口；保留 ORG 命令权限及不足经验反馈；先校验接收方容量，容量不足时双方均不改变；自转移不改变余额。整数计算修正进度浮点表示误差，等级限制在 `int` 范围，转移不读写离线玩家数据
+- 源码预处理范围：`MC >= 1.21.1 && MC <= 26.3`。实际构建节点：`1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3`
+- 已完成构建与自动测试：上述10个节点分别通过 `:<版本>:build`；每个最终 JAR 均检查了 Fabric manifest、ORG Mixin 配置、生成的目标类和 ORG 版本白名单。最终产物分别归档在 `mod-builds/20260928-231807`、`20260928-231858`、`20260928-232008`、`20260928-232052`、`20260928-232153`、`20260928-232254`、`20260928-232348`、`20260928-232810`、`20260928-232922`、`20260928-233212`
+- 已通过隔离服务端 ORG Mixin 冒烟：1.21.11 + ORG `1.41.5`、26.1.2 + `1.44.0`、26.2 + `1.45.1`、26.3 + `1.46.0`。26.3 另通过完整经验加减与 ORG 转移探针（含规则关闭/开启、30级边界、大额正负经验、余数守恒、不足经验与接收方溢出）；无 ORG 对照也通过。报告：`scripts/logs/org-flat-experience-smoke-1_21_11-20260928-232357-904/summary.txt`、`scripts/logs/org-flat-experience-smoke-26_1_2-20260928-230245-017/summary.txt`、`scripts/logs/org-flat-experience-smoke-26_2-20260928-230736-013/summary.txt`、`scripts/logs/org-flat-experience-smoke-26_3-20260928-231106-785/summary.txt`、`scripts/logs/flat-experience-smoke-26.3-20260928-231155-103/summary.txt`、`scripts/logs/flat-experience-smoke-26.3-20260928-231330-568/summary.txt`
+- 1.21.1 + ORG `1.41.6` 的隔离服务端冒烟未能运行到 FGA 探针：服务端在 ORG 自身 `LivingEntityMixin` 的 MixinExtras Expression 注入点应用阶段失败（加载到 MixinExtras `0.3.5`）；因此该组合的运行时适配待确认，不据此推断 FGA 转移探针通过，也未为掩盖 ORG 依赖冲突而改动依赖
+- 测试入口：`FlatExperienceMathTest` 覆盖两种固定消耗曲线、全部进度余数、30级双向跨越及大额正负经验；`scripts/powershell/flat-experience-smoke-26.3.ps1` 覆盖服务端经验行为；`scripts/powershell/org-flat-experience-mixin-smoke.ps1` 用于各版本的可选 ORG Mixin 隔离验证。26.3 完整 ORG 命令行为已验证；其他节点目前验证到代表性版本的 Mixin 应用和辅助逻辑，未逐节点执行完整 ORG 命令矩阵
+- 客户端/服务端要求：只需服务端安装 FGA；不增加客户端依赖、网络协议、配置格式、权限或存档数据，也不改变规则默认值和版本号。真实图形客户端经验条显示尚未验证
+
 ## 26.3 长名称假人玩家列表编码与解码
 
 - 问题：`fakePlayerNameLength` 设置为大于 16 后，长名称假人加入、实时同步或客户端重进后的玩家列表初始化可能触发 UTF 玩家名 16 字符限制；安装 FGA 与 Flashback 的客户端还会在录制线程重新编码收到的玩家列表包时崩溃，因为解码后的包没有服务端构造时的许可标记

@@ -545,7 +545,7 @@ public final class FakePlayerItemSortManager {
             else compactBoxOverflow(targets, request.itemKey(), request.source(), request.initiator());
             dashboardDirty = true;
         } catch (IOException exception) {
-            notice(request.source(), request.initiator(), "sorter rebuild skipped for " + request.target() + ": " + exception.getMessage());
+            notice(request.source(), request.initiator(), "sorter rebuild skipped for " + request.target() + ": " + exception.getMessage(), "notice_rebuild_failed", request.target());
         }
     }
 
@@ -1094,7 +1094,7 @@ public final class FakePlayerItemSortManager {
             try {
                 overflow = openOverflowTarget(baseTarget, index, context);
             } catch (IOException e) {
-                notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage());
+                notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage(), "notice_overflow_open_failed", baseTarget + "_" + index);
                 return moved;
             }
             if (overflow == null) {
@@ -1127,7 +1127,7 @@ public final class FakePlayerItemSortManager {
             try {
                 overflow = openOverflowTarget(baseTarget, index, context);
             } catch (IOException e) {
-                notice(sourceId, initiator, "shulker overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage());
+                notice(sourceId, initiator, "shulker overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage(), "notice_shulker_overflow_open_failed", baseTarget + "_" + index);
                 return moved;
             }
             if (overflow == null) {
@@ -1168,7 +1168,7 @@ public final class FakePlayerItemSortManager {
             try {
                 overflow = openOverflowTarget(baseTarget, index, context);
             } catch (IOException e) {
-                notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage());
+                notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage(), "notice_overflow_open_failed", baseTarget + "_" + index);
                 return false;
             }
             if (overflow == null) {
@@ -1257,7 +1257,7 @@ public final class FakePlayerItemSortManager {
             ItemStack stack = target.main(slot);
             if (stack.isEmpty()) continue;
             if (!isShulkerBox(stack)) {
-                if (!itemKey(stack).equals(itemKey)) notice(sourceId, initiator, "other item found in overflow target");
+                if (!itemKey(stack).equals(itemKey)) notice(sourceId, initiator, "other item found in overflow target", "notice_mixed_overflow");
                 continue;
             }
             if (!isUsableShulkerFor(stack, itemKey)) continue;
@@ -1537,7 +1537,7 @@ public final class FakePlayerItemSortManager {
         try {
             ManagedInventory depot = openDepot(minecraftServer);
             if (depot == null) {
-                notice(sourceId, initiator, "box depot is occupied by a real player: " + depotName());
+                notice(sourceId, initiator, "box depot is occupied by a real player: " + depotName(), "notice_depot_occupied", depotName());
                 return ItemStack.EMPTY;
             }
             for (int slot = 0; slot < MAIN_SIZE; slot++) {
@@ -1554,7 +1554,7 @@ public final class FakePlayerItemSortManager {
             }
             return ItemStack.EMPTY;
         } catch (IOException e) {
-            notice(sourceId, initiator, "box depot read failed: " + e.getMessage());
+            notice(sourceId, initiator, "box depot read failed: " + e.getMessage(), "notice_depot_read_failed");
             return ItemStack.EMPTY;
         } finally { finishDepotUse(minecraftServer); }
     }
@@ -1601,7 +1601,7 @@ public final class FakePlayerItemSortManager {
             ManagedInventory depot = openOnlineDepotForCraft(minecraftServer, sourceId, initiator);
             if (depot == null) {
                 nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                notice(sourceId, initiator, "box restock failed: depot is occupied by a real player");
+                notice(sourceId, initiator, "box restock failed: depot is occupied by a real player", "notice_restock_depot_occupied");
                 return 0;
             }
             int current = countDepotBoxes(depot.inventory());
@@ -1621,14 +1621,14 @@ public final class FakePlayerItemSortManager {
             }
             if (!ensureDepotWorkbench(depot.inventory())) {
                 nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                notice(sourceId, initiator, "box restock failed: no slot available for depot crafting table");
+                notice(sourceId, initiator, "box restock failed: no slot available for depot crafting table", "notice_restock_no_workbench_slot");
                 return 0;
             }
             int craftable = Math.min(wanted, Math.min(countDepotMaterial(depot.inventory(), true) / 2,
                     countDepotMaterial(depot.inventory(), false) / 2));
             if (craftable <= 0) {
                 nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                notice(sourceId, initiator, "box restock failed: need 2 logs and 2 shulker shells per box");
+                notice(sourceId, initiator, "box restock failed: need 2 logs and 2 shulker shells per box", "notice_restock_material_shortage");
                 return 0;
             }
             consumeDepotMaterials(depot.inventory(), true, craftable * 2);
@@ -1639,7 +1639,7 @@ public final class FakePlayerItemSortManager {
             for (TargetInventory inventory : changed) {
                 if (!inventory.save()) {
                     nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                    notice(sourceId, initiator, "box restock failed while saving materials");
+                    notice(sourceId, initiator, "box restock failed while saving materials", "notice_restock_material_save_failed");
                     return 0;
                 }
             }
@@ -1652,15 +1652,15 @@ public final class FakePlayerItemSortManager {
             }
             if (!depot.inventory().save()) {
                 nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                notice(sourceId, initiator, "box restock failed while saving depot");
+                notice(sourceId, initiator, "box restock failed while saving depot", "notice_restock_depot_save_failed");
                 return 0;
             }
             nextDepotRestockAttemptMs = 0L;
-            notice(sourceId, initiator, "box restock crafted " + placed + " plain shulker boxes");
+            notice(sourceId, initiator, "box restock crafted " + placed + " plain shulker boxes", "notice_restock_succeeded", placed);
             return placed;
         } catch (IOException e) {
             nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-            notice(sourceId, initiator, "box restock failed: " + e.getMessage());
+            notice(sourceId, initiator, "box restock failed: " + e.getMessage(), "notice_restock_failed");
             return 0;
         } finally {
             if (spawnedForRestock) finishDepotUse(minecraftServer);
@@ -1872,10 +1872,12 @@ public final class FakePlayerItemSortManager {
         }
     }
 
-    private static void notice(UUID sourceId, UUID initiator, String message) {
-        lastError = message;
+    private static void notice(UUID sourceId, UUID initiator, String diagnostic, String translationKey, Object... args) {
+        String translationId = "carpet.fga.fake_player_item_sort." + translationKey;
+        String message = FGAText.raw(translationId, args);
+        lastError = diagnostic;
         long now = System.currentTimeMillis();
-        String key = message + "|" + sourceId + "|" + initiator;
+        String key = translationKey + Arrays.deepToString(args) + "|" + sourceId + "|" + initiator;
         Long previous = NOTICE_TIMES.get(key);
         if (previous != null && now - previous < NOTICE_THROTTLE_MS) return;
         NOTICE_TIMES.put(key, now);
@@ -1889,7 +1891,7 @@ public final class FakePlayerItemSortManager {
         if (initiator != null) recipients.add(initiator);
         for (UUID recipient : recipients) {
             ServerPlayer player = minecraftServer.getPlayerList().getPlayer(recipient);
-            if (player != null) player.sendSystemMessage(Component.literal(message));
+            if (player != null) player.sendSystemMessage(FGAText.text(translationId, args));
         }
     }
 
@@ -2017,6 +2019,11 @@ public final class FakePlayerItemSortManager {
     public static String status() {
         return "jobs=" + JOBS.size() + ", queue=" + READY.size() + ", cache=" + ROUTES.size()
                 + ", hits=" + HIT.get() + ", misses=" + MISS.get();
+    }
+
+    public static net.minecraft.network.chat.MutableComponent statusText() {
+        return FGAText.text("carpet.fga.fake_player_item_sort.runtime_status",
+                JOBS.size(), READY.size(), ROUTES.size(), HIT.get(), MISS.get());
     }
 
     private static long sorterMoveIntervalTicks() {

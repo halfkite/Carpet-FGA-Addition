@@ -360,7 +360,7 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 
 ### `/fakePlayerItemSort` 与 `bot_sort`
 
-分类核心在 Minecraft `1.21+` 注册，Dashboard/API、磁盘路由缓存、库存重构、自动补货和线程调优仍仅限 `1.21.1`<br>
+分类核心在 Minecraft `1.21+` 注册。Dashboard/API、磁盘路由缓存、库存重构、自动补货和线程调优的数据路径适用于 `1.21+`；对应管理命令目前开放于 `1.21.1` 和 `26.3`，其他版本待同步<br>
 除查询类子命令（`status`、`whitelist list`、`name list`、`format status`、`dashboard status`、`bot_sort stop`）外，配置、白名单增删、排序启动等子命令均需要 OP 2 及以上权限
 
 ```text
@@ -376,9 +376,9 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 /fakePlayerItemSort name remove <item_id>             # 删除物品名称
 /fakePlayerItemSort name list [page]                  # 查看物品名称
 /fakePlayerItemSort name reload                       # 重新加载名称
-/fakePlayerItemSort workers <initial> <cached>        # 设置线程数，仅 1.21.1
-/fakePlayerItemSort dashboard status                  # 查看 Dashboard 状态，仅 1.21.1
-/fakePlayerItemSort dashboard port <1024-65535>       # 设置 Dashboard 端口，仅 1.21.1
+/fakePlayerItemSort workers <initial> <cached>        # 设置线程数，1.21.1 和 26.3
+/fakePlayerItemSort dashboard status                  # 查看 Dashboard 状态，1.21.1 和 26.3
+/fakePlayerItemSort dashboard port <1024-65535>       # 设置 Dashboard 端口，1.21.1 和 26.3
 /player <fake_player> bot_sort                        # 开始分类
 /player <fake_player> bot_sort continuous             # 开始持续分类
 /player <fake_player> bot_sort stop                   # 停止分类
@@ -386,6 +386,10 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 /player <fake_player> bot_sort restart all            # 请求重构全部分类
 /player <fake_player> bot_sort restart all confirm    # 确认重构全部分类
 ```
+
+`setting` 的值补全会按已选设置键过滤：`whitelistMode` 为 `false|vanillaWhitelist|modWhitelist`，`quickShulker`、`cleanOpenedTarget` 为 `false|true`，`targetLanguage` 为 `english|chinese|custom`；`1.21.1` 和 `26.3` 还提供 `shulkerRestock`、`dashboard`（`false|true`），`inventoryRebuild`（`false|true|opall`），`cpuThreads`（`0|1|2`）和 `speed`（`4|8|16`）。
+
+命令反馈和分类过程通知：安装 FGA 的客户端按客户端语言显示；未安装 FGA 的客户端使用服务端 `/carpet language` 设置的语言。`help` 中的命令可点击后放入聊天栏，不会立即执行。
 
 `restart all` 必须在确认按钮或 `confirm` 子命令有效期内再次确认；`opall` 时全量重构仅 OP 可执行。`quickopen` 不召唤目标假人，直接读写离线 playerdata；`summon` 会短暂登录在线分类假人，当前批次完成后自动下线，物品保存在该假人的 playerdata 中，下次上线仍可取回。装备栏始终不读写。
 
