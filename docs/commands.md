@@ -358,10 +358,20 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 
 <a id="cmd-fake-player-item-sort"></a>
 
-### `/fakePlayerItemSort` 与 `bot_sort`
+### `/fakePlayerItemSort`、`/fga playersort` 与 `bot_sort`
 
-分类核心在 Minecraft `1.21+` 注册，Dashboard/API、磁盘路由缓存、库存重构、自动补货和线程调优仍仅限 `1.21.1`<br>
-除查询类子命令（`status`、`whitelist list`、`name list`、`format status`、`dashboard status`、`bot_sort stop`）外，配置、白名单增删、排序启动等子命令均需要 OP 2 及以上权限
+26.3 提供客户端主动查询与轻松放置半组补货 API，详见 [假人库存 API](playersort_inventory_api.md)；查询使用 `stock` 权限，取物使用独立的 `inventoryTake` 权限，默认均要求 OP，可通过 `/fga playersort permission <权限> <玩家名> true` 单独授权
+
+26.3 的可选 `query_amount` / `take_amount` 扩展复用上述权限，支持客户端指定0（半组）或1–2304个物品，普通/静默同用；数量越界拒绝，单个来源不足或背包空间不足时不部分扣货。halfmasa 在扩展功能栏分别设置轻松放置和打印机补货的允许取货、数量与静默子项。
+
+26.3 开启分类规则后，普通材料首位散货不足 1152 时，自动从最大编号后位补入首位 9–35 槽（普通物品最多 1728）；材料查询首位不足也优先查最大后位。取空的盒子送到名称为 `潜影盒` 的库存假人，接收者忙碌或背包满时原处保留并重试。维护直接处理合法库存，不召唤假人；不是 `autoCraft` 的潜影盒补给站合成功能，详见 API 文档。
+
+分类核心在 Minecraft `1.21+` 注册。现有 Dashboard/API、磁盘路由缓存、库存重构、自动补货和线程调优保留；基础管理命令适配 `1.21.1` 和 `26.3`。26.3 另外提供设置向导、逐命令权限、库存正则查询/文本导出和新的潜影盒分类路由；本轮重构仅适用于 `26.3`，其他版本行为不变。<br>
+
+26.3 向导第 11 项为网页功能，`/fga playersort set dashboard false|true|login` 分别表示关闭（默认）、无需登录、需要登录。关闭后停止 HTTP 监听和自动网页库存快照更新；游戏内主动查询库存仍可使用。登录模式保护网页、两个库存 API 和库存文本导出，先用 `/fga playersort set dashboard password <password>` 设置密码，用户名固定为 `fga`。密码为 12–128 个无空格的 ASCII 可打印字符，建议在服务端控制台设置；配置只保存随机盐 PBKDF2 哈希。设置与密码修改无需重启，仍仅监听 `127.0.0.1`；使用此 API 的客户端在 login 模式下也必须提供认证信息。
+26.3 的 `/fga playersort` 默认仅 OP 2 及以上和控制台可用，可通过 `permission` 单独调整命令权限；旧版本仍使用 Carpet 的 `commandPlayer` 权限模型。
+
+26.3 的 11 项设置统一收拢到 `/fga playersort set`，直接执行该命令会显示设置面板。外层只保留管理命令及语言快捷入口；`language` 同时支持 `/fga playersort set language` 与 `/fga playersort language`。26.3 的旧 `/fakePlayerItemSort` 别名采用同一布局；下面开头的 `/fakePlayerItemSort mode/setting/format/workers/dashboard` 旧语法仅用于 26.3 之前的版本。
 
 ```text
 /fakePlayerItemSort status                            # 查看当前状态
@@ -376,18 +386,62 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 /fakePlayerItemSort name remove <item_id>             # 删除物品名称
 /fakePlayerItemSort name list [page]                  # 查看物品名称
 /fakePlayerItemSort name reload                       # 重新加载名称
-/fakePlayerItemSort workers <initial> <cached>        # 设置线程数，仅 1.21.1
-/fakePlayerItemSort dashboard status                  # 查看 Dashboard 状态，仅 1.21.1
-/fakePlayerItemSort dashboard port <1024-65535>       # 设置 Dashboard 端口，仅 1.21.1
+/fakePlayerItemSort workers <initial> <cached>        # 旧入口，1.21.1
+/fakePlayerItemSort dashboard status                  # 旧入口，1.21.1
+/fakePlayerItemSort dashboard port <1024-65535>       # 旧入口，1.21.1
+/fga playersort set                                  # 26.3：显示设置面板
+/fga playersort set mode summon|quickopen             # 26.3：设置分类模式
+/fga playersort set whitelistMode false|vanillaWhitelist|modWhitelist # 26.3：设置白名单过滤模式
+/fga playersort set inventoryRebuild false|true|opall  # 26.3：设置库存重构策略
+/fga playersort set format prefix|suffix <text>       # 26.3：保留的名称格式设置
+/fga playersort set workers <initial> <cached>        # 26.3：保留的旧线程设置；实际线程数使用 cpu 设置
+/fga playersort set dashboard status                 # 26.3：查看网页状态
+/fga playersort set dashboard port <1024-65535>       # 26.3：设置网页端口
+/fga playersort set dashboard false|true|login           # 26.3 网页关闭 / 无需登录 / 需要登录
+/fga playersort set dashboard password <password>        # 26.3 设置网页密码，用户名为 fga
+/fga playersort setup                                  # 26.3：显示设置向导
+/fga playersort set language chinese|english|custom       # 26.3：设置分类语言
+/fga playersort language chinese|english|custom       # 26.3：保留的语言快捷入口
+/fga playersort set summonNotices true|false                # 26.3：是否向游戏公屏广播分类假人上下线消息；控制台日志始终保留
+/fga playersort set prefix default|off                    # 26.3：默认 bulk_ 前缀或关闭
+/fga playersort set prefix custom <text>                  # 26.3：自定义前缀
+/fga playersort set quickShulker true|false                # 26.3：拆分潜影盒内容或按盒分类
+/fga playersort set autoCraft true|false                   # 26.3：设置空潜影盒自动补货/合成
+/fga playersort set cleanOpenedTarget true|false           # 26.3：打开目标时整理不匹配物品
+/fga playersort set speed <ticks>                          # 26.3：分类间隔；范围 1-120 刻，4/8/16 可 Tab 补全
+/fga playersort set cpu 0|1|2                              # 26.3：0 为可用 CPU 的一半；1、2 为工作线程数
+/fga playersort set cpu custom <threads>                   # 26.3：自定义工作线程数，输入范围 1-256，实际不超过可用 CPU 数
+/fga playersort stock list <regex> [page]              # 26.3：正则查询缓存库存
+/fga playersort stock list all                         # 26.3：导出全部库存文本
+/fga playersort permission <command> <ops|0-4|player> <true|false>  # 26.3：设置命令权限
 /player <fake_player> bot_sort                        # 开始分类
 /player <fake_player> bot_sort continuous             # 开始持续分类
 /player <fake_player> bot_sort stop                   # 停止分类
 /player <fake_player> bot_sort restart <item_name>    # 重启指定物品分类
 /player <fake_player> bot_sort restart all            # 请求重构全部分类
 /player <fake_player> bot_sort restart all confirm    # 确认重构全部分类
+/player <fake_player> bot_sort restart stop           # 停止该假人的待处理重构
 ```
 
-`restart all` 必须在确认按钮或 `confirm` 子命令有效期内再次确认；`opall` 时全量重构仅 OP 可执行。`quickopen` 不召唤目标假人，直接读写离线 playerdata；`summon` 会短暂登录在线分类假人，当前批次完成后自动下线，物品保存在该假人的 playerdata 中，下次上线仍可取回。装备栏始终不读写。
+26.3 的 `set` 值补全按所选设置过滤；11 项设置名为 `language`、`mode`、`summonNotices`、`prefix`、`quickShulker`、`autoCraft`、`whitelistMode`、`cleanOpenedTarget`、`speed`、`cpu`、`dashboard`。`dashboard` 支持 `false|true|login`，`speed` 接受 1–120 刻，`cpu custom` 接受 1–256。高级内部设置名 `targetLanguage`、`shulkerRestock`、`cpuThreads`、`inventoryRebuild` 仍可通过 `set <name> <value>` 输入，沿用原 `settings` 权限；11 项明确子命令沿用原有对应功能权限，并兼容原 settings 授权能够修改的设置；网页密码和端口仍要求 dashboard 权限。其他版本继续使用 `setting` 旧入口和原有可选值。
+
+26.3 首次启用后会提示设置语言；选择语言后才展示其余十项设置。第 3 项控制分类自动召唤假人的上下线消息是否广播到游戏公屏；关闭时服务端控制台仍会记录登录与断开信息。点击选项只会把命令放入聊天栏。设置项与选择状态会写入世界配置。分类速度按 N 刻间隔移动；散货也会按速度分批转移，潜影盒补货假人会在补货/清理任务结束后下线（资料预载延迟上线时也会清理）。潜影盒开启拆分时按盒内物品路由，并在首位库存满后使用编号后位；关闭时散件、满单物品盒、混合/未满盒分别进入物品、`_box` 和混合盒分类。默认前缀为 `bulk_`。白名单可使用原版服务器白名单或 FGA 内置白名单。
+
+26.3 库存查询的 `<regex>` 匹配物品名、物品 ID 和目标假人名；`stock list all` 写出位于世界配置目录下的文本文件。`restart all` 需在 30 秒内确认，重构限速排队；`restart stop` 取消该假人尚未处理的重构。逐命令权限支持 `all`、命令名、权限等级 `0-4`、`ops` 和具体玩家名；默认 OP 2 及以上可用，控制台始终可用。
+
+命令反馈和分类过程通知：安装 FGA 的客户端按客户端语言显示；未安装 FGA 的客户端使用服务端 `/carpet language` 设置的语言。`help` 中的命令可点击后放入聊天栏，不会立即执行。
+
+26.3 的 `stock list all` 成功反馈保留可翻译文本，导出路径以字符串发送，避免 Path 参数导致系统聊天包编码失败。导出的 TXT 位于服务端，不会自动下载到客户端。
+
+`restart all` 必须在确认按钮或 `confirm` 子命令有效期内再次确认；`opall` 时全量重构仅 OP 可执行。`quickopen` 不召唤目标假人，直接读写离线 playerdata；`summon` 会短暂登录在线分类假人，当前批次完成后自动下线，物品保存在该假人的 playerdata 中，下次上线仍可取回。装备栏始终不读写。分类目标假人使用按名字确定的离线档案，召唤前先写入服务端档案缓存，因此中文等本地化目标名不会触发向 Mojang 查询档案的主线程卡顿。
+
+26.3 的 `speed` 是两次搬运尝试之间的游戏刻数，数字越小越快，失败尝试也会等待该间隔。拆盒单次最多转移 64 个同类物品；同类物品跨多个盒内槽位时合并处理。排队中的任务不会重复规划，停止或重启分类后旧任务不会继续写入。空盒分类假人会等源库存中待拆盒全部处理完再下线，避免每拆一个盒子就重新登录。提高 tick rate 会增加每秒执行次数，并不会改变这些每 tick 限制。
+
+26.3 使用原版玩家数据目录 `world/players/data`。若旧 FGA 曾在 `world/playerdata` 写入同 UUID 的分类库存，分类器会保留旧文件并拒绝继续写入该目标；需核对两边库存后恢复，不能直接覆盖或删除任一份档案。
+
+空潜影盒补给假人（`潜影盒补货`）以本轮分类为生命周期：只要还有分类任务在跑，它就保持在线，即使一次补货因为缺少材料失败也不会立刻下线，等到原木、潜影盒壳在后续分类中到位后再合成；本轮分类结束（源假人背包清空、没有分类任务）或规则关闭时它才下线。玩家自己召唤的同名假人不受此逻辑影响，不会被自动下线。
+
+补给站按盒装材料取料：放进 `潜影盒补货` 背包的潜影盒只要装的是原木或潜影盒壳，就算补给站材料而不是需要清出去的杂物；合成空盒时会直接从这些盒子里取 2 原木 + 2 潜影盒壳，因此背包 36 格全被材料盒占满、没有空槽时也能继续产出空盒。被取空的盒子留在原处，本身就是一个可用空盒。该行为同样受 `shulkerRestock` 开关约束。
 
 ## 矿车与载具指令 (vehicle)
 

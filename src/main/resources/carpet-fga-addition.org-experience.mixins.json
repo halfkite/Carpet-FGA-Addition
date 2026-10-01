@@ -1,0 +1,8 @@
+{
+    "required": true,
+    "package": "carpet.fga.mixin",
+    "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
+    "plugin": "carpet.fga.mixin.OrgExperienceMixinPlugin",
+    "mixins": ["OrgFlatExperienceMixin"],
+    "injectors": {"defaultRequire": 1}
+}

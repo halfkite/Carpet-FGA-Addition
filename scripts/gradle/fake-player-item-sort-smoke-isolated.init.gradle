@@ -5,6 +5,12 @@ if (runDirectory == null || runDirectory.isBlank()) {
 
 gradle.afterProject { project ->
     if (project.path == ':26.3') {
+        String baselineJar = System.getenv('FGA_SORT_BASELINE_JAR')
+        if (baselineJar != null && !baselineJar.isBlank()) {
+            // A/B performance run: use an archived distributable for the main mod, retaining
+            // the current independent test probe. Never replace working-tree sources/classes.
+            project.sourceSets.main.output.setClassesDirs(project.files(baselineJar))
+        }
         project.loom.runs.named('server') {
             runDir runDirectory
         }

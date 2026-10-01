@@ -922,6 +922,26 @@ public class FGASettings {
     //#endif
     public static String babyMobNoGrowth = "false";
 
+    //#if MC >= 26.2 && MC <= 26.3
+    //$$ @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+    //$$     options = {"-1", "1"},
+    //$$     strict = false,
+    //$$     validators = FGASettings.SulfurCubeGrowthTimeValidator.class
+    //$$ )
+    //$$ public static int sulfurCubeGrowthTime = -1;
+    //$$
+    //$$ public static class SulfurCubeGrowthTimeValidator extends Validator<Integer> {
+    //$$     @Override
+    //$$     public Integer validate(CommandSourceStack source, CarpetRule<Integer> currentRule,
+    //$$                             Integer newValue, String userInput) {
+    //$$         if (newValue != null && SulfurCubeGrowthTime.isValid(newValue)) return newValue;
+    //$$         Messenger.m(source, "r sulfurCubeGrowthTime must be -1 or between 1 and "
+    //$$                 + SulfurCubeGrowthTime.MAX_SECONDS + " seconds");
+    //$$         return null;
+    //$$     }
+    //$$ }
+    //#endif
+
     public static class BabyMobNoGrowthBaselineCondition implements
             //#if MC >= 1.19
             carpet.api.settings.Rule.Condition {

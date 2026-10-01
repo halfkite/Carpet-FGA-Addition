@@ -476,6 +476,17 @@ mini：仅阻止自定义名称完整等于小写 `mini` 的幼体，`Mini` 不�
 - 分类：`FGA`，`生存`
 - 生效版本：`1.21+`
 
+### 硫方怪成长时间(sulfurCubeGrowthTime)
+
+设置小型硫方怪成长为中型所需的游戏时间，按秒输入；`-1` 保持原版 20 分钟，正整数设置对应秒数<br>
+只影响之后出生或分裂的小型硫方怪；规则修改不会重置已有幼体保存的年龄计时，喂养加速仍按原版生效
+
+- 类型：`整数`
+- 默认值：`-1`
+- 参考选项：`-1` 或 `1–107374182` 秒
+- 分类：`FGA`，`生存`
+- 生效版本：`26.2`、`26.3`
+
 ### 坚韧的花草(resilientPlants)
 
 让匹配的花草忽略原版存活限制，可以放在空气位置或任意方块上<br>
@@ -606,6 +617,8 @@ false 或 0 保持原版上限；直接输入数字 N 让附魔的原版等级�
 - 客户端要求：无（纯服务端）
 
 ### 经验升级消耗扁平化(experienceLevelCost)
+
+所有当前构建版本的固定消耗区间均使用有界整数运算；29-30 在30级以下沿用原版经验曲线、30级及以上每级固定消耗107点，0-1 则所有等级每级固定消耗7点；同时适配经过版本校验的 ORG 经验转移实现
 
 false 使用原版经验曲线；29-30 让30级后每级升级消耗经验与29到30一样；0-1 让每级升级消耗经验与0到1一样
 
@@ -911,7 +924,7 @@ ops：需要 OP 2 及以上<br>
 
 ### 假人物品分类(fakePlayerItemSort) · [相关指令](commands.md#cmd-fake-player-item-sort)
 
-启用假人物品分类，使用 /fakePlayerItemSort 管理模式和分类配置
+启用假人物品分类。Minecraft 26.3 使用 `/fga playersort` 进行首次设置和分类管理；旧版本继续使用 `/fakePlayerItemSort`
 
 - 类型：`布尔`
 - 默认值：`false`
@@ -920,7 +933,7 @@ ops：需要 OP 2 及以上<br>
 - 生效版本：`1.21+`
 
 
-分类配置保存在 `world/config/carpetfgaaddition/fake-player-item-sort.json`。`/fakePlayerItemSort mode summon` 使用在线 Carpet 假人，`mode quickopen` 直接读写离线 playerdata。旧版 `fakePlayerItemSort*` Carpet 配置只在首次启动时迁移到该 JSON，不再注册为规则。
+分类配置保存在 `world/config/carpetfgaaddition/fake-player-item-sort.json`。`mode summon` 使用在线 Carpet 假人，`mode quickopen` 直接读写离线 playerdata。26.3 首次启用时会显示双语设置向导；旧版 `fakePlayerItemSort*` Carpet 配置只在首次启动时迁移到该 JSON，不再注册为规则。
 
 
 ## 配置文件

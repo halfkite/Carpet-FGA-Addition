@@ -40,6 +40,9 @@ public class FGAExtension implements CarpetExtension {
     public void onGameStarted() {
         VillagerBreedingAnimalization.registerRuleObserver();
         registerFgaCommandTreeRefreshObserver();
+        //#if MC == 26.3
+        registerFakePlayerItemSortRuleObserver();
+        //#endif
         //#if MC >= 1.21 && MC <= 26.3
         registerCommandTreeJoinRefresh();
         //#endif
@@ -197,6 +200,9 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onTick(MinecraftServer server) {
+        //#if MC == 26.3
+        //$$ PlayerSortInventoryApi.tick(server);
+        //#endif
         //#if MC >= 1.21.1 && MC <= 26.3
         FakePlayerRejoinCommand.tick(server);
         //#endif
@@ -254,6 +260,9 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onServerClosed(MinecraftServer server) {
+        //#if MC == 26.3
+        //$$ PlayerSortInventoryApi.clear();
+        //#endif
         //#if MC >= 1.21 && MC <= 26.3
         JoinNoticeConfig.clear();
         AnnouncementConfig.clear();
@@ -269,6 +278,9 @@ public class FGAExtension implements CarpetExtension {
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.3
         FakePlayerItemSortManager.close();
+        //#if MC == 26.3
+        FakePlayerItemSortCommand.clearSetupNotifications();
+        //#endif
         //#if MC == 1.20.1 || MC >= 1.21 && MC <= 26.3
         TerrainRegenerationManager.clear();
         //#endif
@@ -329,12 +341,20 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onPlayerLoggedOut(net.minecraft.server.level.ServerPlayer player) {
+        //#if MC == 26.3
+        //$$ PlayerSortInventoryApi.disconnect(player);
+        //#endif
         FGAModDetector.remove(player);
         //#if MC >= 1.20.1
         StackLimitClientRequirement.onPlayerLoggedOut(player);
         //#endif
+        //#if MC == 1.20.1 || MC == 1.21.1 || MC == 26.3
+        if (player instanceof carpet.patches.EntityPlayerMPFake) {
+            FakePlayerItemSortManager.onSorterPlayerLoggedOut(player);
+            FakePlayerItemSortManager.markDashboardDirty();
+        }
+        //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
-        if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();
         MinecartFeatureManager.removePlayer(player);
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
@@ -351,8 +371,11 @@ public class FGAExtension implements CarpetExtension {
         StackLimitClientRequirement.onPlayerLoggedIn(player);
         //#endif
         RecipeBookAlwaysUnlockedManager.onPlayerLoggedIn(player);
-        //#if MC == 1.20.1 || MC == 1.21.1
-        if (player instanceof carpet.patches.EntityPlayerMPFake) FakePlayerItemSortManager.markDashboardDirty();
+        //#if MC == 1.20.1 || MC == 1.21.1 || MC == 26.3
+        if (player instanceof carpet.patches.EntityPlayerMPFake) {
+            FakePlayerItemSortManager.onSorterPlayerLoggedIn(player);
+            FakePlayerItemSortManager.markDashboardDirty();
+        }
         //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         PlayerLoadDistanceCompat.onLogin(player);
@@ -452,6 +475,18 @@ public class FGAExtension implements CarpetExtension {
         //#endif
     }
 
+    //#if MC == 26.3
+    private static void registerFakePlayerItemSortRuleObserver() {
+        carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
+            if (!"fakePlayerItemSort".equals(rule.name())) return;
+            if (Boolean.TRUE.equals(rule.value())) FakePlayerItemSortCommand.onRuleEnabled(source);
+            else FakePlayerItemSortCommand.clearSetupNotifications();
+            MinecraftServer server = CarpetServer.minecraft_server;
+            if (server != null) refreshCommandTree(server);
+        });
+    }
+    //#endif
+
     //#if MC >= 1.21 && MC <= 26.3
     /**
      * High-version clients can receive the initial command tree before a
@@ -463,6 +498,9 @@ public class FGAExtension implements CarpetExtension {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 server.execute(() -> {
                     refreshCommandTree(server);
+                    //#if MC == 26.3
+                    FakePlayerItemSortCommand.onPlayerJoin(handler.player);
+                    //#endif
                     //#if MC >= 1.21 && MC <= 26.3
                     JoinNoticeManager.onJoin(handler.player);
                     AnnouncementManager.onJoin(handler.player);

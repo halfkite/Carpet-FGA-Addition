@@ -1,9 +1,12 @@
 //#if MC >= 1.20.1 && MC <= 26.3
 package carpet.fga;
 
+import carpet.CarpetSettings;
 import carpet.patches.EntityPlayerMPFake;
 import com.google.gson.*;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -17,6 +20,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+//#if MC >= 1.21.10
+//$$ import net.minecraft.server.players.NameAndId;
+//#endif
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -43,6 +49,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * playerdata mutation stays on the server thread.
  */
 public final class FakePlayerItemSortManager {
+    private static final String BOX_ROUTE_PREFIX = "@fga:full-box:";
+    private static final String MIXED_BOX_ROUTE_KEY = "@fga:mixed-boxes";
     // Inventory access is not thread-safe. Keep only one short commit on the server thread per tick.
     private static final long ALL_REBUILD_INTERVAL_TICKS = 100L;
     private static final int MAIN_SIZE = 36;
@@ -66,6 +74,8 @@ public final class FakePlayerItemSortManager {
     private static final Map<String, String> ROUTES = new ConcurrentHashMap<>();
     // Never call Minecraft's profile cache lookup from a server tick: it may synchronously query Mojang.
     private static final Map<String, UUID> LOCAL_PROFILE_UUIDS = new ConcurrentHashMap<>();
+    // Target names already seeded with a deterministic offline profile in this server session.
+    private static final Set<String> SEEDED_SORTER_TARGETS = ConcurrentHashMap.newKeySet();
     //#if MC >= 1.21.1 && MC <= 26.3
     // Carpet FGA profile preloading can finish asynchronously. Keep a single in-flight spawn per name.
     private static final Map<String, Long> PENDING_SORTER_SPAWNS = new HashMap<>();
@@ -73,6 +83,9 @@ public final class FakePlayerItemSortManager {
     //#endif
     private static final Map<String, Set<String>> AUTO_SPAWNED_BY_BATCH = new HashMap<>();
     private static final Set<UUID> AUTO_SPAWNED_DEPOTS = new HashSet<>();
+    private static final Set<String> AUTO_SPAWNED_DEPOT_NAMES = ConcurrentHashMap.newKeySet();
+    private static final Set<String> DEPOT_CLOSE_AFTER_LOGIN = ConcurrentHashMap.newKeySet();
+    private static final Map<String, Long> SORTER_FAKE_NOTICE_NAMES = new ConcurrentHashMap<>();
     private static final Map<String, Long> NOTICE_TIMES = new HashMap<>();
     private static final Set<String> OPEN_TARGET_CLEANUPS = new HashSet<>();
     private static final Map<String, String> CHINESE_TRANSLATIONS = loadChineseTranslations();
@@ -100,6 +113,14 @@ public final class FakePlayerItemSortManager {
         //#endif
     }
 
+    private static boolean supportsPlayersortRefactor() {
+        //#if MC == 26.3
+        return true;
+        //#else
+        //$$ return false;
+        //#endif
+    }
+
     public static void enableFromLegacyMigration() {
         FGASettings.fakePlayerItemSort = true;
     }
@@ -107,7 +128,8 @@ public final class FakePlayerItemSortManager {
     private enum MoveKind {
         NORMAL,
         WHOLE_SHULKER,
-        SPLIT_SHULKER
+        SPLIT_SHULKER,
+        RAW_SHULKER
     }
 
     public static void load(MinecraftServer value) {
@@ -136,7 +158,7 @@ public final class FakePlayerItemSortManager {
             lastError = "cache ignored: " + e.getMessage();
         }
         recreateWorkers();
-        refreshDashboardSnapshot(value);
+        if (!supportsPlayersortRefactor() || FakePlayerItemSortConfig.snapshot().dashboard()) refreshDashboardSnapshot(value);
         syncDashboard(value);
     }
 
@@ -155,10 +177,14 @@ public final class FakePlayerItemSortManager {
         REBUILD_QUEUE.clear();
         AUTO_SPAWNED_BY_BATCH.clear();
         AUTO_SPAWNED_DEPOTS.clear();
+        AUTO_SPAWNED_DEPOT_NAMES.clear();
+        DEPOT_CLOSE_AFTER_LOGIN.clear();
+        SORTER_FAKE_NOTICE_NAMES.clear();
         //#if MC >= 1.21.1 && MC <= 26.3
         PENDING_SORTER_SPAWNS.clear();
         //#endif
         LOCAL_PROFILE_UUIDS.clear();
+        SEEDED_SORTER_TARGETS.clear();
         dashboardDirty = true;
         if (workers != null) workers.shutdownNow();
         workers = null;
@@ -172,18 +198,28 @@ public final class FakePlayerItemSortManager {
         ExecutorService old = workers;
         FakePlayerItemSortConfig.State config = FakePlayerItemSortConfig.snapshot();
         int cpu = Math.max(1, Runtime.getRuntime().availableProcessors());
-        int size = supportsExtendedFeatures() ? switch (config.cpuThreads()) {
-            case "1" -> 1;
-            case "2" -> cpu;
-            default -> Math.max(1, cpu / 2);
-        } : 1;
+        int size;
+        if (!supportsExtendedFeatures()) size = 1;
+        else if (!supportsPlayersortRefactor()) {
+            size = switch (config.cpuThreads()) {
+                case "1" -> 1;
+                case "2" -> cpu;
+                default -> Math.max(1, cpu / 2);
+            };
+        } else {
+            int configuredThreads = Integer.parseInt(config.cpuThreads());
+            size = configuredThreads == 0 ? Math.max(1, cpu / 2) : Math.min(configuredThreads, cpu);
+        }
         workers = Executors.newFixedThreadPool(size, r -> {
             Thread t = new Thread(r, "carpet-fga-item-sort");
             t.setDaemon(true);
             return t;
         });
         activeCpuPreset = config.cpuThreads();
-        if (old != null) old.shutdownNow();
+        if (old != null) {
+            // Let already submitted plans finish; cancelling them would strand their pending jobs.
+            if (supportsPlayersortRefactor()) old.shutdown(); else old.shutdownNow();
+        }
     }
 
     public static boolean start(ServerPlayer player, boolean continuous, UUID initiator, StringBuilder error) {
@@ -231,11 +267,15 @@ public final class FakePlayerItemSortManager {
                 && !Objects.equals(activeCpuPreset, FakePlayerItemSortConfig.snapshot().cpuThreads())) recreateWorkers();
         if (supportsExtendedFeatures()) syncDashboard(value);
         dashboardRefreshTicks++;
+        SORTER_FAKE_NOTICE_NAMES.entrySet().removeIf(entry -> entry.getValue() != Long.MAX_VALUE
+                && entry.getValue() < dashboardRefreshTicks
+                && value.getPlayerList().getPlayerByName(entry.getKey()) == null);
         if (!FGASettings.isFakePlayerItemSortEnabled()) {
             JOBS.clear();
             READY.clear();
             REBUILD_QUEUE.clear();
             AUTO_SPAWNED_BY_BATCH.clear();
+            closeRoundDepot(value);
             refreshDashboardIfDue(value);
             return;
         }
@@ -243,7 +283,20 @@ public final class FakePlayerItemSortManager {
         while (budget-- > 0) {
             PlannedMove move = READY.poll();
             if (move == null) break;
-            apply(move);
+            if (supportsPlayersortRefactor()) {
+                // A stopped/restarted job must never commit an old worker's plan.
+                if (JOBS.get(move.source()) != move.owner()) continue;
+                try {
+                    apply(move);
+                } finally {
+                    // Keep ownership through queueing and commit. Failed moves also back off:
+                    // missing box material/offline targets must not trigger disk I/O every tick.
+                    move.owner().pauseUntil(dashboardRefreshTicks + sorterMoveIntervalTicks());
+                    move.owner().pending(false);
+                }
+            } else {
+                apply(move);
+            }
         }
         RebuildRequest request = supportsExtendedFeatures() ? REBUILD_QUEUE.peek() : null;
         if (request != null && (!request.all() || dashboardRefreshTicks >= nextAllRebuildTick)) {
@@ -251,6 +304,7 @@ public final class FakePlayerItemSortManager {
             rebuildRoute(value, request);
             if (request.all()) nextAllRebuildTick = dashboardRefreshTicks + ALL_REBUILD_INTERVAL_TICKS;
         }
+        boolean depotJobFinished = false;
         for (Iterator<Job> it = JOBS.values().iterator(); it.hasNext();) {
             Job job = it.next();
             ServerPlayer player = value.getPlayerList().getPlayer(job.player());
@@ -260,10 +314,13 @@ public final class FakePlayerItemSortManager {
             }
             if (!job.pending() && !job.coolingDown(dashboardRefreshTicks)) plan(player, job);
             if (!job.continuous() && !job.pending() && !hasSortableSourceItems(player, job)) {
-                if (job.depotCleanup()) closeDepotFake(value, player);
+                // The depot cleanup job finishing is not the end of its round; finishDepotUse
+                // below decides whether the round it serves is over.
+                if (job.depotCleanup()) depotJobFinished = true;
                 it.remove();
             }
         }
+        if (depotJobFinished || !sortingRoundActive()) finishDepotUse(value);
         refreshDashboardIfDue(value);
     }
 
@@ -272,7 +329,11 @@ public final class FakePlayerItemSortManager {
                 && FakePlayerItemSortConfig.snapshot().dashboard();
         if (enabled == dashboardRunning) return;
         if (enabled) FakePlayerItemSortDashboard.start(minecraftServer, FakePlayerItemSortConfig.snapshot().dashboardPort());
-        else FakePlayerItemSortDashboard.stop();
+        else {
+            FakePlayerItemSortDashboard.stop();
+            if (supportsPlayersortRefactor()) dashboardSnapshot = "{\"items\":[]}";
+        }
+        if (enabled && !dashboardRunning) markDashboardDirty();
         dashboardRunning = enabled;
     }
 
@@ -310,6 +371,13 @@ public final class FakePlayerItemSortManager {
         return routes.size();
     }
 
+    public static int stopRebuild(ServerPlayer source) {
+        if (source == null) return 0;
+        int before = REBUILD_QUEUE.size();
+        REBUILD_QUEUE.removeIf(request -> source.getUUID().equals(request.source()));
+        return before - REBUILD_QUEUE.size();
+    }
+
     public static boolean isInventoryRebuildEnabled() {
         return supportsExtendedFeatures()
                 && !"false".equals(FakePlayerItemSortConfig.snapshot().inventoryRebuild());
@@ -324,6 +392,32 @@ public final class FakePlayerItemSortManager {
     /** Called by explicit lifecycle and sorter inventory-access paths; never scans inventories in tick(). */
     public static void markDashboardDirty() {
         dashboardDirty = true;
+    }
+
+    public static void onSorterPlayerLoggedIn(ServerPlayer player) {
+        if (!(player instanceof EntityPlayerMPFake)) return;
+        String key = player.getGameProfile().getName().toLowerCase(Locale.ROOT);
+        if (SORTER_FAKE_NOTICE_NAMES.containsKey(key)) SORTER_FAKE_NOTICE_NAMES.put(key, Long.MAX_VALUE);
+        if (!AUTO_SPAWNED_DEPOT_NAMES.contains(key)) return;
+        AUTO_SPAWNED_DEPOTS.add(player.getUUID());
+        if (DEPOT_CLOSE_AFTER_LOGIN.contains(key) && server != null) finishDepotUse(server);
+    }
+
+    public static void onSorterPlayerLoggedOut(ServerPlayer player) {
+        if (!(player instanceof EntityPlayerMPFake)) return;
+        String key = player.getGameProfile().getName().toLowerCase(Locale.ROOT);
+        SORTER_FAKE_NOTICE_NAMES.remove(key);
+        if (AUTO_SPAWNED_DEPOTS.remove(player.getUUID())) {
+            AUTO_SPAWNED_DEPOT_NAMES.remove(key);
+            DEPOT_CLOSE_AFTER_LOGIN.remove(key);
+        }
+    }
+
+    public static boolean shouldSuppressSorterFakeNotice(ServerPlayer player) {
+        if (!supportsPlayersortRefactor() || !(player instanceof EntityPlayerMPFake)
+                || FakePlayerItemSortConfig.snapshot().summonNotices()) return false;
+        Long expiry = SORTER_FAKE_NOTICE_NAMES.get(player.getGameProfile().getName().toLowerCase(Locale.ROOT));
+        return expiry != null && (expiry == Long.MAX_VALUE || expiry >= dashboardRefreshTicks);
     }
 
     private static void refreshDashboardIfDue(MinecraftServer minecraftServer) {
@@ -372,19 +466,21 @@ public final class FakePlayerItemSortManager {
             job.pending(true);
             int sourceSlot = slot;
             workers.submit(() -> {
+                boolean queued = false;
                 try {
                     if (!isSortableSourceStack(copy)) return;
                     if (job.depotCleanup() && isDepotAllowed(copy)) return;
                     SourceMove sourceMove = sourceMove(copy);
                     String itemKey = sourceMove.itemKey();
                     if (ROUTES.containsKey(itemKey)) HIT.incrementAndGet(); else MISS.incrementAndGet();
-                    String target = route(sourceMove.routeStack());
+                    String target = route(sourceMove.routeStack(), sourceMove.routeKey(), sourceMove.kind());
                     String batch = batchKey(job.player(), itemKey, target);
-                    READY.add(new PlannedMove(job.player(), job.initiator(), sourceSlot, target, sourceMove.sourceKey(), itemKey, batch, sourceMove.kind()));
+                    READY.add(new PlannedMove(job.player(), job.initiator(), sourceSlot, target, sourceMove.sourceKey(), itemKey, batch, sourceMove.kind(), job, copy));
+                    queued = true;
                 } catch (Exception e) {
                     lastError = e.getMessage();
                 } finally {
-                    job.pending(false);
+                    if (!supportsPlayersortRefactor() || !queued) job.pending(false);
                 }
             });
             break;
@@ -392,25 +488,61 @@ public final class FakePlayerItemSortManager {
     }
 
     private static String route(ItemStack stack) {
-        String itemKey = itemKey(stack);
-        String cached = ROUTES.get(itemKey);
+        SourceMove move = sourceMove(stack);
+        return route(move.routeStack(), move.routeKey(), move.kind());
+    }
+
+    private static String route(ItemStack stack, String routeKey, MoveKind kind) {
+        String cached = ROUTES.get(routeKey);
         if (cached != null) return cached;
-        String name = computedRoute(stack);
-        ROUTES.put(itemKey, name);
+        String name = computedRoute(stack, routeKey, kind);
+        ROUTES.put(routeKey, name);
         dashboardDirty = true;
         return name;
     }
 
-    private static String computedRoute(ItemStack stack) {
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        String base = displayName(stack, id.toString());
+    private static String computedRoute(ItemStack stack, String routeKey, MoveKind kind) {
         FakePlayerItemSortConfig.State cfg = FakePlayerItemSortConfig.snapshot();
-        String logical = cfg.quickShulker() ? base : "bulk_" + base;
-        return switch (cfg.nameFormat()) {
-            case "prefix" -> cfg.prefix() + logical;
-            case "suffix" -> logical + cfg.suffix();
-            default -> logical;
-        };
+        if (!supportsPlayersortRefactor()) {
+            ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+            String base = displayName(stack, id.toString());
+            String logical = cfg.quickShulker() ? base : "bulk_" + base;
+            return switch (cfg.nameFormat()) {
+                case "prefix" -> cfg.prefix() + logical;
+                case "suffix" -> logical + cfg.suffix();
+                default -> logical;
+            };
+        }
+        String logical;
+        if (MIXED_BOX_ROUTE_KEY.equals(routeKey)) {
+            logical = mixedBoxName();
+        } else if (kind == MoveKind.WHOLE_SHULKER && !stack.isEmpty()) {
+            logical = displayName(stack, BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()) + "_box";
+        } else if (kind == MoveKind.RAW_SHULKER && !stack.isEmpty()) {
+            logical = displayName(stack, BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+        } else {
+            logical = displayName(stack, BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+        }
+        return cfg.prefix() + logical + cfg.suffix();
+    }
+
+    private static String computedRouteForKey(String routeKey) {
+        if (!supportsPlayersortRefactor()) {
+            ItemStack stack = stackForKey(routeKey);
+            return stack.isEmpty() ? ROUTES.get(routeKey) : computedRoute(stack, routeKey, MoveKind.NORMAL);
+        }
+        if (MIXED_BOX_ROUTE_KEY.equals(routeKey)) {
+            FakePlayerItemSortConfig.State cfg = FakePlayerItemSortConfig.snapshot();
+            return cfg.prefix() + mixedBoxName() + cfg.suffix();
+        }
+        if (routeKey.startsWith(BOX_ROUTE_PREFIX)) {
+            String contentsKey = routeKey.substring(BOX_ROUTE_PREFIX.length());
+            ItemStack contents = stackForKey(contentsKey);
+            return contents.isEmpty() ? ROUTES.get(routeKey)
+                    : computedRoute(contents, routeKey, MoveKind.WHOLE_SHULKER);
+        }
+        ItemStack stack = stackForKey(routeKey);
+        return stack.isEmpty() ? ROUTES.get(routeKey) : computedRoute(stack, routeKey, MoveKind.NORMAL);
     }
 
     private static String displayName(ItemStack stack, String id) {
@@ -427,8 +559,14 @@ public final class FakePlayerItemSortManager {
     }
 
     private static String serverDisplayName(String key) {
+        if (MIXED_BOX_ROUTE_KEY.equals(key)) {
+            return "english".equals(FakePlayerItemSortConfig.snapshot().targetLanguage()) ? "mixed boxes" : "杂盒";
+        }
+        boolean boxed = key.startsWith(BOX_ROUTE_PREFIX);
         ItemStack stack = stackForKey(key);
-        return stack.isEmpty() ? cleanItemKey(key) : cleanDisplayName(stack, FakePlayerItemSortConfig.snapshot().targetLanguage());
+        String name = stack.isEmpty() ? cleanItemKey(key) : cleanDisplayName(stack, FakePlayerItemSortConfig.snapshot().targetLanguage());
+        if (boxed) return name + ("chinese".equals(FakePlayerItemSortConfig.snapshot().targetLanguage()) ? "（盒装）" : " box");
+        return name;
     }
 
     private static String cleanDisplayName(ItemStack stack, String mode) {
@@ -443,6 +581,8 @@ public final class FakePlayerItemSortManager {
     }
 
     private static ItemStack stackForKey(String key) {
+        if (key.startsWith(BOX_ROUTE_PREFIX)) return stackForKey(key.substring(BOX_ROUTE_PREFIX.length()));
+        if (MIXED_BOX_ROUTE_KEY.equals(key)) return ItemStack.EMPTY;
         int separator = key.indexOf('|');
         ResourceLocation id = ResourceLocation.tryParse(separator < 0 ? key : key.substring(0, separator));
         Item item = itemAt(id);
@@ -464,6 +604,10 @@ public final class FakePlayerItemSortManager {
         //#else
         player.kill();
         //#endif
+    }
+
+    private static String mixedBoxName() {
+        return "english".equals(FakePlayerItemSortConfig.snapshot().targetLanguage()) ? "mixed_box" : "杂盒";
     }
 
     //#if MC >= 1.21.1 && MC <= 26.3
@@ -501,6 +645,9 @@ public final class FakePlayerItemSortManager {
     private static boolean createFake(String name, MinecraftServer minecraftServer, net.minecraft.world.phys.Vec3 position,
                                       float yaw, float pitch, ResourceKey<Level> dimension,
                                       GameType gameMode, boolean flying) {
+        //#if MC == 26.3
+        //$$ if (PlayerSortOfflineWithdrawal.isLocked(name)) return false;
+        //#endif
         //#if MC >= 1.21.1 && MC <= 26.3
         String key = name.toLowerCase(Locale.ROOT);
         ServerPlayer online = minecraftServer.getPlayerList().getPlayerByName(name);
@@ -512,15 +659,23 @@ public final class FakePlayerItemSortManager {
         if (retryAt != null && dashboardRefreshTicks < retryAt) return true;
         PENDING_SORTER_SPAWNS.remove(key);
         //#endif
+        if (supportsPlayersortRefactor()) SORTER_FAKE_NOTICE_NAMES.put(key, dashboardRefreshTicks + 1_800L);
+        seedSorterTargetProfile(minecraftServer, name);
         //#if MC >= 1.20.2
         boolean created = EntityPlayerMPFake.createFake(name, minecraftServer, position, yaw, pitch, dimension, gameMode, flying);
         //#else
         //$$ boolean created = EntityPlayerMPFake.createFake(name, minecraftServer, position, yaw, pitch, dimension, gameMode, flying) != null;
         //#endif
         //#if MC >= 1.21.1 && MC <= 26.3
-        if (!created) return false;
+        if (!created) {
+            SORTER_FAKE_NOTICE_NAMES.remove(key);
+            return false;
+        }
         ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(name);
-        if (spawned instanceof EntityPlayerMPFake) return true;
+        if (spawned instanceof EntityPlayerMPFake) {
+            if (supportsPlayersortRefactor()) SORTER_FAKE_NOTICE_NAMES.put(key, Long.MAX_VALUE);
+            return true;
+        }
         PENDING_SORTER_SPAWNS.put(key, dashboardRefreshTicks + SORTER_SPAWN_RETRY_TICKS);
         return true;
         //#else
@@ -528,12 +683,40 @@ public final class FakePlayerItemSortManager {
         //#endif
     }
 
+    /**
+     * Seeds the server profile cache with the deterministic offline identity before carpet resolves the
+     * name. {@code OldUsersConverter.convertMobOwnerIfNecessary}, which carpet's createFake calls first,
+     * synchronously queries the Mojang profile service whenever the cache misses on an online-mode server.
+     * Sorter targets are localized container names that always miss and always fail there, and nothing
+     * caches a failed lookup, so every new route or overflow name stalled the server thread for seconds.
+     * Writing the offline entry first turns that lookup into a cache hit; it also keeps summon and
+     * quickopen mode on the same target identity, because offline playerdata resolution already uses it.
+     */
+    private static void seedSorterTargetProfile(MinecraftServer minecraftServer, String name) {
+        if (!CarpetSettings.allowSpawningOfflinePlayers) return;
+        String key = name.toLowerCase(Locale.ROOT);
+        if (!SEEDED_SORTER_TARGETS.add(key)) return;
+        UUID offline = UUIDUtil.createOfflinePlayerUUID(name);
+        UUID known = LOCAL_PROFILE_UUIDS.get(key);
+        // A name already owned by a real account keeps vanilla resolution instead of being pinned offline.
+        if (known != null && !known.equals(offline)) return;
+        //#if MC >= 1.21.10
+        //$$ minecraftServer.services().nameToIdCache().add(NameAndId.createOffline(name));
+        //#else
+        minecraftServer.getProfileCache().add(new GameProfile(offline, name));
+        //#endif
+    }
+
     private static void rebuildRoute(MinecraftServer minecraftServer, RebuildRequest request) {
         try {
-            String desiredTarget = computedRoute(stackForKey(request.itemKey()));
+            String desiredTarget = computedRouteForKey(request.itemKey());
             if (!request.target().equals(desiredTarget)) {
                 migrateRebuildRoute(minecraftServer, request, desiredTarget);
                 ROUTES.put(request.itemKey(), desiredTarget);
+            }
+            if (supportsPlayersortRefactor() && isRawBoxRoute(request.itemKey())) {
+                dashboardDirty = true;
+                return;
             }
             List<ManagedInventory> targets = openRebuildTargets(minecraftServer, desiredTarget);
             if (targets.isEmpty()) return;
@@ -545,13 +728,17 @@ public final class FakePlayerItemSortManager {
             else compactBoxOverflow(targets, request.itemKey(), request.source(), request.initiator());
             dashboardDirty = true;
         } catch (IOException exception) {
-            notice(request.source(), request.initiator(), "sorter rebuild skipped for " + request.target() + ": " + exception.getMessage());
+            notice(request.source(), request.initiator(), "sorter rebuild skipped for " + request.target() + ": " + exception.getMessage(), "notice_rebuild_failed", request.target());
         }
     }
 
     private static void migrateRebuildRoute(MinecraftServer minecraftServer, RebuildRequest request, String destinationName) throws IOException {
         List<ManagedInventory> sources = openRebuildTargets(minecraftServer, request.target());
         if (sources.isEmpty()) return;
+        if (supportsPlayersortRefactor() && isRawBoxRoute(request.itemKey())) {
+            migrateRawBoxRoute(sources, request, destinationName);
+            return;
+        }
         TargetInventory destination = quickopenPrimaryTarget(minecraftServer, destinationName);
         if (destination == null) throw new IOException("new language target is protected or occupied by a real player");
         for (ManagedInventory source : sources) {
@@ -565,6 +752,44 @@ public final class FakePlayerItemSortManager {
             if (!inventory.save()) throw new IOException("could not save old language target " + source.name());
         }
         if (!destination.save()) throw new IOException("could not save new language target " + destinationName);
+    }
+
+    private static boolean isRawBoxRoute(String routeKey) {
+        return MIXED_BOX_ROUTE_KEY.equals(routeKey) || routeKey.startsWith(BOX_ROUTE_PREFIX)
+                || isShulkerBox(stackForKey(routeKey));
+    }
+
+    private static boolean belongsToRawBoxRoute(ItemStack stack, String routeKey) {
+        if (!isShulkerBox(stack)) return false;
+        if (MIXED_BOX_ROUTE_KEY.equals(routeKey)) return hasShulkerContents(stack) && !isFullSingleItemShulker(stack);
+        if (routeKey.startsWith(BOX_ROUTE_PREFIX)) {
+            if (!isFullSingleItemShulker(stack)) return false;
+            return itemKey(firstShulkerContent(stack)).equals(routeKey.substring(BOX_ROUTE_PREFIX.length()));
+        }
+        return itemKey(stack).equals(routeKey);
+    }
+
+    private static void migrateRawBoxRoute(List<ManagedInventory> sources, RebuildRequest request,
+                                           String destinationName) throws IOException {
+        for (ManagedInventory source : sources) {
+            TargetInventory inventory = source.inventory();
+            for (int slot = 0; slot < MAIN_SIZE; slot++) {
+                ItemStack stack = inventory.main(slot);
+                if (!belongsToRawBoxRoute(stack, request.itemKey())) continue;
+                int moved = moveRawShulkerQuickopen(stack, destinationName, itemKey(stack), request.source(), request.initiator());
+                if (moved != stack.getCount()) throw new IOException("could not move every box from " + source.name());
+                stack.shrink(moved);
+                if (stack.isEmpty()) inventory.setMain(slot, ItemStack.EMPTY);
+            }
+            ItemStack offhand = inventory.offhand();
+            if (belongsToRawBoxRoute(offhand, request.itemKey())) {
+                int moved = moveRawShulkerQuickopen(offhand, destinationName, itemKey(offhand), request.source(), request.initiator());
+                if (moved != offhand.getCount()) throw new IOException("could not move every box from " + source.name());
+                offhand.shrink(moved);
+                if (offhand.isEmpty()) inventory.setOffhand(ItemStack.EMPTY);
+            }
+            if (!inventory.save()) throw new IOException("could not save old box target " + source.name());
+        }
     }
 
     private static boolean migrateRebuildStack(ItemStack stack, String destinationName, TargetInventory destination, RebuildRequest request) {
@@ -695,23 +920,46 @@ public final class FakePlayerItemSortManager {
     }
 
     private static boolean isSortableSourceStack(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        if (!isShulkerBox(stack) || !hasShulkerContents(stack)) return true;
-        return isFullSingleItemShulker(stack) || FakePlayerItemSortConfig.snapshot().quickShulker();
+        if (!supportsPlayersortRefactor()) {
+            if (stack.isEmpty()) return false;
+            if (!isShulkerBox(stack) || !hasShulkerContents(stack)) return true;
+            return isFullSingleItemShulker(stack) || FakePlayerItemSortConfig.snapshot().quickShulker();
+        }
+        return !stack.isEmpty();
     }
 
     private static SourceMove sourceMove(ItemStack stack) {
         String sourceKey = itemKey(stack);
-        if (isShulkerBox(stack) && hasShulkerContents(stack)) {
-            ItemStack first = firstShulkerContent(stack);
-            if (!first.isEmpty() && isFullSingleItemShulker(stack)) {
-                return new SourceMove(sourceKey, itemKey(first), first.copyWithCount(1), MoveKind.WHOLE_SHULKER);
+        if (!supportsPlayersortRefactor()) {
+            if (isShulkerBox(stack) && hasShulkerContents(stack)) {
+                ItemStack first = firstShulkerContent(stack);
+                if (!first.isEmpty() && isFullSingleItemShulker(stack)) {
+                    String innerKey = itemKey(first);
+                    return new SourceMove(sourceKey, innerKey, innerKey, first.copyWithCount(1), MoveKind.WHOLE_SHULKER);
+                }
+                if (!first.isEmpty() && FakePlayerItemSortConfig.snapshot().quickShulker()) {
+                    String innerKey = itemKey(first);
+                    return new SourceMove(sourceKey, innerKey, innerKey, first.copyWithCount(1), MoveKind.SPLIT_SHULKER);
+                }
             }
-            if (!first.isEmpty() && FakePlayerItemSortConfig.snapshot().quickShulker()) {
-                return new SourceMove(sourceKey, itemKey(first), first.copyWithCount(1), MoveKind.SPLIT_SHULKER);
-            }
+            return new SourceMove(sourceKey, sourceKey, sourceKey, stack, MoveKind.NORMAL);
         }
-        return new SourceMove(sourceKey, sourceKey, stack, MoveKind.NORMAL);
+        if (isShulkerBox(stack)) {
+            if (!hasShulkerContents(stack)) {
+                return new SourceMove(sourceKey, sourceKey, sourceKey, stack.copy(), MoveKind.RAW_SHULKER);
+            }
+            ItemStack first = firstShulkerContent(stack);
+            if (FakePlayerItemSortConfig.snapshot().quickShulker()) {
+                return new SourceMove(sourceKey, itemKey(first), itemKey(first), first.copyWithCount(1), MoveKind.SPLIT_SHULKER);
+            }
+            if (isFullSingleItemShulker(stack)) {
+                String contentsKey = itemKey(first);
+                return new SourceMove(sourceKey, sourceKey, BOX_ROUTE_PREFIX + contentsKey,
+                        first.copyWithCount(1), MoveKind.WHOLE_SHULKER);
+            }
+            return new SourceMove(sourceKey, sourceKey, MIXED_BOX_ROUTE_KEY, stack.copyWithCount(1), MoveKind.RAW_SHULKER);
+        }
+        return new SourceMove(sourceKey, sourceKey, sourceKey, stack, MoveKind.NORMAL);
     }
 
     private static String batchKey(UUID source, String itemKey, String target) {
@@ -724,13 +972,25 @@ public final class FakePlayerItemSortManager {
         ServerPlayer source = minecraftServer.getPlayerList().getPlayer(move.source());
         if (!(source instanceof EntityPlayerMPFake)) return;
         ItemStack current = sourceStack(source.getInventory(), move.slot());
-        if (current.isEmpty() || !itemKey(current).equals(move.sourceKey())) return;
+        if (current.isEmpty()) return;
+        if (supportsPlayersortRefactor()) {
+            // Compare immutable component values, without formatting a whole container as text.
+            if (!FGACompat.isSameItemSameTags(current, move.snapshot())) return;
+        } else if (!itemKey(current).equals(move.sourceKey())) return;
+
+        ItemStack moveStack = current;
+        if (supportsPlayersortRefactor() && move.kind() == MoveKind.NORMAL) {
+            int maxLooseItemsPerMove = Math.max(1, 64 / (int) sorterMoveIntervalTicks());
+            if (current.getCount() > maxLooseItemsPerMove) {
+                moveStack = current.copyWithCount(maxLooseItemsPerMove);
+            }
+        }
 
         int moved;
         if ("quickopen".equals(FakePlayerItemSortConfig.snapshot().mode())) {
-            moved = moveQuickopen(current, move.target(), move.itemKey(), move.kind(), move.source(), move.initiator());
+            moved = moveQuickopen(moveStack, move.target(), move.itemKey(), move.kind(), move.source(), move.initiator());
         } else {
-            moved = moveSummon(current, source, move.target(), move.batch(), move.itemKey(), move.kind(), move.initiator());
+            moved = moveSummon(moveStack, source, move.target(), move.batch(), move.itemKey(), move.kind(), move.initiator());
         }
         if (moved <= 0) return;
 
@@ -745,6 +1005,7 @@ public final class FakePlayerItemSortManager {
         } else {
             current.shrink(moved);
             if (current.isEmpty()) setSourceStack(source.getInventory(), move.slot(), ItemStack.EMPTY);
+            source.getInventory().setChanged();
         }
         finishAutoSpawnedBatchIfComplete(source, move.batch(), move.itemKey());
     }
@@ -752,7 +1013,9 @@ public final class FakePlayerItemSortManager {
     private static int moveQuickopen(ItemStack current, String baseTarget, String itemKey, MoveKind kind, UUID sourceId, UUID initiator) {
         MinecraftServer minecraftServer = server;
         if (minecraftServer == null) return 0;
-        if (kind == MoveKind.WHOLE_SHULKER) {
+        if (supportsPlayersortRefactor() && (kind == MoveKind.WHOLE_SHULKER || kind == MoveKind.RAW_SHULKER))
+            return moveRawShulkerQuickopen(current, baseTarget, itemKey, sourceId, initiator);
+        if (!supportsPlayersortRefactor() && kind == MoveKind.WHOLE_SHULKER) {
             try {
                 TargetInventory primary = quickopenPrimaryTarget(minecraftServer, baseTarget);
                 if (primary == null) return 0;
@@ -801,6 +1064,36 @@ public final class FakePlayerItemSortManager {
         return OfflineInventory.open(minecraftServer, name);
     }
 
+    private static int moveRawShulkerQuickopen(ItemStack source, String baseTarget, String itemKey,
+                                               UUID sourceId, UUID initiator) {
+        MinecraftServer minecraftServer = server;
+        if (minecraftServer == null) return 0;
+        OverflowContext context = new OverflowContext(null, null);
+        for (int index = 0; index < 1000; index++) {
+            TargetInventory target;
+            try {
+                if (index == 0) {
+                    target = quickopenPrimaryTarget(minecraftServer, baseTarget);
+                    if (target == null) return 0;
+                } else {
+                    target = openOverflowTarget(baseTarget, index, context);
+                }
+            } catch (IOException exception) {
+                lastError = "quickopen shulker target read failed for " + baseTarget + ": " + exception.getMessage();
+                return 0;
+            }
+            if (target == null) continue;
+            int moved = moveLoose(source, target, itemKey);
+            if (moved > 0) {
+                if (!target.save()) return 0;
+                return moved;
+            }
+        }
+        notice(sourceId, initiator, "no quickopen shulker inventory room for " + baseTarget,
+                "notice_raw_box_no_room", baseTarget);
+        return 0;
+    }
+
     /** Runs only for an inventory opened by an active sort. Target armor is never read or changed. */
     private static void cleanOpenedTarget(TargetInventory target, String currentTarget, String expectedItemKey,
                                           UUID sourceId, UUID initiator, OverflowContext context, boolean primary) {
@@ -810,7 +1103,7 @@ public final class FakePlayerItemSortManager {
                 ItemStack stack = slot == MAIN_SIZE ? target.offhand() : target.main(slot);
                 if (stack.isEmpty() || belongsToOpenedTarget(stack, expectedItemKey, primary, slot == MAIN_SIZE)) continue;
                 SourceMove move = sourceMove(stack.copy());
-                String destination = route(move.routeStack());
+                String destination = route(move.routeStack(), move.routeKey(), move.kind());
                 if (destination.equals(currentTarget)) continue;
                 int moved = 0;
                 if (context.source() == null) {
@@ -851,13 +1144,12 @@ public final class FakePlayerItemSortManager {
             if (moved > 0) target.save();
             return moved;
         }
-        if (kind == MoveKind.WHOLE_SHULKER) {
-            OnlineInventory primary = primaryOnlineTarget(source, base, batch);
-            if (primary == null) return 0;
-            cleanOpenedTarget(primary, base, itemKey, source.getUUID(), initiator, new OverflowContext(source, batch), true);
-            normalizePrimaryTarget(base, primary, itemKey, source.getUUID(), initiator, new OverflowContext(source, batch));
-            primary.save();
-            return moveFullBoxIntoOnlineOverflow(current, source, base, batch, itemKey);
+        if (kind == MoveKind.WHOLE_SHULKER || kind == MoveKind.RAW_SHULKER) {
+            OnlineInventory target = looseTarget(source, base, batch, itemKey);
+            if (target == null) return 0;
+            int moved = moveLoose(current, target, itemKey);
+            if (moved > 0) target.save();
+            return moved;
         }
         OnlineInventory primary = primaryOnlineTarget(source, base, batch);
         if (primary == null) return 0;
@@ -986,7 +1278,8 @@ public final class FakePlayerItemSortManager {
             lastError = "item cannot be packed into shulker boxes: " + BuiltInRegistries.ITEM.getKey(from.getItem());
             return 0;
         }
-        normalizePrimaryTarget(baseTarget, target, itemKey, sourceId, initiator, overflow);
+        // 26.3 callers normalize once before transferring, not once per inner shulker slot.
+        if (!supportsPlayersortRefactor()) normalizePrimaryTarget(baseTarget, target, itemKey, sourceId, initiator, overflow);
         int left = from.getCount();
         for (int i = PRIMARY_LOOSE_START; i < MAIN_SIZE && left > 0; i++) {
             ItemStack dest = target.main(i);
@@ -1069,6 +1362,33 @@ public final class FakePlayerItemSortManager {
                                                       String itemKey, UUID sourceId, UUID initiator, OverflowContext overflow) {
         if (!isShulkerBox(sourceBox)) return 0;
         NonNullList<ItemStack> contents = shulkerContents(sourceBox);
+        if (supportsPlayersortRefactor()) {
+            // One bounded transfer per commit. Combine matching slots before opening overflow
+            // inventories, then remove exactly what was accepted. No source mutation on failure.
+            ItemStack transfer = ItemStack.EMPTY;
+            int available = 0;
+            for (ItemStack content : contents) {
+                if (content.isEmpty() || !itemKey(content).equals(itemKey)) continue;
+                if (transfer.isEmpty()) transfer = content.copy();
+                available += Math.min(content.getCount(), 64 - available);
+                if (available == 64) break;
+            }
+            if (available == 0) return 0;
+            transfer.setCount(available);
+            int accepted = moveLooseIntoPrimary(transfer, baseTarget, target, itemKey, sourceId, initiator, overflow);
+            if (accepted <= 0) return 0;
+            int remaining = accepted;
+            for (int slot = 0; slot < contents.size() && remaining > 0; slot++) {
+                ItemStack content = contents.get(slot);
+                if (content.isEmpty() || !itemKey(content).equals(itemKey)) continue;
+                int removed = Math.min(remaining, content.getCount());
+                content.shrink(removed);
+                remaining -= removed;
+                if (content.isEmpty()) contents.set(slot, ItemStack.EMPTY);
+            }
+            setShulkerContents(sourceBox, contents);
+            return accepted;
+        }
         int moved = 0;
         for (int slot = 0; slot < contents.size(); slot++) {
             ItemStack content = contents.get(slot);
@@ -1094,7 +1414,7 @@ public final class FakePlayerItemSortManager {
             try {
                 overflow = openOverflowTarget(baseTarget, index, context);
             } catch (IOException e) {
-                notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage());
+                notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage(), "notice_overflow_open_failed", baseTarget + "_" + index);
                 return moved;
             }
             if (overflow == null) {
@@ -1108,9 +1428,11 @@ public final class FakePlayerItemSortManager {
             if (n > 0) {
                 moved += n;
                 if (!overflow.save()) return moved - n;
-            } else if (spawnedFake) {
+            } else if (spawnedFake || (supportsPlayersortRefactor()
+                    && overflow instanceof OfflineInventory offline && !offline.existing)) {
                 // A freshly spawned fake that accepted nothing means no space or no empty
-                // shulker material; spawning more fakes will not help this move.
+                // shulker material. The same applies to a new offline target: trying another
+                // 998 nonexistent inventories would only repeat the empty-depot scan and I/O.
                 break;
             }
         }
@@ -1127,7 +1449,7 @@ public final class FakePlayerItemSortManager {
             try {
                 overflow = openOverflowTarget(baseTarget, index, context);
             } catch (IOException e) {
-                notice(sourceId, initiator, "shulker overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage());
+                notice(sourceId, initiator, "shulker overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage(), "notice_shulker_overflow_open_failed", baseTarget + "_" + index);
                 return moved;
             }
             if (overflow == null) {
@@ -1168,7 +1490,7 @@ public final class FakePlayerItemSortManager {
             try {
                 overflow = openOverflowTarget(baseTarget, index, context);
             } catch (IOException e) {
-                notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage());
+                notice(sourceId, initiator, "overflow open failed for " + baseTarget + "_" + index + ": " + e.getMessage(), "notice_overflow_open_failed", baseTarget + "_" + index);
                 return false;
             }
             if (overflow == null) {
@@ -1257,7 +1579,7 @@ public final class FakePlayerItemSortManager {
             ItemStack stack = target.main(slot);
             if (stack.isEmpty()) continue;
             if (!isShulkerBox(stack)) {
-                if (!itemKey(stack).equals(itemKey)) notice(sourceId, initiator, "other item found in overflow target");
+                if (!itemKey(stack).equals(itemKey)) notice(sourceId, initiator, "other item found in overflow target", "notice_mixed_overflow");
                 continue;
             }
             if (!isUsableShulkerFor(stack, itemKey)) continue;
@@ -1537,7 +1859,7 @@ public final class FakePlayerItemSortManager {
         try {
             ManagedInventory depot = openDepot(minecraftServer);
             if (depot == null) {
-                notice(sourceId, initiator, "box depot is occupied by a real player: " + depotName());
+                notice(sourceId, initiator, "box depot is occupied by a real player: " + depotName(), "notice_depot_occupied", depotName());
                 return ItemStack.EMPTY;
             }
             for (int slot = 0; slot < MAIN_SIZE; slot++) {
@@ -1552,9 +1874,15 @@ public final class FakePlayerItemSortManager {
                 }
                 return ItemStack.EMPTY;
             }
-            return ItemStack.EMPTY;
+            // The depot holds boxed logs and shells instead of loose material and free slots.
+            // Crafting on demand keeps sorting going without needing an output slot, and it obeys the
+            // same restock setting as the bulk restock above.
+            if (!supportsExtendedFeatures() || !FakePlayerItemSortConfig.snapshot().shulkerRestock()) {
+                return ItemStack.EMPTY;
+            }
+            return craftDepotBox(depot);
         } catch (IOException e) {
-            notice(sourceId, initiator, "box depot read failed: " + e.getMessage());
+            notice(sourceId, initiator, "box depot read failed: " + e.getMessage(), "notice_depot_read_failed");
             return ItemStack.EMPTY;
         } finally { finishDepotUse(minecraftServer); }
     }
@@ -1601,7 +1929,7 @@ public final class FakePlayerItemSortManager {
             ManagedInventory depot = openOnlineDepotForCraft(minecraftServer, sourceId, initiator);
             if (depot == null) {
                 nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                notice(sourceId, initiator, "box restock failed: depot is occupied by a real player");
+                notice(sourceId, initiator, "box restock failed: depot is occupied by a real player", "notice_restock_depot_occupied");
                 return 0;
             }
             int current = countDepotBoxes(depot.inventory());
@@ -1621,14 +1949,14 @@ public final class FakePlayerItemSortManager {
             }
             if (!ensureDepotWorkbench(depot.inventory())) {
                 nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                notice(sourceId, initiator, "box restock failed: no slot available for depot crafting table");
+                notice(sourceId, initiator, "box restock failed: no slot available for depot crafting table", "notice_restock_no_workbench_slot");
                 return 0;
             }
             int craftable = Math.min(wanted, Math.min(countDepotMaterial(depot.inventory(), true) / 2,
                     countDepotMaterial(depot.inventory(), false) / 2));
             if (craftable <= 0) {
                 nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                notice(sourceId, initiator, "box restock failed: need 2 logs and 2 shulker shells per box");
+                notice(sourceId, initiator, "box restock failed: need 2 logs and 2 shulker shells per box", "notice_restock_material_shortage");
                 return 0;
             }
             consumeDepotMaterials(depot.inventory(), true, craftable * 2);
@@ -1639,7 +1967,7 @@ public final class FakePlayerItemSortManager {
             for (TargetInventory inventory : changed) {
                 if (!inventory.save()) {
                     nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                    notice(sourceId, initiator, "box restock failed while saving materials");
+                    notice(sourceId, initiator, "box restock failed while saving materials", "notice_restock_material_save_failed");
                     return 0;
                 }
             }
@@ -1652,15 +1980,15 @@ public final class FakePlayerItemSortManager {
             }
             if (!depot.inventory().save()) {
                 nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-                notice(sourceId, initiator, "box restock failed while saving depot");
+                notice(sourceId, initiator, "box restock failed while saving depot", "notice_restock_depot_save_failed");
                 return 0;
             }
             nextDepotRestockAttemptMs = 0L;
-            notice(sourceId, initiator, "box restock crafted " + placed + " plain shulker boxes");
+            notice(sourceId, initiator, "box restock crafted " + placed + " plain shulker boxes", "notice_restock_succeeded", placed);
             return placed;
         } catch (IOException e) {
             nextDepotRestockAttemptMs = now + RESTOCK_RETRY_MS;
-            notice(sourceId, initiator, "box restock failed: " + e.getMessage());
+            notice(sourceId, initiator, "box restock failed: " + e.getMessage(), "notice_restock_failed");
             return 0;
         } finally {
             if (spawnedForRestock) finishDepotUse(minecraftServer);
@@ -1673,20 +2001,73 @@ public final class FakePlayerItemSortManager {
 
     private static boolean isDepotAllowed(ItemStack stack) {
         return stack.isEmpty() || stack.is(Items.CRAFTING_TABLE) || isLog(stack)
-                || stack.is(Items.SHULKER_SHELL) || isOrdinaryEmptyShulker(stack);
+                || stack.is(Items.SHULKER_SHELL) || isOrdinaryEmptyShulker(stack) || isDepotMaterialBox(stack);
+    }
+
+    /**
+     * A shulker box used as depot material storage. A player inventory only holds 36 slots, so logs
+     * and shells are normally handed to the depot boxed; such boxes are depot material, not foreign
+     * items, and their contents have to count as craftable material.
+     */
+    private static boolean isDepotMaterialBox(ItemStack stack) {
+        if (!isShulkerBox(stack)) return false;
+        boolean storage = false;
+        for (ItemStack content : shulkerContents(stack)) {
+            if (content.isEmpty()) continue;
+            if (!isLog(content) && !content.is(Items.SHULKER_SHELL)) return false;
+            storage = true;
+        }
+        return storage;
     }
 
     /** The depot is a temporary worker: sort its foreign inventory, then always log it out. */
     private static void finishDepotUse(MinecraftServer minecraftServer) {
-        ServerPlayer depot = minecraftServer.getPlayerList().getPlayerByName(depotName());
-        if (!(depot instanceof EntityPlayerMPFake)) return;
-        if (!AUTO_SPAWNED_DEPOTS.contains(depot.getUUID())) return;
+        String name = depotName();
+        String key = name.toLowerCase(Locale.ROOT);
+        ServerPlayer depot = minecraftServer.getPlayerList().getPlayerByName(name);
+        if (!(depot instanceof EntityPlayerMPFake)) {
+            //#if MC >= 1.21.1 && MC <= 26.3
+            // A depot whose summon is still in flight must not be marked for closing at login, or the
+            // asynchronous spawn would be logged straight back out before it can serve a single box.
+            if (supportsPlayersortRefactor() && AUTO_SPAWNED_DEPOT_NAMES.contains(key)
+                    && !PENDING_SORTER_SPAWNS.containsKey(key)) {
+                DEPOT_CLOSE_AFTER_LOGIN.add(key);
+            }
+            //#else
+            //$$ if (supportsPlayersortRefactor() && AUTO_SPAWNED_DEPOT_NAMES.contains(key)) {
+            //$$     DEPOT_CLOSE_AFTER_LOGIN.add(key);
+            //$$ }
+            //#endif
+            return;
+        }
+        if (!isAutoSpawnedDepot(depot)) return;
+        if (supportsPlayersortRefactor()) DEPOT_CLOSE_AFTER_LOGIN.add(key);
         if (JOBS.containsKey(depot.getUUID())) return;
         if (hasDepotForeignItems(depot)) {
             JOBS.put(depot.getUUID(), new Job(depot.getUUID(), false, null, true));
-        } else {
-            closeDepotFake(minecraftServer, depot);
+            return;
         }
+        // The depot serves the whole sorting round: stay online so boxes can still be crafted when
+        // logs and shells arrive later, and only log out once the round has nothing left to sort.
+        if (sortingRoundActive()) return;
+        closeDepotFake(minecraftServer, depot);
+    }
+
+    /** True while a real sorting job, not the depot's own cleanup job, is still running. */
+    private static boolean sortingRoundActive() {
+        for (Job job : JOBS.values()) if (!job.depotCleanup()) return true;
+        return false;
+    }
+
+    private static boolean isAutoSpawnedDepot(ServerPlayer depot) {
+        return AUTO_SPAWNED_DEPOTS.contains(depot.getUUID())
+                || AUTO_SPAWNED_DEPOT_NAMES.contains(depot.getGameProfile().getName().toLowerCase(Locale.ROOT));
+    }
+
+    /** Logs out the auto-summoned depot without a cleanup pass; used when sorting is switched off. */
+    private static void closeRoundDepot(MinecraftServer minecraftServer) {
+        ServerPlayer depot = minecraftServer.getPlayerList().getPlayerByName(depotName());
+        if (depot instanceof EntityPlayerMPFake && isAutoSpawnedDepot(depot)) closeDepotFake(minecraftServer, depot);
     }
 
     private static boolean hasDepotForeignItems(ServerPlayer depot) {
@@ -1697,6 +2078,14 @@ public final class FakePlayerItemSortManager {
     private static void closeDepotFake(MinecraftServer minecraftServer, ServerPlayer depot) {
         if (depot instanceof EntityPlayerMPFake && depot.getScoreboardName().equals(depotName())) {
             AUTO_SPAWNED_DEPOTS.remove(depot.getUUID());
+            String key = depot.getGameProfile().getName().toLowerCase(Locale.ROOT);
+            AUTO_SPAWNED_DEPOT_NAMES.remove(key);
+            DEPOT_CLOSE_AFTER_LOGIN.remove(key);
+            //#if MC >= 1.21.1 && MC <= 26.3
+            // A deliberate logout must not leave an in-flight spawn marker behind: the next round has
+            // to be able to summon the depot again right away instead of waiting out the retry window.
+            PENDING_SORTER_SPAWNS.remove(key);
+            //#endif
             stopFake(depot);
         }
     }
@@ -1705,9 +2094,42 @@ public final class FakePlayerItemSortManager {
         int total = 0;
         for (int slot = 0; slot < MAIN_SIZE; slot++) {
             ItemStack stack = inventory.main(slot);
-            if (!stack.isEmpty() && (logs ? isLog(stack) : stack.is(Items.SHULKER_SHELL))) total += stack.getCount();
+            if (stack.isEmpty()) continue;
+            if (logs ? isLog(stack) : stack.is(Items.SHULKER_SHELL)) {
+                total += stack.getCount();
+                continue;
+            }
+            if (isShulkerBox(stack)) total += countShulkerMaterial(stack, logs);
         }
         return total;
+    }
+
+    private static int countShulkerMaterial(ItemStack box, boolean logs) {
+        int total = 0;
+        for (ItemStack content : shulkerContents(box)) {
+            if (content.isEmpty()) continue;
+            if (logs ? isLog(content) : content.is(Items.SHULKER_SHELL)) total += content.getCount();
+        }
+        return total;
+    }
+
+    /** Removes material from inside one box and writes the remaining contents back. */
+    private static int takeShulkerMaterial(ItemStack box, boolean logs, int count) {
+        NonNullList<ItemStack> contents = shulkerContents(box);
+        int left = count;
+        boolean changed = false;
+        for (int index = 0; index < contents.size() && left > 0; index++) {
+            ItemStack content = contents.get(index);
+            if (content.isEmpty()) continue;
+            if (!(logs ? isLog(content) : content.is(Items.SHULKER_SHELL))) continue;
+            int used = Math.min(left, content.getCount());
+            content.shrink(used);
+            left -= used;
+            changed = true;
+            if (content.isEmpty()) contents.set(index, ItemStack.EMPTY);
+        }
+        if (changed) setShulkerContents(box, contents);
+        return count - left;
     }
 
     private static void transferMaterialsToDepot(TargetInventory depot, List<MaterialSource> sources, boolean logs, int target) {
@@ -1751,12 +2173,33 @@ public final class FakePlayerItemSortManager {
         int left = amount;
         for (int slot = 0; slot < MAIN_SIZE && left > 0; slot++) {
             ItemStack stack = depot.main(slot);
-            if (stack.isEmpty() || !(logs ? isLog(stack) : stack.is(Items.SHULKER_SHELL))) continue;
-            int used = Math.min(left, stack.getCount());
-            stack.shrink(used);
-            if (stack.isEmpty()) depot.setMain(slot, ItemStack.EMPTY);
-            left -= used;
+            if (stack.isEmpty()) continue;
+            if (logs ? isLog(stack) : stack.is(Items.SHULKER_SHELL)) {
+                int used = Math.min(left, stack.getCount());
+                stack.shrink(used);
+                if (stack.isEmpty()) depot.setMain(slot, ItemStack.EMPTY);
+                left -= used;
+                continue;
+            }
+            if (!isShulkerBox(stack)) continue;
+            // Boxed storage is the normal depot layout. A box that runs empty stays in place and
+            // simply becomes another usable empty shulker box.
+            left -= takeShulkerMaterial(stack, logs, left);
         }
+    }
+
+    /**
+     * Crafts one plain shulker box straight out of depot material. A depot handed boxes full of
+     * logs and shells has no free slot to stock crafted boxes in, so consume 2 logs and 2 shells
+     * at the moment the box is needed instead of pre-crafting into inventory space.
+     */
+    private static ItemStack craftDepotBox(ManagedInventory depot) {
+        if (countDepotMaterial(depot.inventory(), true) < 2 || countDepotMaterial(depot.inventory(), false) < 2) {
+            return ItemStack.EMPTY;
+        }
+        consumeDepotMaterials(depot.inventory(), true, 2);
+        consumeDepotMaterials(depot.inventory(), false, 2);
+        return depot.inventory().save() ? new ItemStack(Items.SHULKER_BOX) : ItemStack.EMPTY;
     }
 
     private static boolean ensureDepotWorkbench(TargetInventory depot) {
@@ -1797,6 +2240,8 @@ public final class FakePlayerItemSortManager {
         ServerPlayer reference = sourceId == null ? null : minecraftServer.getPlayerList().getPlayer(sourceId);
         if (reference == null && initiator != null) reference = minecraftServer.getPlayerList().getPlayer(initiator);
         if (reference != null) {
+            String key = name.toLowerCase(Locale.ROOT);
+            if (supportsPlayersortRefactor()) AUTO_SPAWNED_DEPOT_NAMES.add(key);
             if (createFake(name, minecraftServer, reference.position(), reference.getYRot(), reference.getXRot(),
                     reference.serverLevel().dimension(), GameType.SURVIVAL, false)) {
                 ServerPlayer spawned = minecraftServer.getPlayerList().getPlayerByName(name);
@@ -1804,6 +2249,9 @@ public final class FakePlayerItemSortManager {
                     AUTO_SPAWNED_DEPOTS.add(spawned.getUUID());
                     return new ManagedInventory(name, new OnlineInventory(spawned));
                 }
+            } else if (supportsPlayersortRefactor()) {
+                AUTO_SPAWNED_DEPOT_NAMES.remove(key);
+                DEPOT_CLOSE_AFTER_LOGIN.remove(key);
             }
         }
         return new ManagedInventory(name, OfflineInventory.open(minecraftServer, name));
@@ -1872,10 +2320,12 @@ public final class FakePlayerItemSortManager {
         }
     }
 
-    private static void notice(UUID sourceId, UUID initiator, String message) {
-        lastError = message;
+    private static void notice(UUID sourceId, UUID initiator, String diagnostic, String translationKey, Object... args) {
+        String translationId = "carpet.fga.fake_player_item_sort." + translationKey;
+        String message = FGAText.raw(translationId, args);
+        lastError = diagnostic;
         long now = System.currentTimeMillis();
-        String key = message + "|" + sourceId + "|" + initiator;
+        String key = translationKey + Arrays.deepToString(args) + "|" + sourceId + "|" + initiator;
         Long previous = NOTICE_TIMES.get(key);
         if (previous != null && now - previous < NOTICE_THROTTLE_MS) return;
         NOTICE_TIMES.put(key, now);
@@ -1889,7 +2339,7 @@ public final class FakePlayerItemSortManager {
         if (initiator != null) recipients.add(initiator);
         for (UUID recipient : recipients) {
             ServerPlayer player = minecraftServer.getPlayerList().getPlayer(recipient);
-            if (player != null) player.sendSystemMessage(Component.literal(message));
+            if (player != null) player.sendSystemMessage(FGAText.text(translationId, args));
         }
     }
 
@@ -1911,6 +2361,10 @@ public final class FakePlayerItemSortManager {
     private static boolean hasSourceItem(ServerPlayer source, String itemKey) {
         for (int i = 0; i < SOURCE_SLOT_COUNT; i++) {
             ItemStack stack = sourceStack(source.getInventory(), i);
+            // Unopened mixed boxes will produce more empty boxes. Keep their auto-summoned
+            // collector alive until the last box is processed instead of relogging per box.
+            if (supportsPlayersortRefactor() && FakePlayerItemSortConfig.snapshot().quickShulker()
+                    && isShulkerTarget(itemKey) && isShulkerBox(stack)) return true;
             if (itemKey(stack).equals(itemKey) || shulkerContainsItem(stack, itemKey)) return true;
         }
         return false;
@@ -1960,6 +2414,7 @@ public final class FakePlayerItemSortManager {
         for (Map.Entry<String, String> route : routes) {
             long count = 0;
             int lastIndex = -1;
+            Map<String, Long> mixedContents = new TreeMap<>();
             for (int index = 0; index < 1000; index++) {
                 String name = index == 0 ? route.getValue() : route.getValue() + "_" + index;
                 TargetInventory inventory;
@@ -1975,8 +2430,14 @@ public final class FakePlayerItemSortManager {
                     }
                 } catch (IOException ignored) { break; }
                 lastIndex = index;
-                for (int slot = 0; slot < MAIN_SIZE; slot++) count += countDashboardStack(inventory.main(slot), route.getKey());
-                count += countDashboardStack(inventory.offhand(), route.getKey());
+                for (int slot = 0; slot < MAIN_SIZE; slot++) {
+                    ItemStack stack = inventory.main(slot);
+                    count += countDashboardStack(stack, route.getKey());
+                    if (MIXED_BOX_ROUTE_KEY.equals(route.getKey())) accumulateShulkerContents(stack, mixedContents);
+                }
+                ItemStack offhand = inventory.offhand();
+                count += countDashboardStack(offhand, route.getKey());
+                if (MIXED_BOX_ROUTE_KEY.equals(route.getKey())) accumulateShulkerContents(offhand, mixedContents);
             }
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("itemKey", route.getKey());
@@ -1984,14 +2445,30 @@ public final class FakePlayerItemSortManager {
             ItemStack displayStack = stackForKey(route.getKey());
             Map<String, String> names = new LinkedHashMap<>();
             names.put("server", serverDisplayName(route.getKey()));
-            names.put("chinese", displayStack.isEmpty() ? cleanItemKey(route.getKey()) : cleanDisplayName(displayStack, "chinese"));
-            names.put("english", displayStack.isEmpty() ? cleanItemKey(route.getKey()) : cleanDisplayName(displayStack, "english"));
+            names.put("chinese", MIXED_BOX_ROUTE_KEY.equals(route.getKey()) ? "杂盒"
+                    : displayStack.isEmpty() ? cleanItemKey(route.getKey()) : cleanDisplayName(displayStack, "chinese"));
+            names.put("english", MIXED_BOX_ROUTE_KEY.equals(route.getKey()) ? "mixed shulker boxes"
+                    : displayStack.isEmpty() ? cleanItemKey(route.getKey()) : cleanDisplayName(displayStack, "english"));
             String custom = displayStack.isEmpty() ? null : FakePlayerItemSortConfig.snapshot().names()
                     .get(BuiltInRegistries.ITEM.getKey(displayStack.getItem()).toString());
             names.put("custom", custom == null ? names.get("server") : custom);
             entry.put("names", names);
             entry.put("count", count);
             entry.put("lastIndex", lastIndex);
+            if (MIXED_BOX_ROUTE_KEY.equals(route.getKey())) {
+                List<Map<String, Object>> contents = new ArrayList<>();
+                for (Map.Entry<String, Long> content : mixedContents.entrySet()) {
+                    ItemStack contentStack = stackForKey(content.getKey());
+                    Map<String, Object> contentEntry = new LinkedHashMap<>();
+                    contentEntry.put("itemKey", content.getKey());
+                    contentEntry.put("itemId", baseItemId(content.getKey()));
+                    contentEntry.put("name", contentStack.isEmpty() ? cleanItemKey(content.getKey())
+                            : serverDisplayName(content.getKey()));
+                    contentEntry.put("count", content.getValue());
+                    contents.add(contentEntry);
+                }
+                entry.put("contents", contents);
+            }
             items.add(entry);
         }
         Map<String, Object> root = new LinkedHashMap<>();
@@ -2003,11 +2480,271 @@ public final class FakePlayerItemSortManager {
 
     private static long countDashboardStack(ItemStack stack, String itemKey) {
         if (stack.isEmpty()) return 0;
+        if (MIXED_BOX_ROUTE_KEY.equals(itemKey)) return isShulkerBox(stack) ? stack.getCount() : 0;
+        if (itemKey.startsWith(BOX_ROUTE_PREFIX)) itemKey = itemKey.substring(BOX_ROUTE_PREFIX.length());
         if (itemKey(stack).equals(itemKey)) return stack.getCount();
         if (!isShulkerBox(stack)) return 0;
         long count = 0;
         for (ItemStack content : shulkerContents(stack)) if (!content.isEmpty() && itemKey(content).equals(itemKey)) count += content.getCount();
         return count;
+    }
+
+    private static void accumulateShulkerContents(ItemStack stack, Map<String, Long> counts) {
+        if (!isShulkerBox(stack)) return;
+        for (ItemStack content : shulkerContents(stack)) {
+            if (!content.isEmpty()) counts.merge(itemKey(content), (long) content.getCount(), Long::sum);
+        }
+    }
+
+    private static String baseItemId(String key) {
+        String itemKey = key.startsWith(BOX_ROUTE_PREFIX) ? key.substring(BOX_ROUTE_PREFIX.length()) : key;
+        int separator = itemKey.indexOf('|');
+        return separator < 0 ? itemKey : itemKey.substring(0, separator);
+    }
+
+    public static List<StockEntry> stockEntries() {
+        MinecraftServer current = server;
+        if (current != null) refreshDashboardSnapshot(current);
+        JsonObject snapshot = JsonParser.parseString(dashboardSnapshot).getAsJsonObject();
+        Map<String, MutableStockEntry> grouped = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        JsonArray entries = snapshot.getAsJsonArray("items");
+        if (entries == null) return List.of();
+        for (JsonElement element : entries) {
+            if (!element.isJsonObject()) continue;
+            JsonObject item = element.getAsJsonObject();
+            String routeKey = item.get("itemKey").getAsString();
+            String target = item.get("target").getAsString();
+            if (MIXED_BOX_ROUTE_KEY.equals(routeKey)) {
+                JsonArray contents = item.has("contents") ? item.getAsJsonArray("contents") : new JsonArray();
+                for (JsonElement contentElement : contents) {
+                    JsonObject content = contentElement.getAsJsonObject();
+                    addStockEntry(grouped, content.get("itemId").getAsString(), content.get("name").getAsString(),
+                            target, content.get("count").getAsLong());
+                }
+                continue;
+            }
+            String itemId = baseItemId(routeKey);
+            ItemStack display = stackForKey(routeKey);
+            String name = display.isEmpty() ? serverDisplayName(routeKey)
+                    : cleanDisplayName(display, FakePlayerItemSortConfig.snapshot().targetLanguage());
+            addStockEntry(grouped, itemId, name, target, item.get("count").getAsLong());
+        }
+        return grouped.values().stream().filter(entry -> entry.count > 0)
+                .map(entry -> new StockEntry(entry.itemId, entry.name,
+                        String.join(", ", entry.targets), entry.count))
+                .toList();
+    }
+
+    private static void addStockEntry(Map<String, MutableStockEntry> grouped, String itemId, String name,
+                                      String target, long count) {
+        String safeName = name.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').trim();
+        String key = safeName.toLowerCase(Locale.ROOT);
+        MutableStockEntry entry = grouped.computeIfAbsent(key, ignored -> new MutableStockEntry(itemId, safeName));
+        entry.count += count;
+        if (!entry.targets.contains(target)) entry.targets.add(target);
+    }
+
+    public static Path writeStockExport() throws IOException {
+        List<StockEntry> entries = stockEntries();
+        MinecraftServer current = server;
+        if (current == null) throw new IOException("server is not loaded");
+        String stamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS"));
+        Path output = FGAWorldConfigPaths.current(current, "exports/playersort-stock-"
+                + stamp + "-" + UUID.randomUUID().toString().substring(0, 8) + ".txt");
+        StringBuilder text = new StringBuilder("物品\t数量\t分类假人\tID\n");
+        for (StockEntry entry : entries) {
+            text.append(entry.name()).append('\t').append(entry.count()).append('\t')
+                    .append(entry.targets()).append('\t').append(entry.itemId()).append('\n');
+        }
+        Files.createDirectories(output.getParent());
+        Path temp = output.resolveSibling(output.getFileName() + ".tmp");
+        Files.writeString(temp, text, StandardCharsets.UTF_8);
+        try {
+            Files.move(temp, output, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(temp, output, StandardCopyOption.REPLACE_EXISTING);
+        }
+        return output;
+    }
+
+    public static String dashboardStockText() {
+        JsonObject snapshot = JsonParser.parseString(dashboardSnapshot).getAsJsonObject();
+        StringBuilder text = new StringBuilder("物品\t数量\t分类假人\n");
+        JsonArray entries = snapshot.getAsJsonArray("items");
+        if (entries == null) return text.toString();
+        for (JsonElement element : entries) {
+            JsonObject item = element.getAsJsonObject();
+            JsonObject names = item.getAsJsonObject("names");
+            String name = names.has("server") ? names.get("server").getAsString() : item.get("itemKey").getAsString();
+            text.append(name.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ')).append('\t')
+                    .append(item.get("count").getAsLong()).append('\t').append(item.get("target").getAsString()).append('\n');
+        }
+        return text.toString();
+    }
+
+    public record StockEntry(String itemId, String name, String targets, long count) {}
+    //#if MC == 26.3
+    //$$
+    //$$     /** API v1: only registered sorter identities; no arbitrary playerdata access. */
+    //$$     static Map<String, String> apiRoutes() {
+    //$$         Map<String, String> result = new TreeMap<>();
+    //$$         ROUTES.forEach((key, target) -> {
+    //$$             if (target != null && !target.isBlank() && target.length() <= 64 && baseItemId(key).length() <= 256)
+    //$$                 result.put(target, baseItemId(key));
+    //$$         });
+    //$$         return result;
+    //$$     }
+
+    //$$     static String apiChineseMaterialName(String itemId) {
+    //$$         ItemStack stack = stackForKey(itemId+"|{}");
+    //$$         String name = stack.isEmpty() ? null : CHINESE_TRANSLATIONS.get(stack.getItem().getDescriptionId());
+    //$$         if (name == null || name.isBlank()) throw new IllegalArgumentException("INVALID_ITEM");
+    //$$         return normalize(name);
+    //$$     }
+    //$$
+    //$$     static List<String> apiMaterialBases(String itemId) {
+    //$$         return apiMaterialRoutes(itemId).values().stream()
+    //$$                 .filter(base -> base != null && !base.isBlank() && base.length() <= 64).distinct().toList();
+    //$$     }
+    //$$
+    //$$     private static Map<String,String> apiMaterialRoutes(String itemId) {
+    //$$         Map<String,String> result = new LinkedHashMap<>();
+    //$$         ROUTES.entrySet().stream().filter(entry -> baseItemId(entry.getKey()).equals(itemId)
+    //$$                 || entry.getKey().equals(MIXED_BOX_ROUTE_KEY)).sorted(Map.Entry.comparingByKey())
+    //$$                 .forEach(entry -> result.put(entry.getKey(),entry.getValue()));
+    //$$         // Do not register speculative names. Reuse the sorter's actual naming and box route rules.
+    //$$         for (String key : List.of(itemId+"|{}",BOX_ROUTE_PREFIX+itemId+"|{}",MIXED_BOX_ROUTE_KEY)) {
+    //$$             String generated = computedRouteForKey(key);
+    //$$             if (!result.containsValue(generated)) result.put("generated:"+key,generated);
+    //$$         }
+    //$$         try {
+    //$$             String chinese = apiChineseMaterialName(itemId);
+    //$$             if (!result.containsValue(chinese)) result.put("chinese:"+itemId,chinese);
+    //$$         } catch (IllegalArgumentException ignored) { /* Modded items may have no Chinese translation. */ }
+    //$$         return result;
+    //$$     }
+    //$$
+    //$$     private static boolean apiMatchesFamily(String name,String base) {
+    //$$         return base != null && (name.equals(base) || name.startsWith(base+"_")
+    //$$                 && name.substring(base.length()+1).matches("[1-9][0-9]{0,2}"));
+    //$$     }
+    //$$
+    //$$     static void apiRememberMaterial(String name,String itemId) {
+    //$$         // Called only after identity, equipment and complete snapshot validation. Preserve old routes.
+    //$$         for (var entry : apiMaterialRoutes(itemId).entrySet()) {
+    //$$             if (!apiMatchesFamily(name,entry.getValue())) continue;
+    //$$             String key = entry.getKey();
+    //$$             if (key.startsWith("chinese:")) return; // Keep explicit Chinese candidates out of configured routes.
+    //$$             if (key.startsWith("generated:")) key = key.substring("generated:".length());
+    //$$             if (ROUTES.putIfAbsent(key,entry.getValue()) == null) dashboardDirty = true;
+    //$$             return;
+    //$$         }
+    //$$     }
+    //$$
+    //$$     static void apiValidateTarget(MinecraftServer current, String name) {
+    //$$         apiValidateTarget(current,name,null);
+    //$$     }
+    //$$
+    //$$     static void apiValidateTarget(MinecraftServer current,String name,String materialId) {
+    //$$         if (name == null || name.isBlank() || name.length() > 64) throw new IllegalArgumentException("INVALID_TARGET");
+    //$$         if (PlayerSortHeadRestock.quarantined(name)) throw new IllegalArgumentException("TRANSFER_FAILED");
+    //$$         boolean registered = ROUTES.values().stream().anyMatch(base -> apiMatchesFamily(name,base));
+    //$$         if (!registered && materialId != null)
+    //$$             registered = apiMaterialBases(materialId).stream().anyMatch(base -> apiMatchesFamily(name,base));
+    //$$         if (!registered || skipped(current, name)) throw new IllegalArgumentException("INVALID_TARGET");
+    //$$         UUID offline = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8));
+    //$$         if (!OfflineInventory.uuidFor(current, name).equals(offline)) throw new IllegalArgumentException("PROTECTED_TARGET");
+    //$$         ServerPlayer online = current.getPlayerList().getPlayerByName(name);
+    //$$         if (online != null && (!(online instanceof EntityPlayerMPFake fake) || fake.isAShadow)) throw new IllegalArgumentException("PROTECTED_TARGET");
+    //$$         if (online != null && (JOBS.containsKey(online.getUUID()) || PlayerPossessionManager.isParticipant(online)))
+    //$$             throw new IllegalArgumentException("TARGET_BUSY");
+    //$$     }
+    //$$
+    //$$     static Path apiDataPath(MinecraftServer current, String name) throws IOException {
+    //$$         return apiDataPath(current,name,null);
+    //$$     }
+    //$$
+    //$$     static Path apiDataPath(MinecraftServer current,String name,String materialId) throws IOException {
+    //$$         apiValidateTarget(current,name,materialId);
+    //$$         return OfflineInventory.playerDataPath(current, OfflineInventory.uuidFor(current, name));
+    //$$     }
+    //$$
+    //$$     static ItemStack[] apiSnapshot(MinecraftServer current, String name, CompoundTag offlineData) {
+    //$$         return apiSnapshot(current,name,offlineData,null);
+    //$$     }
+    //$$
+    //$$     static ItemStack[] apiSnapshot(MinecraftServer current,String name,CompoundTag offlineData,String materialId) {
+    //$$         apiValidateTarget(current,name,materialId);
+    //$$         ServerPlayer online = current.getPlayerList().getPlayerByName(name);
+    //$$         if (online == null && (offlineData == null || !name.equals(offlineData.getStringOr("fgaOfflineSorterName", ""))))
+    //$$             throw new IllegalArgumentException("UNVERIFIED_TARGET");
+    //$$         TargetInventory inventory = online == null ? null : new OnlineInventory(online);
+    //$$         ItemStack[] result = new ItemStack[37];
+    //$$         if (online == null) {
+    //$$             return PlayerSortInventoryApi.decodeOfflineInventory(current.registryAccess(), offlineData);
+    //$$         }
+    //$$         for (int i = 0; i < 36; i++) result[i] = inventory.main(i).copy();
+    //$$         result[36] = inventory.offhand().copy();
+    //$$         return result;
+    //$$     }
+    //$$
+    //$$     static boolean apiSpawn(MinecraftServer current,ServerPlayer actor,String name,String materialId) {
+    //$$         apiValidateTarget(current,name,materialId);
+    //$$         if (!CarpetSettings.allowSpawningOfflinePlayers) throw new IllegalArgumentException("SPAWN_DISABLED");
+    //$$         return createFake(name, current, actor.position(), actor.getYRot(), actor.getXRot(),
+    //$$                 actor.level().dimension(), GameType.SPECTATOR, false);
+    //$$     }
+    //$$
+    //$$     static void apiSetSlot(ServerPlayer target, int slot, ItemStack stack) {
+    //$$         if (slot == 36) new OnlineInventory(target).setOffhand(stack);
+    //$$         else target.getInventory().setItem(slot, stack);
+    //$$         target.getInventory().setChanged();
+    //$$         markDashboardDirty();
+    //$$     }
+    //$$
+    //$$     static void apiCloseOwned(MinecraftServer current, String name) {
+    //$$         ServerPlayer target = current.getPlayerList().getPlayerByName(name);
+    //$$         if (!(target instanceof EntityPlayerMPFake fake) || fake.isAShadow || JOBS.containsKey(target.getUUID())
+    //$$                 || PlayerPossessionManager.isParticipant(target)
+    //$$                 || AUTO_SPAWNED_BY_BATCH.values().stream().anyMatch(names -> names.contains(name))) return;
+    //$$         apiSpawnResolved(name);
+    //$$         stopFake(target);
+    //$$     }
+    //$$
+    //$$     static String apiMaterialHead(String name,String itemId) {
+    //$$         return apiMaterialRoutes(itemId).entrySet().stream().filter(entry->{
+    //$$             String key=entry.getKey();
+    //$$             if (key.startsWith("generated:")) key=key.substring("generated:".length());
+    //$$             return key.startsWith("chinese:") || !isRawBoxRoute(key);
+    //$$         }).map(Map.Entry::getValue).filter(base -> apiMatchesFamily(name,base))
+    //$$                 .max(Comparator.comparingInt(String::length)).orElseGet(()->computedRouteForKey(itemId+"|{}"));
+    //$$     }
+    //$$
+    //$$     static Map<String,String> apiPrimaryRoutes() {
+    //$$         Map<String,String> result=new TreeMap<>();
+    //$$         ROUTES.forEach((key,name)->{
+    //$$             if (!isRawBoxRoute(key)) result.put(name,baseItemId(key));
+    //$$         });
+    //$$         return result;
+    //$$     }
+    //$$
+    //$$     static void apiSpawnResolved(String name) {
+    //$$         PENDING_SORTER_SPAWNS.remove(name.toLowerCase(Locale.ROOT));
+    //$$     }
+    //$$
+    //#endif
+
+    private static final class MutableStockEntry {
+        private final String itemId;
+        private final String name;
+        private final List<String> targets = new ArrayList<>();
+        private long count;
+
+        private MutableStockEntry(String itemId, String name) {
+            this.itemId = itemId;
+            this.name = name;
+        }
     }
 
     public static String dashboardJson() {
@@ -2019,12 +2756,13 @@ public final class FakePlayerItemSortManager {
                 + ", hits=" + HIT.get() + ", misses=" + MISS.get();
     }
 
+    public static net.minecraft.network.chat.MutableComponent statusText() {
+        return FGAText.text("carpet.fga.fake_player_item_sort.runtime_status",
+                JOBS.size(), READY.size(), ROUTES.size(), HIT.get(), MISS.get());
+    }
+
     private static long sorterMoveIntervalTicks() {
-        return switch (FakePlayerItemSortConfig.snapshot().speed()) {
-            case "4" -> 4L;
-            case "16" -> 16L;
-            default -> 8L;
-        };
+        return Long.parseLong(FakePlayerItemSortConfig.snapshot().speed());
     }
 
     private interface TargetInventory {
@@ -2134,8 +2872,11 @@ public final class FakePlayerItemSortManager {
         }
 
         static OfflineInventory open(MinecraftServer server, String name) throws IOException {
+            //#if MC == 26.3
+            //$$ if (PlayerSortOfflineWithdrawal.isLocked(name)) throw new IOException("inventory withdrawal in progress");
+            //#endif
             UUID uuid = uuidFor(server, name);
-            Path path = server.getWorldPath(LevelResource.ROOT).resolve("playerdata").resolve(uuid + ".dat");
+            Path path = playerDataPath(server, uuid);
             if (Files.exists(path)) return new OfflineInventory(server, path, readCompressed(path), true);
             CompoundTag data = new CompoundTag();
             data.put("Inventory", new ListTag());
@@ -2144,10 +2885,25 @@ public final class FakePlayerItemSortManager {
         }
 
         static OfflineInventory openExisting(MinecraftServer server, String name) throws IOException {
+            //#if MC == 26.3
+            //$$ if (PlayerSortOfflineWithdrawal.isLocked(name)) throw new IOException("inventory withdrawal in progress");
+            //#endif
             UUID uuid = uuidFor(server, name);
-            Path path = server.getWorldPath(LevelResource.ROOT).resolve("playerdata").resolve(uuid + ".dat");
+            Path path = playerDataPath(server, uuid);
             if (!Files.exists(path)) return null;
             return new OfflineInventory(server, path, readCompressed(path), true);
+        }
+
+        private static Path playerDataPath(MinecraftServer server, UUID uuid) throws IOException {
+            Path legacy = server.getWorldPath(LevelResource.ROOT).resolve("playerdata").resolve(uuid + ".dat");
+            if (!supportsPlayersortRefactor()) return legacy;
+            Path actual = server.getWorldPath(LevelResource.PLAYER_DATA_DIR).resolve(uuid + ".dat");
+            if (!actual.normalize().equals(legacy.normalize()) && Files.exists(legacy)) {
+                // Old FGA builds wrote outside 26.3's vanilla players/data directory. Do not
+                // overwrite or silently choose between two inventories; preserve both for recovery.
+                throw new IOException("legacy sorter playerdata requires recovery before sorting: " + uuid);
+            }
+            return actual;
         }
 
         private Path path() { return path; }
@@ -2267,7 +3023,7 @@ public final class FakePlayerItemSortManager {
         }
     }
 
-    private record SourceMove(String sourceKey, String itemKey, ItemStack routeStack, MoveKind kind) {}
+    private record SourceMove(String sourceKey, String itemKey, String routeKey, ItemStack routeStack, MoveKind kind) {}
 
     private record OverflowContext(ServerPlayer source, String batch) {}
 
@@ -2276,7 +3032,7 @@ public final class FakePlayerItemSortManager {
     private record MaterialSource(TargetInventory inventory, String itemKey) {}
 
     private record PlannedMove(UUID source, UUID initiator, int slot, String target, String sourceKey, String itemKey,
-                               String batch, MoveKind kind) {}
+                               String batch, MoveKind kind, Job owner, ItemStack snapshot) {}
 
     private record RebuildRequest(String itemKey, String target, UUID source, UUID initiator, boolean all) {}
 

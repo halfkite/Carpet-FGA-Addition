@@ -366,10 +366,20 @@ Changes apply immediately and are saved to the world configuration. In `controll
 
 <a id="cmd-fake-player-item-sort"></a>
 
-### `/fakePlayerItemSort` and `bot_sort`
+### `/fakePlayerItemSort`, `/fga playersort`, and `bot_sort`
 
-The sorter core is registered on Minecraft `1.21+`. Dashboard/API, disk route cache, inventory rebuild, automatic restock, and worker tuning remain `1.21.1` only.<br>
-Besides the read-only subcommands (`status`, `whitelist list`, `name list`, `format status`, `dashboard status`, `bot_sort stop`), configuration, whitelist changes, and sort start all require OP level 2 or higher.
+26.3 provides an on-demand inventory and Easy Place half-stack API; see [Inventory API](playersort_inventory_api_en.md). Queries use `stock` and withdrawals use the separate `inventoryTake` permission, both OP-only by default. Grant either with `/fga playersort permission <permission> <player> true`.
+
+Optional 26.3 `query_amount` / `take_amount` channels reuse these permissions and accept0 (half a stack) or1–2304 items, with normal or silent withdrawal. Invalid quantities are rejected; insufficient single-source stock or recipient capacity causes no partial debit. halfmasa exposes separate Easy Place/printer permission, quantity and silent children under Extensions.
+
+On 26.3, enabling the sorter also maintains ordinary-material primary inventories: below 1152 loose items, transfer matching stock from the highest existing overflow suffix into slots 9–35 (up to 1728 ordinary items). Insufficient primaries also fall back to descending overflow order in material queries. Empty donor boxes return to the inventory named exactly `潜影盒`; unavailable or full recipients leave boxes at the donor for retry. Maintenance uses verified inventories without summoning fakes. This is separate from crafting-depot `autoCraft`; see the API document for bounds and manual acceptance.
+
+The sorter core is registered on Minecraft `1.21+`. The existing Dashboard/API, disk route cache, inventory rebuild, automatic restock, and worker tuning are retained; the base management commands are available on `1.21.1` and `26.3`. Minecraft 26.3 additionally has the setup wizard, per-command permissions, regex stock search/text export, and refactored shulker routing. This refactor is gated to `26.3`; older versions keep their existing behavior.<br>
+
+On 26.3, setup item 11 controls the dashboard with `/fga playersort set dashboard false|true|login`: `false` (default) stops HTTP listening and automatic dashboard snapshots; `true` allows access without login; `login` protects the page, both inventory APIs and the stock text export with HTTP Basic authentication. Set a password first using `/fga playersort set dashboard password <password>`; the username is `fga`. Use 12–128 printable ASCII characters without spaces. Only a salted PBKDF2 hash is saved, and changing the mode/password takes effect without restarting. The dashboard continues to bind only to `127.0.0.1`; clients using its API must supply credentials in login mode. Console password setup is recommended. Explicit in-game stock queries remain available when the dashboard is off.
+
+All eleven 26.3 settings are grouped under `/fga playersort set`; running it without arguments displays the setup panel. Language also retains `/fga playersort language` as a shortcut. The 26.3 `/fakePlayerItemSort` alias uses the same layout; legacy outer mode/setting/format/workers/dashboard syntax below applies only before 26.3. Administration of lists, item names, stock and permissions remains at the root.
+On 26.3, `/fga playersort` defaults to OP level 2 and console; individual command permissions can be changed with `permission`. Older versions continue to use Carpet's `commandPlayer` permission model.
 
 ```text
 /fakePlayerItemSort status
@@ -384,18 +394,62 @@ Besides the read-only subcommands (`status`, `whitelist list`, `name list`, `for
 /fakePlayerItemSort name remove <item id>
 /fakePlayerItemSort name list [page]
 /fakePlayerItemSort name reload
-/fakePlayerItemSort workers <initial> <cached>  # 1.21.1 only
-/fakePlayerItemSort dashboard status  # 1.21.1 only
-/fakePlayerItemSort dashboard port <1024-65535>  # 1.21.1 only
+/fakePlayerItemSort workers <initial> <cached>  # legacy: 1.21.1
+/fakePlayerItemSort dashboard status  # legacy: 1.21.1
+/fakePlayerItemSort dashboard port <1024-65535>  # legacy: 1.21.1
+/fga playersort set  # 26.3: display settings
+/fga playersort set mode summon|quickopen
+/fga playersort set whitelistMode false|vanillaWhitelist|modWhitelist
+/fga playersort set inventoryRebuild false|true|opall
+/fga playersort set format prefix|suffix <text>
+/fga playersort set workers <initial> <cached>  # legacy fields; cpu controls actual workers
+/fga playersort set dashboard false|true|login
+/fga playersort set dashboard password <password>
+/fga playersort set dashboard status
+/fga playersort set dashboard port <1024-65535>
+/fga playersort setup  # 26.3: display the setup wizard
+/fga playersort set language chinese|english|custom  # 26.3: set sorter language
+/fga playersort language chinese|english|custom  # 26.3: language shortcut
+/fga playersort set summonNotices true|false  # 26.3: broadcast sorter fake-player join/leave messages in game; console logs remain
+/fga playersort set prefix default|off  # 26.3: use bulk_ or disable the prefix
+/fga playersort set prefix custom <text>  # 26.3: set a custom prefix
+/fga playersort set quickShulker true|false  # 26.3: split contents or sort boxes as boxes
+/fga playersort set autoCraft true|false  # 26.3: configure empty-shulker restock/crafting
+/fga playersort set cleanOpenedTarget true|false  # 26.3: route unrelated items found in a target
+/fga playersort set speed <ticks>  # 26.3: interval from 1-120 ticks; 4/8/16 have Tab suggestions
+/fga playersort set cpu 0|1|2  # 26.3: 0 uses half available CPUs; 1 and 2 select worker count
+/fga playersort set cpu custom <threads>  # 26.3: custom worker count from 1-256, capped to available CPUs
+/fga playersort stock list <regex> [page]  # 26.3: search cached stock
+/fga playersort stock list all  # 26.3: export all stock to a text file
+/fga playersort permission <command> <ops|0-4|player> <true|false>  # 26.3: set command access
 /player <fake> bot_sort
 /player <fake> bot_sort continuous
 /player <fake> bot_sort stop
 /player <fake> bot_sort restart <item name>
 /player <fake> bot_sort restart all
 /player <fake> bot_sort restart all confirm
+/player <fake> bot_sort restart stop
 ```
 
-`restart all` requires a second confirmation through the clickable button or the `confirm` subcommand. With `opall`, the all-inventory rebuild is OP-only. `quickopen` does not summon target fake players and writes their offline playerdata directly; `summon` logs target fake players in temporarily and logs them out after the current batch, saving their items to playerdata for their next login. Armor slots are never read or written.
+On 26.3, `set` offers language, mode, summonNotices, prefix, quickShulker, autoCraft, whitelistMode, cleanOpenedTarget, speed, cpu and dashboard with matching value suggestions. Dashboard accepts false|true|login, speed accepts 1–120 ticks and cpu custom accepts 1–256. Internal aliases targetLanguage, shulkerRestock, cpuThreads and inventoryRebuild remain available through `set <name> <value>` using the existing settings permission; named setting branches retain their original feature permissions and accept legacy settings grants for previously supported options; password and port changes still require dashboard permission. Earlier versions retain their existing setting commands and values.
+
+On 26.3, first enablement prompts for the sorter language; the other ten settings appear after a language is chosen. Setting 3 controls whether sorter-summoned fake-player join/leave messages are broadcast to in-game chat; when off, the dedicated-server console still records them. Clicking an option only suggests its command in chat. Settings and completion state are saved in the world configuration. The interval setting also batches loose-item transfers; the temporary shulker-restock fake logs out after its restock/cleanup task, including when profile preloading delays its login. With quick shulker handling enabled, contents are routed by item and numbered targets are used when the primary inventory fills. When disabled, loose items, full single-item boxes, and mixed/partial boxes use item, `_box`, and mixed-box routes respectively. The default prefix is `bulk_`. Whitelisting can use either the vanilla server list or the FGA built-in list.
+
+For 26.3, `<regex>` matches item names, item IDs, and target fake-player names; `stock list all` writes a text file under the world configuration directory. `restart all` must be confirmed within 30 seconds and is queued with rate limiting; `restart stop` cancels pending rebuilds for that fake player. Per-command access supports `all`, command names, levels `0-4`, `ops`, and specific player names. OP level 2 and above are allowed by default; console access is always allowed.
+
+Command responses and sorter notifications use the FGA client's language when that client has FGA installed. Clients without FGA see the server language selected by `/carpet language`. Commands in `help` are clickable and only inserted into chat; they are not executed.
+
+On 26.3, `stock list all` retains translatable success feedback but sends its export path as a string, avoiding a system-chat packet encoding failure caused by a Java Path argument. The TXT file is saved on the server, not automatically downloaded to the client.
+
+`restart all` requires a second confirmation through the clickable button or the `confirm` subcommand. With `opall`, the all-inventory rebuild is OP-only. `quickopen` does not summon target fake players and writes their offline playerdata directly; `summon` logs target fake players in temporarily and logs them out after the current batch, saving their items to playerdata for their next login. Armor slots are never read or written. Sorter targets use the deterministic offline profile for their name, seeded into the server profile cache before the summon, so localized target names never trigger a main-thread Mojang profile lookup.
+
+On 26.3, `speed` is the number of game ticks between transfer attempts; smaller values are faster, and failed attempts also wait. Each shulker split transfers at most 64 matching items, combining matching inner slots in one transfer. Queued jobs are not planned again, and stopped or replaced jobs cannot commit stale plans. The empty-box collector stays online while the source still contains boxes to unpack. Increasing the tick rate increases attempts per second without changing the per-tick limits.
+
+26.3 uses vanilla's `world/players/data` directory. If an older FGA build wrote a sorter inventory with the same UUID under `world/playerdata`, sorting refuses further writes to that target and preserves the legacy file. Reconcile both inventories before recovery; do not overwrite or delete either copy blindly.
+
+The empty-shulker restock fake (`box_restock`, or `潜影盒补货` in Chinese) now lives for the whole sorting round: while any sorting job still runs it stays online, a restock attempt that fails for missing material no longer logs it out, and it crafts once logs and shells arrive later in the round. It only logs out when the round is over (the source inventory is drained, no sorting job left) or when the rule is disabled. A depot the player summoned manually is never logged out by this logic.
+
+The depot reads boxed material: a shulker box in its inventory counts as depot material while it holds only logs or shulker shells, so such boxes are never treated as foreign items. Crafting takes 2 logs and 2 shells straight out of those boxes, which means the depot keeps producing empty boxes even when all 36 slots are filled with material boxes and no slot is free. A box that runs empty stays in place as a usable empty box. The same `shulkerRestock` switch still gates all crafting.
 
 ## Minecart and vehicle commands (vehicle)
 

@@ -30,6 +30,8 @@
         //#endif
         //#if MC == 26.3
         //$$ "ClientboundOpenScreenPacketUnicodeProfileMixin",
+          //$$ "SorterInventoryIdentityMixin",
+          //$$ "SilentInventorySpawnGuardMixin",
         //#endif
         "EntitySelectorParserMixin",
         //#if MC >= 1.18 && MC < 26.3
@@ -49,6 +51,10 @@
         //#if MC >= 1.20.2
         "ServerCommonPacketListenerAccessor",
         "ServerCommonPacketListenerImplMixin",
+        //#if MC == 26.3
+        "SorterFakeJoinNoticeMixin",
+        "SorterFakeLeaveNoticeMixin",
+        //#endif
         //#endif
         //#if MC >= 1.16.5 && MC < 1.20.2
         //$$ "LegacyCustomPayloadAccessor",
@@ -106,7 +112,8 @@
         //#endif
         //#if MC >= 1.21 && MC <= 26.3
         ,"AnvilMenuNoPriorWorkPenaltyMixin",
-        "PlayerExperienceLevelCostMixin"
+        "PlayerExperienceLevelCostMixin",
+        "FlatExperienceAwardMixin"
         //#endif
         //#if MC >= 1.21 && MC <= 26.3
         ,"EnchantmentMaxLevelMixin",
@@ -302,6 +309,9 @@
         "ServerPlayerSpectatorTeleportMixin",
         "EntitySelectorParserSpectatorTeleportMixin",
         "EntitySelectorSpectatorTeleportMixin"
+        //#endif
+        //#if MC >= 26.2 && MC <= 26.3
+        //$$ ,"SulfurCubeGrowthMixin"
         //#endif
     ],
     "client": [
