@@ -847,12 +847,14 @@ Enables and controls `/trialStop` and `/fga trialStop` stop-and-refresh commands
 
 ### Fake Player Item Sorting(fakePlayerItemSort) · [Related command](commands_en.md#cmd-fake-player-item-sort)
 
-Enables fake-player item sorting; use `/fakePlayerItemSort` to manage modes and sorting configuration
+Enables fake-player item sorting. On Minecraft 26.3, use `/fga playersort` for first-run setup and sorter management; older versions continue to use `/fakePlayerItemSort`
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`, `Command`
 - Effective versions: `1.21+`
+
+Sorter settings are stored in `world/config/carpetfgaaddition/fake-player-item-sort.json`. `summon` uses online Carpet fake players; `quickopen` reads and writes offline playerdata directly. On 26.3, first enablement displays a bilingual setup wizard. Legacy `fakePlayerItemSort*` Carpet settings are migrated to the JSON file on first load and are no longer registered as rules.
 
 ## Configuration files

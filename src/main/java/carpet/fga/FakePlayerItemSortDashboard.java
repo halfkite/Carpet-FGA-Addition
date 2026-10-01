@@ -14,9 +14,30 @@ public final class FakePlayerItemSortDashboard {
     private FakePlayerItemSortDashboard() {}
     public static synchronized void start(MinecraftServer server,int requested) {
         if(http!=null&&port==requested)return; stop(); try { http=HttpServer.create(new InetSocketAddress("127.0.0.1",requested),0);port=requested;
-            http.createContext("/api/cache", FakePlayerItemSortDashboard::writeInventoryCache);
-            http.createContext("/api/v1/inventory", FakePlayerItemSortDashboard::writeInventoryCache);
-            http.createContext("/", e->{byte[] body=PAGE.getBytes(StandardCharsets.UTF_8);e.getResponseHeaders().set("Content-Type","text/html; charset=utf-8");e.sendResponseHeaders(200,body.length);try(var out=e.getResponseBody()){out.write(body);}});http.setExecutor(null);http.start();
+            var legacy = http.createContext("/api/cache", FakePlayerItemSortDashboard::writeInventoryCache);
+            var inventory = http.createContext("/api/v1/inventory", FakePlayerItemSortDashboard::writeInventoryCache);
+            //#if MC == 26.3
+            var stock = http.createContext("/api/v1/stock.txt", FakePlayerItemSortDashboard::writeStockText);
+            //#endif
+            var page = http.createContext("/", e->{byte[] body=PAGE.getBytes(StandardCharsets.UTF_8);e.getResponseHeaders().set("Content-Type","text/html; charset=utf-8");e.sendResponseHeaders(200,body.length);try(var out=e.getResponseBody()){out.write(body);}});
+            //#if MC == 26.3
+            var authentication = new com.sun.net.httpserver.BasicAuthenticator("FGA playersort") {
+                @Override public Result authenticate(HttpExchange exchange) {
+                    if (!FGASettings.isFakePlayerItemSortEnabled() || !FakePlayerItemSortConfig.snapshot().dashboard())
+                        return new Failure(503);
+                    if (!FakePlayerItemSortConfig.dashboardMode().equals("login"))
+                        return new Success(new com.sun.net.httpserver.HttpPrincipal("guest", "FGA playersort"));
+                    return super.authenticate(exchange);
+                }
+                @Override public boolean checkCredentials(String username, String password) {
+                    return username.equals("fga") && FakePlayerItemSortWebPassword.verify(password,
+                            FakePlayerItemSortConfig.dashboardPasswordHash());
+                }
+            };
+            for (var context : new com.sun.net.httpserver.HttpContext[]{page, legacy, inventory, stock})
+                context.setAuthenticator(authentication);
+            //#endif
+            http.setExecutor(null);http.start();
         } catch(IOException ignored) { http=null; }
     }
     public static synchronized void stop(){if(http!=null){http.stop(0);http=null;}port=0;}
@@ -26,6 +47,23 @@ public final class FakePlayerItemSortDashboard {
         if (!"GET".equals(exchange.getRequestMethod())) { exchange.sendResponseHeaders(405, -1); return; }
         byte[] body = FakePlayerItemSortManager.dashboardJson().getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+        //#if MC == 26.3
+        if (!FakePlayerItemSortConfig.dashboardMode().equals("login"))
+        //#endif
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().set("Cache-Control", "no-store");
+        exchange.sendResponseHeaders(200, body.length);
+        try (var out = exchange.getResponseBody()) { out.write(body); }
+    }
+
+    private static void writeStockText(HttpExchange exchange) throws IOException {
+        if (!"GET".equals(exchange.getRequestMethod())) { exchange.sendResponseHeaders(405, -1); return; }
+        byte[] body = FakePlayerItemSortManager.dashboardStockText().getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
+        exchange.getResponseHeaders().set("Content-Disposition", "attachment; filename=playersort-stock.txt");
+        //#if MC == 26.3
+        if (!FakePlayerItemSortConfig.dashboardMode().equals("login"))
+        //#endif
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         exchange.getResponseHeaders().set("Cache-Control", "no-store");
         exchange.sendResponseHeaders(200, body.length);

@@ -1,5 +1,190 @@
 # Minecraft 版本适配记录
 
+## 模组版本号调整为 1.6.0（2026-10-01）
+
+- 仅调整根 `gradle.properties` 的 `mod_version`，所有构建节点继承 1.6.0；保留历史产物版本号及此前验证记录
+- 本次基线仍为 Minecraft 26.3，不改变任何功能源码、预处理条件、客户端要求、协议、配置、存档格式、规则默认值或权限；此前单版本功能不因版本号变化而同步到其他版本
+- 验证：`git diff --check` 通过；`:26.3:build --no-daemon --configure-on-demand --max-workers=1` 主源码编译及 assemble 完成，但53项自动测试有1项失败，完整 build 未通过；失败项 `filenameIndexFindsSparseOverflowWithoutPrimaryOrIntermediateFiles` 仍期待升序，而此前实现已改为首位优先、后位倒序，属于既有源码/测试不一致，本次不修改业务或测试
+- 打包：另执行 `:26.3:assemble --no-daemon --configure-on-demand --max-workers=1` 成功，归档 `mod-builds/20261001-144823/carpet-fga-addition-1.6.0+v2610011448-mc26.3.jar`；读取 JAR 内 `fabric.mod.json` 确认版本为 `1.6.0+v2610011448-mc26.3`，本地开发时间戳沿用现有构建约定，正式发布版本另由 Tag 传入
+- 边界：此次没有启动客户端或服务端，其他版本本次不打包、不进行游戏测试；待人工确认项为既有升序测试与倒序实现的验收同步，及当前新增库存功能的游戏内回归；不推送、创建 Tag 或发布
+
+## 客户端打印机补货及有界取货数量（2026-10-01，26.3）
+
+- 仅 `MC == 26.3` 新增服务端可选 query_amount/take_amount 频道，0为半组、1–2304为指定数量；普通与静默共用身份/授权/限速/快照/防重放/库存锁。原 v1 频道及 DTO 构造器和 Java 入口描述符保持兼容。
+- halfmasa 将轻松放置与打印机补货移入扩展功能栏，各自折叠允许假人取货、数量与静默子选项；旧 Ported 配置先迁移，再读 Extensions。打印机按现有 Hana 协调器方法或旧同系 InventoryUtils 方法描述符选择互斥接入，不依赖版本字符串；没有兼容方法时提示，未知改版需提供26.3 JAR再补适配。
+- 本次构建使用 `:26.3:build -x test --console=plain --max-workers=1`。未运行自动测试或启动游戏；具体数量、连续取物、双功能同时触发及改版游戏内行为仍待人工确认，验收步骤见中英文 API 文档及客户端 `docs/litematica-auto-refill.md`。
+- 最终构建两端均成功，`git diff --check` 通过。服务端归档 `mod-builds/20261001-141117/carpet-fga-addition-1.5.16+v2610011409-mc26.3.jar`；客户端归档 `D:/ai/half_masa/mod-builds/20261001-141117/halfmasa-fabric-26.3-1.1.8+20261001.140938.jar`。此前成功的中间构建均独立归档，客户端 `20261001-140348`、服务端 `20261001-135918`。
+
+## 首位低库存从末位补货及空盒回收（2026-10-01，26.3）
+
+- 源码门控：`MC == 26.3`；本次仅修改 Minecraft 26.3 服务端，halfmasa 客户端协议保持不变。其他版本未移植。
+- 材料查询首位优先，后位按实际已有编号倒序，首位缺失或不足时直接查末位。自动维护已登记普通材料首位，散货不足1152时从后位提取材料补入9–35槽；普通64堆叠材料散货区容量1728。
+- 取空盒返回名称精确为 `潜影盒` 的库存假人；保留组件及其他盒内材料，接收者不可用时保留并定期重试。维护不召唤假人，离线读取及压缩写入由有界IO线程处理，主线程复核并提交；共享锁防止分类/取物/手动召唤竞争，失败回滚，回滚不确定时隔离相关库存。
+- 本次未运行自动测试或启动游戏。人工验收及限额详见 `docs/playersort_inventory_api.md`；待确认在线/离线、1151/1152边界、后位倒序与缺号、空盒回收及接收者背包满后重试、连续取货及总量守恒。异常断电跨档案原子性不承诺。
+- 构建：`:26.3:build -x test --console=plain --max-workers=1` 成功，预处理依赖使用仓库内JDK21、26.3使用JDK25。每次成功构建独立归档；最终产物为 `mod-builds/20261001-125047/carpet-fga-addition-1.5.16+v2610011249-mc26.3.jar`，此前中间构建为 `mod-builds/20261001-124430`。本次无需更新客户端。
+
+## 连续补货上线标记清理与静默取物（2026-10-01，26.3）
+
+- 依据：客户端 11:35:07 首次云杉木栅栏取回32，假人正常下线；11:35:12 第二次请求后服务端没有上线记录，11:35:22 返回 SPAWN_TIMEOUT，随后 TARGET_BUSY。API 未清理分类管理器 PENDING_SORTER_SPAWNS 的1800 tick标记，导致重复召唤被当成已有请求；完成上线及关闭 API 假人时现清除此标记。
+- 源码门控：`MC == 26.3`；实际适配仅 Minecraft 26.3，其他版本未移植。
+- 新增可选 C2S `playersort/silent_take`；客户端 halfmasa 增加默认关闭的 `litematicaRefillSilent` 子选项，保持 stock/inventoryTake 权限、半组数量、请求编号防重放和背包同步。
+- 离线静默库存由有界后台线程读取并生成临时文件；主线程复核身份、来源未上线、文件版本与背包容量后执行原子替换及在线背包交付，失败回滚并保留恢复反馈。不改玩家存档格式；原文件存为 dat_old；锁定期间阻止分类离线写入和 Carpet 假人召唤。已经在线的假人通过原在线事务取货，不关闭。
+- 26.3 客户端及服务端 build（-x test）通过；本次未运行自动测试或启动游戏，最终归档及人工验收见本次交付。真实连续三次普通/静默取物、回退、并发和正常停服后库存守恒待确认；断电时两个档案的原子提交仍不承诺。
+- 最终归档：服务端 `mod-builds/20261001-115423/carpet-fga-addition-1.5.16+v2610011151-mc26.3.jar`；客户端 `D:/ai/half_masa/mod-builds/20261001-115535/halfmasa-fabric-26.3-1.1.8+20261001.115429.jar`；两仓库 `git diff --check` 通过。
+
+## 无前缀中文库存直接取货 API（2026-10-01，26.3）
+
+- 源码门控：`MC == 26.3`；本次仅适配 Minecraft 26.3，其他版本未移植。
+- 新增可选 C2S `playersort/direct_take`，只传版本、共享请求编号和物品 ID；服务端推导无前后缀中文假人名，校验完整快照后沿用既有半组转移事务。
+- 直接请求复用取物权限、限速、请求结果缓存、离线身份校验和有界读取；客户端需支持新增频道，未安装 FGA 的客户端也可自行实现协议，旧客户端原查询流程继续可用。
+- 客户端 halfmasa 优先直接取货，找不到有效且足量的来源后再查询分类库存；取货与投影放置冷却独立。
+- 构建状态：`:26.3:build -x test --console=plain --max-workers=1` 成功（显式指定仓库内 JDK 21 供预处理节点使用）；客户端 halfmasa 26.3 同命令构建成功，`git diff --check` 通过。本次未运行自动测试或启动游戏，连续补货、回退、重复编号及物品守恒待游戏内验收。
+
+## 材料 API 补查未登记与稀疏编号库存（26.3）
+
+- 日志/档案依据：中文假人玻璃有1728个 minecraft:glass、身份标记匹配，但缓存没有 glass 映射；客户端请求普通玻璃返回库存不足。黑色染色玻璃与普通玻璃是不同物品，仍禁止互相替代；相关实例没有 debug.log
+- 范围：修改仅 MC == 26.3，并使用原始源码中的 //$$ 隔离；1.21.1、1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2 不启用此修复
+- 行为：复用分类实际命名配置，补查中文/英文/自定义名称、前后缀、盒装和杂盒库存；异步索引已有 UUID 文件名，检查实际存在的 _1–_999，不因首位或中间编号缺失漏查后位；不读取所有玩家背包
+- 登记：仅在身份及完整库存快照通过后补入映射；不覆盖既有路线，正常停服按原缓存格式保存；有旧路线冲突时材料查询仍可使用当前生成名称，但不强行改写旧分类路线
+- 校验：保留 UUID、白名单、真人/shadow 排除、占用/夺舍、权限、快照和重复请求保护；取物阶段复核材料查询对应的物品及来源候选，命名设置改变后不绕过校验
+- 限额：每个材料计划最多64个名称族和4096个实际候选，目录最多65536个 .dat 文件名；单 IO 工作者、有界队列、每请求最多4份库存，查找计划30秒；nextCursor 为服务端计划内索引，客户端只需回传，不可自行计算
+- 反馈：NOT_FOUND 表示没有候选库存；NOT_ENOUGH 表示已找到身份有效的库存但不足半组；不合格来源保留具体保护/身份错误；INVENTORY_INDEX_TOO_LARGE 表示目录超出索引上限
+- 构建：`:26.3:build --no-daemon --configure-on-demand --max-workers=1` 成功，26.3 全部53项自动测试通过（本次新增3项），0失败/错误；其余九个节点仅随预处理依赖图编译主源码，不启用此修复，也不代表完成其游戏测试
+- 产物：`mod-builds/20261001-091638/carpet-fga-addition-1.5.16+v2610010911-mc26.3.jar`，SHA-256 `29703a2a5ff347f4e1bc27caedc85b2fce1b2fbd5a4a027815a34d1153b90db2`
+- 冒烟：归档包的隔离服务端完整回归通过，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20261001-091646/summary.txt`；请求者背包和随身潜影盒无玻璃，未登记中文玻璃档案1728→1696、请求者获得32；仅存在的自定义前后缀盒装 _17 库存33→1、请求者获得32，盒子名称保留；缺失返回 NOT_FOUND、不足半组返回 NOT_ENOUGH；来源登记及物品守恒通过，停服缓存文件确认保存盒装路线
+- 回归边界：原分类、补给、设置、网页登录，以及 API 在线/离线半组补货、重复编号、背包满、快照改变、权限保护均继续通过，正常停机；本次未运行性能基准和正版档案查询专项，报告中对应 False 表示未运行；探针直接调用服务端 API，没有真实投影客户端收发，不记为客户端轻松放置验收通过
+- 兼容：只需更新服务端；Payload 字段及协议版本不变，仅增加错误状态和材料 cursor 内部语义；客户端应只使用返回的 nextCursor，并处理 NOT_FOUND/索引超限；不修改规则默认值、权限、配置格式或玩家存档格式
+- 待人工确认：真实投影客户端轻松放置及新错误提示；不会自动替换生产服 jar 或操作真实库存；其他版本等待确认
+- 已知不一致：此前分类副手存盘格式、基础节点门控和 Mixin 警告仍见后续记录，未扩大此次修改范围
+
+## 库存导出成功反馈发送失败修复（26.3）
+
+- 日志依据：26.3 服务端 latest.log 的 stock_exported 系统消息编码失败，参数含 Java Path；同一时间客户端显示 multiplayer.message_not_delivered，导出的 TXT 文件实际存在；相关实例未找到 debug.log
+- 修改：仅 MC == 26.3 的 stockExport 将输出路径转换为字符串，保留翻译键、服务端语言 fallback 和绿色反馈；其他节点保留原行为，尚未同步 1.21.1、1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2
+- 测试：新增 StockExportFeedbackTest，通过原版 ClientboundSystemChatPacket Codec 复现 Path 参数失败，并验证中文、英文、繁体中文反馈编码/解码，包含中文目录、空格、百分号和相对路径；隔离冒烟增加真实导出命令和 TXT 文件检查
+- 兼容：只需更新服务端，客户端安装要求、协议格式、权限、规则默认值、配置格式和库存存档均不变；不改变 API 身份校验
+- 构建：`:26.3:build --no-daemon --configure-on-demand --max-workers=1` 成功，26.3 全部 50 项自动测试通过（本次新增 2 项），0 失败/错误/跳过；原版系统聊天包的旧参数失败复现和新反馈编码/解码通过。其余九个节点仅随依赖图编译主源码，不代表已启用此修复或完成游戏测试
+- 产物：`mod-builds/20260930-215345/carpet-fga-addition-1.5.16+v2609302151-mc26.3.jar`，SHA-256 `f5c7b21ddd257c4ccf5f8c4c89cbb84750dbfebf014c26aa4b83a94c89ae2b29`
+- 冒烟：归档包的隔离服务端完整回归通过，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260930-215415/summary.txt`；实际执行 `/fga playersort stock list all`，成功提示写入日志并生成一个非空 TXT 文件；同次回归中分类、半组补货 API、权限/设置和网页登录均通过，正常停机。原版消息 Codec 测试覆盖发包编码；隔离服没有真实客户端，不将冒烟通过记作真人聊天栏已验证
+- 待人工确认：更换服务端 jar 并重启后，以 OP 玩家执行 `/fga playersort stock list all`，应显示导出成功路径、TXT 文件正常产生、服务端不再出现该反馈的 EncoderException。分别使用客户端安装/未安装 FGA 的情况检查语言；客户端实际显示尚未验证。其他版本等待本版本确认后同步
+- 不一致：本次日志中的参数类型错误已对应修复；下节记录的旧分类副手写入及既有门控问题不属于此次反馈修复，仍保留记录
+
+## 假人库存查询与轻松放置补货 API v1（26.3）
+
+- 范围：新增 Payload、API、假人身份保存 Mixin 和测试均为 `MC == 26.3`；原始 1.21.1 源码中的新增行使用 `//$$`，不会启用新协议；尚未适配 1.21.1、1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2
+- 行为：仅客户端主动查询回包；可分页查看分类路线/库存，或按物品 ID 查找补货来源；取物数量由服务端按实际堆叠上限计算为半组，64→32、16→8、不堆叠物品→1；可以从潜影盒内提取散货，空盒留在原槽位，同组件物品才合并
+- 权限：查询沿用 stock；新增 inventoryTake 权限默认 OP，可通过 `/fga playersort permission inventoryTake <玩家名|0-4|ops> true|false` 单独授权；普通客户端的轻松放置补货需要同时授予 stock 和 inventoryTake；不新增 Carpet 规则或第 12 项设置
+- 安全：初版只操作缓存分类路线及 _1–_999 后位；当前26.3材料查询的命名候选补查见顶部记录，指定名称查询仍仅允许登记路线；均校验确定性离线 UUID、白名单、在线实体为假人、非夺舍/分类中的来源，以及离线假人身份标记；不接收客户端 ItemStack、NBT、数量或接收者；30 秒快照、请求编号去重、全量快照复核、背包容量预检，失败不扣货
+- 端侧和网络：服务端必须安装此构建，客户端需实现 API v1 的三个游戏 CustomPayload 频道；不要求安装 FGA 客户端，不主动向未实现 API 的客户端发包，不修改原版数据包；网页 HTTP 接口仍只读，网页关闭不影响主动游戏 API
+- 性能：每玩家查询/取物分别最多每秒一次，全局查询最多 10 次/秒、取物最多 4 次/秒；最多 64 会话、8 在途取物，一个有界 IO 线程读取离线 NBT；每次材料查找最多 4 个档案，可继续分页；存盘通过原版假人生命周期，不在 API Tick 内直接读写 playerdata
+- 存档兼容：复用 fgaOfflineSorterName 标记，并在原版保存 Carpet 假人时保留；不标记真人，不自动改写旧档案。没有标记的旧假人档案须先备份并检查旧副手槽位、载具和身份，确认可安全上线后才由管理员上线并正常下线一次，再使用 API。两端背包转移沿用原版存盘/备份语义，不承诺断电时两个 playerdata 文件的原子提交；生产测试前应备份存档
+- 26.3 副手：API 按原版 equipment 读取副手，盔甲不计库存；旧 Inventory 副手槽位返回 LEGACY_OFFHAND，在上线前拒绝操作，须先备份并人工检查迁移，不能盲目用上线/下线修复
+- 临时上线保护：API 自行召唤的库存假人使用旁观模式，避免环境伤害及拾取地面物品；拒绝自动上线含 RootVehicle 的离线档案，不搬移载具；原本在线来源的模式及位置不改变
+- 真人 shadow：排除 Carpet isAShadow 替身，不标记其存盘身份、不将其视作分类库存、不由 API 清理逻辑下线
+- 接口文档：`docs/playersort_inventory_api.md`、`docs/playersort_inventory_api_en.md`
+- 构建：`:26.3:build --no-daemon --configure-on-demand --max-workers=1` 成功，使用本机已有 JDK 21 工具链；26.3 全部 48 项自动测试通过，其中 API 单元测试 12 项。实际打包仅 26.3；其余九个节点仅随预处理依赖图编译主源码，未启用该 API、未进行此功能游戏测试
+- 验证：最终归档包的隔离服务端完整回归通过，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260930-195254/summary.txt`。API 在线/离线半组补货（32/8）、潜影盒散货和物品守恒、重复编号/参数更改、背包满、物品变更快照、权限/关闭、路线列表及库存分页通过；离线取物保留副手 31 个泥土，shadow 标志来源被拒绝。副手解码、旧副手槽位和 RootVehicle 拒绝另有单元测试；shadow 用例为探针设置假人标志，不等同于真人客户端替身测试。原分类、补给、设置、网页回归继续通过，服务端正常停机；本次未运行性能基准及正版档案查询专项，报告中对应 False 表示未运行
+- 最终产物：`mod-builds/20260930-195254/carpet-fga-addition-1.5.16+v2609301946-mc26.3.jar`，SHA-256 `c03f791e0c38641f847a30ff2a0d9aded66df2627985e013ff6d1109680dac4a`
+- 日志边界：启动时存在本机 Windows Perflib/OSHI 计数器错误，测试来源名查询有 Mojang 404；未将这些日志记为 API 故障，也未据冒烟通过宣称日志完全无异常。其他节点既有 Mixin 警告见下节
+- 已发现的既有不一致：分类 OfflineInventory 的读写仍使用旧 Inventory 副手槽位，而 26.3 原版在 equipment 保存副手；本次 API 不复用该读写路径，只安全读取并经原版在线背包转移。未授权扩大为整个分类存盘格式迁移，旧档案含副手时必须先备份检查
+- 待人工确认：实际投影客户端的网络对接与轻松放置补货体验（服务端探针直接调用 API，Codec 有单元测试，未运行真实客户端收发）；断电/强杀恢复及旧档案人工迁移未验证；其他版本等待单版本确认后移植
+
+## 假人分类设置收拢到 set（26.3）
+
+- 范围：`MC == 26.3`；11 项设置统一放在 `/fga playersort set` 下，保留 `/fga playersort language` 语言快捷入口；其他版本的旧 setting 和外层设置入口保持原行为
+- 门控：`usesGroupedSettings()` 在原始源码及其他预处理节点返回 false，仅 26.3 预处理结果返回 true；1.21.1 根节点直接编译原始源码，所以不能仅用正常 Java 外层的 `//#if MC == 26.3` 注释隔离本次命令布局。设置按钮和帮助路径同样按该门控切换
+- 指令：set 下为 language、mode、summonNotices、prefix、quickShulker、autoCraft、whitelistMode、cleanOpenedTarget、speed、cpu、dashboard；网页密码/端口、旧 format/workers 设置同样收拢；名单管理、名称映射、库存查询与权限管理仍在外层；set 不带参数显示设置面板
+- 同步：设置向导的点击补全、帮助及中英文文档改用新路径；26.3 不再注册外层 setting 或上述模式设置，language 同时支持两个路径；旧 `/fakePlayerItemSort` 别名采用同一命令树
+- 兼容：不更改配置字段、规则默认值、物品数据、客户端要求或网络协议；沿用原有逐功能权限键，高级内部设置别名 targetLanguage、shulkerRestock、cpuThreads、inventoryRebuild 仍可在 set 下输入
+- 构建：`:26.3:build :1.21.1:test --tests carpet.fga.FakePlayerItemSortCommandLocalizationTest --no-daemon --configure-on-demand --max-workers=1` 成功；26.3 全部 36 项自动测试通过，1.21.1 命令回归 6 项通过。实际打包版本仅 26.3；1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2 的主源码也随依赖图编译成功，未对这些版本启用新布局或进行游戏测试
+- 验证：补齐基础节点门控后，使用 `scripts/powershell/fake-player-item-sort-smoke-26.3.ps1 -BaselineJar <最终产物>` 重跑隔离服务端全套冒烟通过，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260930-164526/summary.txt`；外层 Tab 不显示设置项、set 包含 11 项、两个 language 路径、全部设置执行、旧 settings 授权/撤销，以及分类/网页登录回归均通过。quickopen/summon、杂盒/满盒/拆盒、散货分批、补给生命周期、盒装补给材料、失败重试节流和网页四端点认证/关闭均通过，正常停机；本次未重复性能基准或正版档案查询专项测试
+- 最终产物：`mod-builds/20260930-164512/carpet-fga-addition-1.5.16+v2609301640-mc26.3.jar`，SHA-256 `79697e1ab937a7a11f65299814c7194020f38f16e041a28f64b5503fd57b9841`
+- 编译警告：1.21.10/1.21.11 的既有末地传送门 Mixin descriptor 有目标未找到警告；与本次命令布局无关，未修改或掩盖，不能把这些节点的编译通过当作 Mixin 游戏验证通过
+- 已发现的既有不一致：1.21.1 原始源码仍含先前用正常 Java 写在 `MC == 26.3` 注释块内的设置向导、权限和网页登录分支，与前序记录的“仅 26.3”范围不一致。本次仅隔离 set 布局与路径变化，不更改那些既有功能；其实际门控需另行核对，不能据此次构建声称它们已经完成其他版本适配或游戏验证
+- 待人工确认：游戏内点击填入聊天栏的视觉交互
+
+## 假人分类网页三态设置与登录（26.3）
+
+- 范围：新增网页登录与指令为 `MC == 26.3`，分类向导新增第 11 项 `[false][true][需要登录]`，内部选项 `false|true|login`
+- 行为：默认 false，关闭 HTTP 服务并停止自动网页快照更新；true 无需登录；login 使用用户名 fga 与单独设置的密码保护页面、库存 API 和文本导出，未设置密码时拒绝进入 login
+- 配置：保留旧布尔 dashboard 字段，新增 dashboardLogin、dashboardPasswordHash；旧配置仍可读取，新密码只保存随机盐 PBKDF2 哈希，写入失败回滚；关闭网页不影响游戏内主动库存查询
+- 端侧：无需客户端 FGA，仍仅监听 127.0.0.1；登录模式下原 API 调用者也需发送认证信息，未更改 Minecraft 网络协议、存档物品、规则默认值或命令权限
+- 验证：`:26.3:build --no-daemon --configure-on-demand --max-workers=1` 成功，36 项自动测试通过；`scripts/powershell/fake-player-item-sort-smoke-26.3.ps1` 隔离服务端全套冒烟通过，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260930-084105/summary.txt`。页面、旧/新库存 API、stock.txt 四个端点均验证匿名和错误密码返回 401、正确密码返回 200；配置重载后认证有效；切回 true 后匿名可访问；false 后监听停止；原分类/补给/物品守恒用例继续通过
+- 实际适配和构建版本：26.3；其余节点仅随预处理依赖编译主源码，未增加登录功能或进行该功能游戏验证
+- 最终产物：`mod-builds/20260930-084713/carpet-fga-addition-1.5.16+v2609300845-mc26.3.jar`，SHA-256 `5ab2c2465046d4280a480a8ea68565dc1b18954123a4facddbc7c8224ad9859d`
+- 待人工确认：浏览器自带登录框交互
+
+## 补给站按盒装材料取料（全部含 `FakePlayerItemSortManager` 的版本）
+
+- 现象：玩家的 `潜影盒补货` 背包里全是装满原木、潜影盒壳的潜影盒，分类却一直取不到空盒；日志表现为每次搬运尝试都新召唤一个编号后位假人而不分类
+- 根因：取料/计数只看背包顶层槽位。`countDepotMaterial` / `consumeDepotMaterials` / `transferMaterialsToDepot` 都只匹配顶层 `isLog(stack)` / `stack.is(Items.SHULKER_SHELL)`，盒内的原木与壳完全看不见；`isDepotAllowed` 还把这类材料盒判为"异物"，会尝试把它们清出去。另外 `restockDepot` 需要一个空槽放合成产物，背包 36 格全被材料盒占满时 `wanted=0` 直接返回
+- 修改：新增 `isDepotMaterialBox`（盒内只装原木/壳的潜影盒视为补给站材料，不再算异物）、`countShulkerMaterial`、`takeShulkerMaterial`；`countDepotMaterial` 与 `consumeDepotMaterials` 改为同时统计并消耗盒内材料，被取空的盒子留在原处直接成为可用的空潜影盒；新增 `craftDepotBox`，在 `takeEmptyShulkerFromDepot` 找不到现成空盒时按需消耗 2 原木 + 2 潜影盒壳直接产出空盒（不需要空槽），并同样受 `shulkerRestock` 开关约束
+- 行为：材料盒装、无散料、无空槽的真实布局下也能持续产出空盒分类；`shulkerRestock=false` 时不合成，与原有语义一致
+- 数据兼容：不新增配置字段、网络协议或客户端要求，不修改规则/权限默认值；材料盒留在补给站内，玩家原有存放方式不变
+- 源码预处理条件：无版本条件，随 `FakePlayerItemSortManager` 一起编译到所有版本
+- 编译：`:26.3:build` 成功
+- 验证：新增 `fgaSortProbe depot-boxed`——把补给假人 36 个主槽全部填成"18 盒原木 + 18 盒潜影盒壳"（无散料、无空槽），连续取两次空盒，断言拿到 2 个潜影盒且恰好消耗 4 原木 + 4 潜影盒壳
+  - 修复后：`FGA_SORT_PROBE_PASS: depot-boxed crafted=2 logsUsed=4 shellsUsed=4`
+  - 修复前（同一探针 + 上一版 jar `mod-builds/20260929-222036`）：`FGA_SORT_PROBE_FAIL: boxed depot material produced no box: 0 minecraft:air`
+  - 全套冒烟 14 项通过，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260929-232748/summary.txt`
+- 顺带修复：异步召唤期间不再给补给假人打"上线即关闭"标记（`finishDepotUse` 的离线分支改为在 `PENDING_SORTER_SPAWNS` 命中时跳过），避免召唤还在途中就被判定为待关闭；`closeDepotFake` 会清掉该名字的召唤重试标记，使下一轮能立即重新召唤
+- 产物：`mod-builds/20260929-233411/carpet-fga-addition-1.5.16+v2609292333-mc26.3.jar`，SHA-256 `29d8a20ace88926333c09ed9e6658a782ce60a78b5d8b708cbc907a4eaacb57b`
+- 待人工确认：真实存档里跑一轮杂盒，确认补给站在"背包全是材料盒"时能持续给出空盒；以及盒内材料被取空后的空盒是否符合你的存放预期
+
+## 空潜影盒补给假人的生命周期改为按轮（全部含 `FakePlayerItemSortManager` 的版本）
+
+- 现象：分类杂盒时补给假人 `潜影盒补货` 上线后同一秒被关闭（`lost connection: Killed`），没有合成任何空盒；随后分类器每次搬运尝试都新召唤一个编号后位假人（日志中 `村民刷怪蛋_1` … `_13` 每约 4~5 秒一个），全程零分类
+- 根因：`restockDepot` 的 `finally { if (spawnedForRestock) finishDepotUse(...) }` 在**每次取盒/补货尝试后**就判定补给假人去留，缺材料（2 原木 + 2 潜影盒壳）时立刻把它关掉；而材料要等本轮分类把原木、潜影盒壳分到各自目标后才可能出现，于是补给永远来不及合成，后位又因取不到空盒而不断新召唤
+- 修改：补给假人生命周期挂到"本轮分类"。`finishDepotUse` 在仍有分类任务时不下线（新增 `sortingRoundActive()`：JOBS 中存在非 `depotCleanup` 任务），只保留"背包有异物则先排队清理"；本轮结束（无分类任务）或规则关闭时才下线。tick 循环里补给假人自己的清理任务结束不再直接关闭，统一交给 `finishDepotUse` 判定；新增 `isAutoSpawnedDepot` 保证玩家手动召唤的同名假人不会被自动下线
+- 行为：一次缺材料的补货失败不再关闭补给假人，它留在线上，等原木、潜影盒壳在后续分类中到位后再合成；补货失败重试间隔仍为 30 秒，通知仍有 10 秒节流
+- 数据兼容：不新增配置字段、网络协议或客户端要求，不修改规则/权限默认值；补给假人在线期间其背包走在线读写，物品仍持久化到 playerdata
+- 源码预处理条件：无版本条件，随 `FakePlayerItemSortManager` 一起编译到所有版本
+- 编译：`:26.3:compileJava`、`:1.21.1:compileJava` 成功
+- 验证：`scripts/powershell/fake-player-item-sort-smoke-26.3.ps1` 新增 `fgaSortProbe depot-round` 用例——分类任务进行中调用一次补货，断言补给假人保持在线（`FGA_SORT_PROBE_PASS: depot-round online-while-sorting`），随后停止本轮，断言它下线（`FGA_SORT_PROBE_PASS: depot-round closed-after-round`）；原 `depot-restock` / `depot-check` 用例继续通过。隔离服实测：22:18:51 补给假人上线，22:18:53 仍在线的断言通过（修复前是上线同一秒被关闭），停止本轮后才 `lost connection: Killed`。全套冒烟 13 项通过，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260929-221537/summary.txt`
+- 产物：`mod-builds/20260929-222036/carpet-fga-addition-1.5.16+v2609292219-mc26.3.jar`，SHA-256 `87a33bcec073a76d018825be6db539edd159736d0e586472710111ddec1e8d51`
+- 仍未修（用户要求暂缓）：一次搬运尝试取不到空潜影盒材料时，后位循环仍会为下一个编号召唤新的目标假人；本轮修复让补给假人能留在线上并合成，但若原木与潜影盒壳始终不到位，仍会出现"一直召唤新假人、不分类"的现象，需要在后位循环里补防呆
+- 待人工确认：真实服务器重跑一次杂盒拆解，确认补给假人本轮内不再反复上下线、缺材料时能在原木与潜影盒壳到位后自动合成空盒；连续分类模式下"只要任务在跑就保持在线"的边界是否符合预期
+
+## 分类目标假人的同步档案查询卡顿修复（全部含 `FakePlayerItemSortManager` 的版本）
+
+- 现象：正版验证（`online-mode=true`）服务器上，summon 模式每创建一个新的分类目标假人都会让主线程同步请求 Mojang 档案服务，单次卡 3–12 秒；`logs/latest.log` 表现为 `Could not lookup user whitelist entry for <目标名>` 紧跟 `Can't keep up! Is the server overloaded? Running 3035ms or 60 ticks behind`，速度设 40/10 都一样
+- 根因：`FakePlayerItemSortManager.createFake` 直接调用 carpet 的 `EntityPlayerMPFake.createFake`，而它的第一步 `OldUsersConverter.convertMobOwnerIfNecessary` 在档案缓存未命中、名字不超过 16 字符且 `usesAuthentication()` 为 true 时会在服务端线程同步查询档案服务。分类目标名来自物品本地化名（`targetLanguage=chinese`、`prefix=""` 时为 `红石火把`、`红石火把_1`、`潜影盒` 等），Mojang 只接受 `[A-Za-z0-9_]{3,16}`，必然返回 400 `Invalid profile name`；失败结果没有负缓存，每个新物品种类、每个编号后位都会再发一次请求
+- 修改：新增 `FakePlayerItemSortManager.seedSorterTargetProfile`，在调用 carpet `createFake` 之前把目标名以确定性离线档案写入服务端档案缓存（`MC >= 1.21.10` 用 `services().nameToIdCache().add(NameAndId.createOffline(name))`，其余版本用 `getProfileCache().add(new GameProfile(UUIDUtil.createOfflinePlayerUUID(name), name))`），使那次查询直接命中缓存。实现只写缓存、不调用任何可能阻塞的缓存 `get`
+- 安全边界：`CarpetSettings.allowSpawningOfflinePlayers` 为 false 时不写入；每个名字每服务器会话只写一次；usercache 中 UUID 与离线 UUID 不同的名字（真实账号）保持原版解析，不会被钉成离线身份
+- 数据兼容：分类目标改为稳定的离线 UUID，与 quickopen 模式 `OfflineInventory` 的解析一致，并会随 `usercache.json` 持久化；不新增配置字段、网络协议、客户端要求，不修改规则/权限默认值
+- 源码预处理条件：方法体为 `//#if MC >= 1.21.10`（新档案缓存 API）/ `//#else`（`GameProfileCache`）；调用点不带版本条件，覆盖所有编译 `FakePlayerItemSortManager` 的版本
+- 编译：`:26.3:compileJava`、`:1.21.1:compileJava` 成功；`:1.21.8`、`:1.21.10`、`:26.2` 节点随预处理依赖图一并编译成功。逐版本检查预处理产物：1.21.1/1.21.8 命中 `getProfileCache().add(new GameProfile(...))`，1.21.10/26.2/26.3 命中 `services().nameToIdCache().add(NameAndId.createOffline(name))`。`:26.3:test` 35 项通过、0 失败
+- 服务端验证（`online-mode=true`）：新增 `scripts/powershell/fake-player-item-sort-smoke-26.3.ps1 -ProfileCheck -OnlineMode`，在隔离 26.3 服务端直接调用 `OldUsersConverter.convertMobOwnerIfNecessary`。未预置时日志出现 `Could not lookup user whitelist entry for fgaProbeProfile`，服务端线程阻塞 `blockedMs=1309.638`；调用预置方法后同一查询 `lookupMs=0.025` 并返回离线 UUID `22950646-3f7f-3afe-af93-f9ebdbdb0484`，不再产生查询告警
+- 回归：`scripts/powershell/fake-player-item-sort-smoke-26.3.ps1` 全套 12 项通过（help、settings、quickopen、summon、混合盒、满盒、拆盒、散货分批、补货假人清理、Dashboard 页面/API/库存文本、Dashboard 停止、正常停机），报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260929-214505/summary.txt`
+- 顺带修正验证脚本缺陷：该脚本被工具写回时丢失 UTF-8 BOM，而本机 Windows PowerShell 5.1 默认按 GBK 解析脚本与 `text/plain` 响应体，导致 Dashboard 库存文本断言把正确响应判为失败（实测响应字节 `231,137,169,229,147,129,9,...` 正是正确的 `物品\t数量\t`）。现改为显式 UTF-8 解码响应体并用码点构造期望表头，不再依赖脚本自身编码
+- 产物：`mod-builds/20260929-215227/carpet-fga-addition-1.5.16+v2609292151-mc26.3.jar`，SHA-256 `edd51090817777f1831744d1c3b4a21b3bc1dab90c853444712dea4e8211f821`；其余版本未打包
+- 已知不一致（本分支未修，待人工确认）：`fakePlayerProfilePreload` 文档标注 `1.21+` 生效，但 `EntityPlayerMPFakeMixin` 只在 `carpet-fga-addition.mixins.json` 的 `MC == 1.21.1` 分支（以及 1.20.1 的注释分支）注册；26.3 与 1.21.3–26.2 上直接调用 `EntityPlayerMPFake.createFake` 不会被预加载拦截，`PlayerCommandMixin` 的指令预加载仍然有效。分类器已不再依赖该规则
+- 待人工确认：真实正版验证服务器上重跑一次大量杂盒拆解，确认不再出现 `Could not lookup user whitelist entry` 与秒级 tick 欠账；以及旧存档中此前以在线 UUID 保存的分类库存是否需要迁移
+
+## 假人分类拆盒主线程峰值优化（26.3）
+
+- 范围：`supportsPlayersortRefactor()` / `MC == 26.3`；其他版本保持原行为
+- 修改：在途计划持有 Job 至主线程提交完成，丢弃停止/重启后的旧计划；失败搬运也按 speed 间隔退避；组件直接比较代替主线程构造整盒字符串；拆盒合并同类槽位、单次上限 64 个物品；移除重复首位库存整理；空盒假人等源库存中的待拆盒处理完后再下线；新建空档案目标无法接收物品时结束本次后位尝试，避免缺盒材料时继续扫描其余不存在的后位档案
+- 数据兼容：26.3 改用 `LevelResource.PLAYER_DATA_DIR` 对应的 `world/players/data`；遇到旧错误目录 `world/playerdata` 的同 UUID 档案时拒绝写入，保留双方数据等待人工恢复。不增加客户端要求、网络协议或配置字段，不修改规则/权限默认值
+- 构建：`:26.3:build --no-daemon --configure-on-demand --max-workers=1` 成功，35 项单元测试通过；本次行为仅适配 26.3，未移植其他版本
+- 完整服务端冒烟：`scripts/powershell/fake-player-item-sort-smoke-26.3.ps1` 通过，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260930-075253/summary.txt`；覆盖命令设置、quickopen/summon、混合盒/满盒/拆盒物品守恒、散货分批、补货假人清理/按轮生命周期/盒装材料，以及 Dashboard 页面/API/停止和正常停服。缺材料用例源库存 64、目标 1728 保持不变，三次失败重试间隔均不小于 40 tick
+- 性能专项：`-PerformanceOnly` 报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260929-192317/summary.txt` 通过；8 个 27 格杂盒的 864 个内容物和 8 个盒子守恒，覆盖速度 40/10、召唤/档案模式；密集同类盒 1728 个物品每 tick 搬运不超过 64；quickopen 写入后实际召唤目标验证 448 个绿宝石仍在。空盒收集假人上线次数由对照版的每场景 8 次降为 1 次
+- 缺材料成本对照：旧版 `v2609291813`（`-PerformanceOnly -BaselineJar`，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260930-075608/summary.txt`）三次尝试平均 38.106 ms、最大 45.617 ms；当前版同一用例平均 17.869 ms、最大 25.491 ms，均转移 0 个物品。这是小样本专项测量，不是整服 MSPT；普通杂盒场景尚未证明平均 MSPT 明显下降，首次加载仍可能有尖峰
+- 产物：`mod-builds/20260930-075247/carpet-fga-addition-1.5.16+v2609300751-mc26.3.jar`，SHA-256 `f996bda68314bdb3df517dcecbe440c109ced1a2b846b4f9c6f52ed73845c096`
+- 待人工确认：真实存档大批杂盒的 MSPT/吞吐量、旧错误目录档案的人工核对与恢复；未进行客户端界面冒烟。本次不自动迁移或覆盖生产档案
+- 已发现旧验证缺陷：原冒烟只从旧 playerdata 目录核验，无法证明 26.3 原版登录后数据一致；本次改用原版目录核验。旧记录中的通过结果仅代表当时脚本检查范围
+
+## 假人物品分类全面重构（26.3 单版本基线）
+
+- 功能：保留旧入口与原有 Dashboard/API、路由缓存、分类模式、白名单、持续分类、自动补货、目标清理、名称配置、库存重构和线程调优；26.3 首次设置向导现共 11 项（含网页三态设置），新增分类假人上下线公屏提示开关，关闭时控制台仍记录、玩家公屏不广播；自动补货假人完成补货/清理后下线，即使档案预加载延迟也会在上线后清理。速度设置接受 1–120 tick，除控制潜影盒拆分间隔外，散货也按速度分批移动；核心选项为 `0|1|2|custom`，自定义线程数上限 256 并受可用核心数限制
+- 源码预处理条件：向导、独立命令、通知 Mixin、权限与 stock 命令为 `MC == 26.3`；`FakePlayerItemSortManager.supportsPlayersortRefactor()` 仅在 `MC == 26.3` 返回 true，其他源码输出走旧路由实现；26.3 配置写入 `schemaVersion: 3`、现有 11 个向导完成字段和逐命令权限
+- 实际适配版本：`26.3`。本轮没有将新行为移植到其他 Minecraft 版本
+- 编译/自动测试：`:26.3:test` 与 `:26.3:build` 成功；自动测试报告 35 项通过。Gradle 的 26.3 预处理依赖图还编译了当前 10 个版本节点的主源码，但其他版本没有运行本次测试或游戏内验证；1.21.10/1.21.11 编译有现存 End Gateway/Portal Mixin 目标方法警告，未导致失败
+- 服务端冒烟：最新 `scripts/powershell/fake-player-item-sort-smoke-26.3.ps1` 在隔离目录验证 `/fga playersort help`、`speed 6`、`cpu custom 3`、通知开关 true/false、quickopen/summon 各转移 16 个物品、混合盒（石头 32、泥土 32）、满盒（石头 1728）、拆盒（钻石 32、泥土 32）守恒；散货 64 个绿宝石按 speed 16 每 16 tick 最多 4 个完整转移；补货假人上线后下线且清理跟踪状态归零。上述项目通过，测试服正常停机。但同次脚本后续 Dashboard 回环 HTTP 检查超时，故本轮不能报告 Dashboard 页面/API 检查通过；报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260929-183038/summary.txt`
+- 产物：`mod-builds/20260929-181436/`，包含 `carpet-fga-addition-1.5.16+v2609291813-mc26.3.jar`；SHA-256 与构建命令见同目录 `build-manifest.json`
+- 客户端/服务端要求：只需服务端安装 FGA；新增服务端 Mixin，不增加客户端代码、自定义网络协议或客户端安装要求。配置 schema 3 在既有 schema 2 数据上补入默认关闭的 `summonNotices`；配置继续位于世界 `config/carpetfgaaddition/`。`stock list all` 会在世界配置目录写入库存文本导出
+- 待人工冒烟：真实客户端确认通知开关关闭时玩家公屏无上下线提示、服务端控制台仍有记录；开启后公屏提示恢复；全新存档设置向导点击/颜色、无 FGA 客户端兼容、旧 schema 配置迁移、权限等级与玩家覆盖、两种分类模式下的其他潜影盒组合、白名单、补货材料场景、库存重构确认/取消。Dashboard/API 本轮检查超时，也待单独确认。详细步骤见 `FeatureSmokeTestPlanTest` 中 `fakePlayerItemSort26_3...` 流程
+
 ## 硫方怪小型成长为中型的时间（26.2、26.3）
 
 - 规则：`sulfurCubeGrowthTime`，默认 `-1`；`-1` 保持原版 20 分钟（24000 游戏刻），正整数设置成长时间秒数，允许范围为 `1–107374182`。只在新小型硫方怪初始化幼年年龄时应用；改规则不会重置已存在幼体的存档年龄计时，喂食加速仍由原版处理

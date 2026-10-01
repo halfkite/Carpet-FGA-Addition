@@ -924,7 +924,7 @@ ops：需要 OP 2 及以上<br>
 
 ### 假人物品分类(fakePlayerItemSort) · [相关指令](commands.md#cmd-fake-player-item-sort)
 
-启用假人物品分类，使用 /fakePlayerItemSort 管理模式和分类配置
+启用假人物品分类。Minecraft 26.3 使用 `/fga playersort` 进行首次设置和分类管理；旧版本继续使用 `/fakePlayerItemSort`
 
 - 类型：`布尔`
 - 默认值：`false`
@@ -933,7 +933,7 @@ ops：需要 OP 2 及以上<br>
 - 生效版本：`1.21+`
 
 
-分类配置保存在 `world/config/carpetfgaaddition/fake-player-item-sort.json`。`/fakePlayerItemSort mode summon` 使用在线 Carpet 假人，`mode quickopen` 直接读写离线 playerdata。旧版 `fakePlayerItemSort*` Carpet 配置只在首次启动时迁移到该 JSON，不再注册为规则。
+分类配置保存在 `world/config/carpetfgaaddition/fake-player-item-sort.json`。`mode summon` 使用在线 Carpet 假人，`mode quickopen` 直接读写离线 playerdata。26.3 首次启用时会显示双语设置向导；旧版 `fakePlayerItemSort*` Carpet 配置只在首次启动时迁移到该 JSON，不再注册为规则。
 
 
 ## 配置文件

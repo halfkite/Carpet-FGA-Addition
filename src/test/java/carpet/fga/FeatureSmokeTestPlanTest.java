@@ -36,16 +36,128 @@ final class FeatureSmokeTestPlanTest {
      * history.
      */
     private static final List<SmokePlan> PLANS = List.of(
+            //#if MC == 26.3
+            //$$ new SmokePlan("playersortInventoryMissingRouteDiscovery", "MC == 26.3", "26.3",
+            //$$         "scripts/powershell/fake-player-item-sort-smoke-26.3.ps1 plus MANUAL: projection client",
+            //$$         "In a disposable world omit glass routes, save a Chinese 玻璃 fake with 1728 glass and a matching "
+            //$$                 + "identity marker. Keep the requester inventory and carried shulker free of glass. Query minecraft:glass "
+            //$$                 + "and withdraw 32; check requester=32 and source=1696. Repeat with custom prefixes/suffixes and only "
+            //$$                 + "a boxed _17 source, retaining its box metadata. Query a shortage and an absent item separately. "
+            //$$                 + "In a real client, try Easy Place with missing glass, wait for inventory synchronization and verify the same conservation.",
+            //$$         "Discovery remembers only verified existing sources, sparse suffixes are found without a primary, "
+            //$$                 + "NOT_FOUND and NOT_ENOUGH are distinct, requests cannot claim real/shadow players, and no world-wide inventory scan runs."),
+            //#endif
+            new SmokePlan(
+                    "playersortInventoryHalfStackApi",
+                    "MC == 26.3; no older-node payload registration",
+                    "26.3",
+                    "scripts/powershell/fake-player-item-sort-smoke-26.3.ps1 plus MANUAL: client Easy Place integration",
+                    "Run the inventory-api probe in a disposable world. Query material IDs, grant and revoke stock and "
+                            + "inventoryTake permissions, withdraw from online and offline fake inventories, repeat a nonce, "
+                            + "change its parameters, fill the recipient inventory and invalidate a snapshot. Verify gold-block "
+                            + "half stacks are 32 and snowball half stacks are 8, the named shulker is preserved, and the API-owned "
+                            + "temporary fake logs out. Compare source playerdata with recipient totals. Separately connect an "
+                            + "API client, register the reply channel, request pages only on demand and test Easy Place replenishment; "
+                            + "test an unmodified client, rate limits, logout during reads and legacy files without identity markers.",
+                    "Exactly one half-stack is moved per successful nonce; denied, full-inventory and stale requests do not "
+                            + "debit stock, retries do not duplicate items, containers retain unmatched content and names, and "
+                            + "unverified offline files cannot be claimed. No inventory packets are pushed without queries. "
+                            + "Vanilla separate player saves do not guarantee atomic recovery after a power failure."),
+            new SmokePlan(
+                    "fakePlayerItemSort26_3MixedBoxTickBudget",
+                    "MC == 26.3 via supportsPlayersortRefactor",
+                    "26.3",
+                    "scripts/powershell/fake-player-item-sort-smoke-26.3.ps1 -PerformanceOnly",
+                    "In a disposable world run eight 27-slot mixed boxes (864 items plus 8 boxes) at speeds 40 and 10, "
+                            + "then repeat 40 warm. Measure tick callback time and wall-clock throughput, count collector "
+                            + "logins, and verify vanilla PLAYER_DATA_DIR totals after logout. Run quickopen and log its "
+                            + "target in through Carpet to verify saved items really load. Run a dense 1728-item mixed box "
+                            + "and assert no tick removes more than 64 contents. For an archived baseline, use -BaselineJar "
+                            + "and verify the printed implementation path. Also manually stop/restart a pending sorter, "
+                            + "block a target and check retry intervals, and supply legacy world/playerdata files to verify "
+                            + "writes are rejected without overwriting either directory.",
+                    "Items and boxes are conserved; the empty-box collector logs in once per fixture; attempts are "
+                            + "bounded and stale plans cannot commit. Separate cold-start maxima from warm tick costs; "
+                            + "benchmark tick callback samples do not claim to reproduce the user's world MSPT."),
+            new SmokePlan(
+                    "fakePlayerItemSort26_3SetupAndPermissionRefactor",
+                    "MC == 26.3; older Minecraft nodes retain their existing sorter implementation",
+                    "26.3",
+                    "MANUAL: disposable 26.3 world, FGA client, vanilla client, and a browser",
+                    "Start with a fresh world, enable fakePlayerItemSort, and join with an FGA client. Verify the bilingual "
+                            + "first-run notice is sent once and clicking setup only inserts `/fga playersort setup` into chat. "
+                            + "Before choosing a language, confirm only the language row is shown; click each option and check "
+                            + "that it is suggested but not executed. Choose a language, then check that the remaining rows "
+                            + "appear in order: mode, join/leave notices, prefix, quick shulker, auto craft, whitelist, clean opened target, speed, "
+                            + "CPU, and dashboard. Verify unconfigured rows are gray, explicitly configured choices are cyan, notes are "
+                            + "separate lines, the notice option affects only in-game broadcasts while console records remain, "
+                            + "custom prefix accepts text, `/fga playersort set speed <ticks>` accepts a direct 1-120 value, "
+                            + "and `/fga playersort set cpu custom <threads>` accepts a custom worker count. Verify help shows this panel "
+                            + "before clickable command descriptions. Exercise valid Tab values for every setting, restart the "
+                            + "world, and verify choices persist. With a non-OP player, test default denial, `permission sort 0 true`, "
+                            + "a per-player false override, and a command-specific override against an `all` rule; confirm OP "
+                            + "and console retain access by default and command trees refresh after a permission change.",
+                    "The setup is localized, appears only until its eleven fields are configured, never runs a clicked option "
+                            + "immediately, and persists across restart. Permissions default to OP level 2, support levels 0-4, "
+                            + "ops and player-name overrides with deterministic precedence, and update online command trees."),
+            new SmokePlan(
+                    "fakePlayerItemSort26_3RoutingAndInventoryConservation",
+                    "MC == 26.3; route and shulker refactor is gated to the 26.3 source output",
+                    "26.3",
+                    "scripts/powershell/fake-player-item-sort-smoke-26.3.ps1 plus MANUAL: isolated item-conservation matrix",
+                    "Use a disposable world and record recursive item totals before and after each run. Test both `quickopen` "
+                            + "and `summon` with quick shulker handling on and off. With it off, sort loose items, a completely "
+                            + "full 27-slot single-item shulker, a mixed shulker, a partial single-item shulker, and an empty "
+                            + "shulker; verify the expected `<item>`, `<item>_box`, and mixed-box routes and numbered overflow "
+                            + "targets. With it on, fill the primary fake-player inventory first, then sort mixed-box contents "
+                            + "and verify they split by item into the base and numbered targets without losing the source box's "
+                            + "remaining contents. Repeat with a custom prefix and with cleanOpenedTarget false/true. Exercise "
+                            + "speeds 4, 8, 16, and a custom interval for loose stacks; confirm each 16-tick test step moves "
+                            + "no more than four loose items while conserving the full stack. Enable restock and exercise an "
+                            + "asynchronously preloaded `box_restock` fake with missing materials; wait for its login and "
+                            + "logout logs, then confirm it is offline and no pending depot cleanup remains. Also test "
+                            + "vanilla and FGA whitelist modes, auto-craft/restock enabled and disabled, a real player occupying "
+                            + "a would-be target name, and a failed/blocked summon. Compare loose items plus all nested shulker "
+                            + "contents in source inventories and target playerdata; verify no duplicate items, unauthorized "
+                            + "real-player inventory writes, or unbounded fake-player cascade.",
+                    "Every item and nested shulker content is conserved exactly once in both modes; target names follow the "
+                            + "selected language/prefix and shulker mode; blocked targets never cause loss, overwrite, or runaway spawns."),
+            new SmokePlan(
+                    "fakePlayerItemSort26_3StockRebuildAndWebDashboard",
+                    "MC == 26.3; existing read-only web dashboard and cache API remain available",
+                    "26.3",
+                    "scripts/powershell/fake-player-item-sort-smoke-26.3.ps1 plus MANUAL: isolated browser visual review",
+                    "Populate several cached routes. Run `/fga playersort stock list <regex>` with matching and nonmatching "
+                            + "patterns, pagination, and an invalid regex; then run `stock list all` and verify the generated "
+                            + "text file contains every cached route and quantity. Enable inventory rebuild, request one item, "
+                            + "confirm only that route is rebuilt, request `restart all` and verify no work starts before "
+                            + "confirmation, confirm once, then separately test the 30-second expiry and `restart stop` on a "
+                            + "queued rebuild. Enable the dashboard and open its loopback page; verify search, language selection, "
+                            + "zero-stock filter, actions, `/api/cache`, and `/api/v1/inventory` still work. Fetch `/api/v1/stock.txt`, "
+                            + "set a dashboard password and enable login mode; verify anonymous and wrong-password requests "
+                            + "to the page, both inventory APIs and stock.txt are rejected, correct credentials work before "
+                            + "and after config reload, and true mode allows anonymous access again; "
+                            + "disable the dashboard, and confirm the listener stops. The isolated smoke script also verifies "
+                            + "the page, legacy `/api/cache`, `/api/v1/inventory`, `/api/v1/stock.txt`, and that disabling the "
+                            + "dashboard closes the listener. In a browser, visually review search, language selection, the "
+                            + "zero-stock filter, and copy buttons. Check there is no mutation endpoint and the listener is "
+                            + "bound only to 127.0.0.1.",
+                    "Stock search/export and confirmed rebuilds reflect the route cache without changing unrelated inventories; "
+                            + "the existing read-only web UI/API works and remains loopback-only; disabling it closes its listener."),
             new SmokePlan(
                     "fakePlayerItemSort26_3CommandPortAndLocalizedFeedback",
                     "MC == 26.3; 1.21.1 retains the existing command set",
                     "26.3",
                     "MANUAL: isolated 26.3 server with an FGA client, a client without FGA, and different client languages",
-                    "On 26.3, enable fakePlayerItemSort and inspect `/fakePlayerItemSort setting cleanOpenedTarget <TAB>`; "
+                    "On 26.3, enable fakePlayerItemSort and inspect `/fga playersort set cleanOpenedTarget <TAB>`; "
                             + "verify that only false and true are suggested. Check targetLanguage, whitelistMode, "
                             + "inventoryRebuild, cpuThreads, speed, shulkerRestock, and dashboard and compare each "
-                            + "suggestion list with its accepted values. Verify `/fakePlayerItemSort workers`, "
-                            + "`/fakePlayerItemSort dashboard`, and `/player <fake> bot_sort restart` are registered. "
+                            + "suggestion list with its accepted values. Check direct numeric `speed <ticks>` and "
+                            + "`cpu custom <threads>` syntax, plus `summonNotices` values and public-chat/console behavior. "
+                            + "Verify `/fga playersort set workers`, "
+                            + "`/fga playersort set dashboard`, and `/player <fake> bot_sort restart` are registered. "
+                            + "The root must offer set but not the old setting/mode/speed/dashboard literals; "
+                            + "verify both `/fga playersort language` and `/fga playersort set language` paths. "
                             + "Set Carpet language to zh_cn: a client without FGA must receive Chinese feedback, while "
                             + "FGA clients set to English and Chinese must receive their own client-language feedback. "
                             + "Change Carpet language to en_us and confirm the no-FGA fallback changes to English without "
@@ -64,12 +176,15 @@ final class FeatureSmokeTestPlanTest {
                             + "then summon mode with 16 items per run. The summon probe enables asynchronous profile "
                             + "preloading, waits for the target to appear, and the test reads source inventory, online "
                             + "inventory, and the target playerdata before asserting conservation. For each other "
-                            + "published Minecraft node, run its test and build tasks; repeat the same gameplay steps "
-                            + "in an isolated server before claiming gameplay verification for that node.",
+                            + "published Minecraft node, run its test and build tasks; repeat the same inventory steps "
+                            + "in an isolated server before claiming gameplay verification for that node. On the 26.3 "
+                            + "baseline, also trigger one restock with a temporary `box_restock` fake while async profile "
+                            + "loading is enabled; it must log in and then leave after completion, with no pending cleanup.",
                     "quickopen transfers all 16 items to offline target playerdata without logging in a target; summon "
-                            + "creates only the requested target fake, transfers all 16 items exactly once, logs it out "
-                            + "after the batch, and saves the inventory for its next login. No numbered fake-player "
-                            + "cascade or repeated in-flight profile request occurs."),
+                    + "creates only the requested target fake, transfers all 16 items exactly once, logs it out "
+                    + "after the batch, and saves the inventory for its next login. No numbered fake-player "
+                    + "cascade or repeated in-flight profile request occurs. On 26.3, an asynchronously preloaded temporary "
+                    + "shulker-restock fake also logs out after its cleanup task; it is never left online."),
             new SmokePlan(
                     "tpTrailingDimension",
                     "MC >= 1.21.1 && MC <= 26.3",

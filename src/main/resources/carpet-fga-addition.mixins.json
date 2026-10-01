@@ -30,6 +30,8 @@
         //#endif
         //#if MC == 26.3
         //$$ "ClientboundOpenScreenPacketUnicodeProfileMixin",
+          //$$ "SorterInventoryIdentityMixin",
+          //$$ "SilentInventorySpawnGuardMixin",
         //#endif
         "EntitySelectorParserMixin",
         //#if MC >= 1.18 && MC < 26.3
@@ -49,6 +51,10 @@
         //#if MC >= 1.20.2
         "ServerCommonPacketListenerAccessor",
         "ServerCommonPacketListenerImplMixin",
+        //#if MC == 26.3
+        "SorterFakeJoinNoticeMixin",
+        "SorterFakeLeaveNoticeMixin",
+        //#endif
         //#endif
         //#if MC >= 1.16.5 && MC < 1.20.2
         //$$ "LegacyCustomPayloadAccessor",

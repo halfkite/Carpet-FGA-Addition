@@ -43,6 +43,9 @@ public final class FGACommand {
         //#if MC >= 1.20.1 && MC <= 26.3
         redirect(root, "fakePlayerItemSort", dispatcher);
         //#endif
+        //#if MC == 26.3
+        root.then(FakePlayerItemSortCommand.root("playersort"));
+        //#endif
         //#if MC >= 1.21 && MC <= 26.3
         redirect(root, "trialStop", dispatcher);
         //#endif
@@ -100,7 +103,11 @@ public final class FGACommand {
         }
         //#endif
         //#if MC >= 1.20.1 && MC <= 26.3
+        //#if MC == 26.3
+        line(out, "/fga playersort help", "假人物品分类配置与命令 / fake-player sorter setup and commands");
+        //#else
         line(out, "/fga fakePlayerItemSort help", "假人物品分类 / fake-player item sorting");
+        //#endif
         //#if MC == 1.20.1 || MC == 1.21.1
         if (CommandHelper.canUseCommand(context.getSource(), FGASettings.minecartFeatureCommandPermission)) {
             line(out, "/fga minecart help", "矿车烟花加速与锁链列车 / firework boost and chain trains");
