@@ -1,6 +1,85 @@
 # Carpet FGA Addition Commands
 
-> Documentation version: `1.5.14`
+> Documentation version: `1.5.16`
+
+## Spectator cross-dimension teleport
+
+`/carpet spectatorFreeTeleport true` keeps spectator self-teleport behavior. Setting the rule to `full` lets players in every game mode use complete `/tp` and `/teleport` commands, including teleporting other players or entities and cross-dimension travel. `full` bypasses TIS and AMS permission wrappers only for these two commands; only the server needs FGA
+
+```text
+/tp in <dimension> <x> <y> <z>
+/teleport in <dimension> <x> <y> <z>
+```
+
+Example: `/tp in minecraft:the_nether 100 64 -20`. This FGA extension syntax teleports the command executor and remains subject to world-bound checks; it is available in every game mode with `full`. Vanilla `/tp <targets> <player>` can teleport targets across dimensions to an online player
+
+On all currently supported build nodes, a dimension can also follow the coordinates to teleport the command executor:
+
+```text
+/tp <x> <y> <z> <dimension>
+/teleport <x> <y> <z> <dimension>
+```
+
+For example, `/tp 1 1 1 minecraft:overworld`. This form keeps the existing `/tp` permission policy: vanilla-authorized users, spectators with `spectatorFreeTeleport=true`, and players in any mode with `full` may use it. Relative coordinates use the executor's original position, and the destination must be within world bounds
+
+<a id="cmd-join-notice"></a>
+
+## Join notice command (joinNotice)
+
+Available on all ten current build versions; only the server needs FGA
+
+```text
+/carpet customJoinNotice true|false
+/fga joinNotice status
+/fga joinNotice preview
+/fga joinNotice welcome set <text>
+/fga joinNotice welcome clear
+/fga joinNotice date set YYYY-MM-DD
+/fga joinNotice date enabled true|false
+/fga joinNotice date clear
+```
+
+<a id="cmd-announcements"></a>
+
+## Server announcement command (announcement)
+
+Available on all ten current build versions. Only the server needs FGA; clients do not need to install it
+
+```text
+/carpet serverAnnouncements true|false
+/fga announcement help
+/fga announcement status
+/fga announcement list
+/fga announcement info <id>
+/fga announcement create <content>                         # create a permanent notice and assign an ID
+/fga announcement create id <id> <content>                 # create with a chosen ID
+/fga announcement header set <text>
+/fga announcement header clear                             # restore "服务器公告如下"
+/fga announcement content set <id> <content>
+/fga announcement expiry set <id> forever|<number>h|<number>d
+/fga announcement enable <id>
+/fga announcement disable <id>
+/fga announcement hide <id>
+/fga announcement show <id>
+/fga announcement delete <id>
+/fga announcement trigger join <id>
+/fga announcement trigger region <id> <dimension> <x1> <y1> <z1> <x2> <y2> <z2>
+/fga announcement reload
+```
+
+Editing requires permission level 2 or higher. `help`, `status`, `list` and `info` are readable by players with access to `/fga`. `create` assigns an ID and creates a permanent announcement by default. The literal `/n` in content becomes a line break. An expiry countdown starts when the expiry is set; `forever` removes the expiry
+
+The default trigger is player join. `trigger region` switches the announcement to a 3D coordinate cuboid in the selected dimension. It fires once when a player enters; leaving and entering again fires it again. Use Tab to select a dimension currently loaded by the server, such as `minecraft:overworld`
+
+`list` shows one announcement per line; click a row to inspect it. Delete, enable/disable and hide/show buttons on the detail page execute immediately. Content, expiry and region buttons put a command in chat for editing. Join announcements require the global rule to be on and the entry to be enabled, visible and unexpired
+
+The file is stored at `world/config/carpetfgaaddition/announcements.json`. Edit its `header` or an announcement's `content`, then run `/fga announcement reload`. A malformed file is preserved and protected from writes until manually repaired or backed up
+
+Changing the configuration requires OP level 2 or higher; `status` and `preview` are available to players, and preview requires a player executor
+
+Welcome text supports `{player}`, RGB markers such as `&#55AAFF`, `&r` to reset the color, and `\n` for a line break
+
+The opening day is day `0` in the server's local time zone; configuration is saved in the current world's `config/carpetfgaaddition/join-notice.json`
 
 <a id="cmd-food"></a>
 
@@ -120,6 +199,20 @@ Related rules: `voidWorldGeneration`, `terrainRegenerationCommandPermission`
 
 ## Player and fake-player range commands (player)
 
+<a id="cmd-player-rejoin"></a>
+
+### Enhanced `/player <name> rejoin`
+
+Requires Carpet TIS on the server and `enhancedFakePlayerRejoin=true`; permissions follow Carpet `commandPlayer`
+
+```text
+/player <name> rejoin
+/player <name> rejoin at <x> <y> <z> [in <dimension>]
+/player <name> rejoin at <x> <y> <z> facing <yaw> <pitch> [in <dimension>]
+```
+
+The no-argument command restores the saved location, vehicle and non-player passengers. `at` moves the whole restored vehicle stack. Without a dimension, the command source's dimension is used; without facing, the saved rotation is retained. Disabling the rule leaves TIS's original no-argument command available.
+
 <a id="cmd-player-range"></a>
 
 ### `/player` range actions
@@ -184,11 +277,15 @@ Related rule: `entityDropRemoval`
 /entityDropRemoval status
 /entityDropRemoval set <entity id> <item id|allEquipment>
 /entityDropRemoval remove <entity id> <item id|allEquipment>
+/entityDropRemoval enableAllDrops <entity id>
+/entityDropRemoval disableAllDrops <entity id>
 /entityDropRemoval list
 /entityDropRemoval list <entity id>
 ```
 
 The command is unavailable when the rule is `false`; `true`, `ops`, and `0-4` control access according to the rule value. Entity and item IDs support full namespaces, omitted `minecraft:`, and Tab completion. `set` adds to existing entries, while `remove` deletes only one entry. `allEquipment` covers the helmet, chestplate, leggings, boots, main-hand, and off-hand slots. `list` shows configured entities and removal entries with clickable red minus buttons; `list <entity id>` shows the default loot-table ID and currently identifiable drop configuration. The file is `world/config/carpetfgaaddition/entity-drop-removal.json`, written with atomic replacement; corrupt files are preserved and writes are rejected for the current run.
+
+`enableAllDrops <entity id>` clears every removal setting for that entity. `disableAllDrops <entity id>` persists a rule that removes all item and equipment drops for that entity. Both actions are available as buttons at the end of `list <entity id>`.
 
 <a id="cmd-piglin-barter-customization"></a>
 
@@ -298,7 +395,7 @@ Besides the read-only subcommands (`status`, `whitelist list`, `name list`, `for
 /player <fake> bot_sort restart all confirm
 ```
 
-`restart all` requires a second confirmation through the clickable button or the `confirm` subcommand. With `opall`, the all-inventory rebuild is OP-only. `quickopen` does not summon target fake players; `summon` uses online fake players. Armor slots are never read or written.
+`restart all` requires a second confirmation through the clickable button or the `confirm` subcommand. With `opall`, the all-inventory rebuild is OP-only. `quickopen` does not summon target fake players and writes their offline playerdata directly; `summon` logs target fake players in temporarily and logs them out after the current batch, saving their items to playerdata for their next login. Armor slots are never read or written.
 
 ## Minecart and vehicle commands (vehicle)
 

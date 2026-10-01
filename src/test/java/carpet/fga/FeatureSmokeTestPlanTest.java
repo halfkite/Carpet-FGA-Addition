@@ -37,6 +37,116 @@ final class FeatureSmokeTestPlanTest {
      */
     private static final List<SmokePlan> PLANS = List.of(
             new SmokePlan(
+                    "fakePlayerItemSortAsyncSummonInventoryConservation",
+                    "MC >= 1.21.1 && MC <= 26.3; isolated service smoke baseline 26.3",
+                    "26.3",
+                    "scripts/powershell/fake-player-item-sort-smoke-26.3.ps1",
+                    "On an isolated 26.3 server, create an empty Carpet fake player and run the probe in quickopen "
+                            + "then summon mode with 16 items per run. The summon probe enables asynchronous profile "
+                            + "preloading, waits for the target to appear, and the test reads source inventory, online "
+                            + "inventory, and the target playerdata before asserting conservation. For each other "
+                            + "published Minecraft node, run its test and build tasks; repeat the same gameplay steps "
+                            + "in an isolated server before claiming gameplay verification for that node.",
+                    "quickopen transfers all 16 items to offline target playerdata without logging in a target; summon "
+                            + "creates only the requested target fake, transfers all 16 items exactly once, logs it out "
+                            + "after the batch, and saves the inventory for its next login. No numbered fake-player "
+                            + "cascade or repeated in-flight profile request occurs."),
+            new SmokePlan(
+                    "tpTrailingDimension",
+                    "MC >= 1.21.1 && MC <= 26.3",
+                    "26.3",
+                    "scripts/powershell/tp-dimension-suffix-smoke-all.ps1; scripts/powershell/spectator-free-teleport-smoke-26.3.ps1",
+                    "On an isolated flat server for every published build node, spawn a fake player and execute "
+                    + "/tp <x> <y> <z> minecraft:the_nether and /teleport back to the Overworld as that player. "
+                            + "Verify the player is present in the expected dimension after each command. On the 26.3 "
+                            + "baseline, also run the TIS/AMS permission matrix in spectator-free-teleport-smoke-26.3.ps1.",
+                    "The suffix moves only the executor to the chosen dimension and coordinates, preserves the "
+                            + "original relative-coordinate origin, and leaves vanilla coordinate commands and "
+                            + "the existing /tp in syntax usable."),
+            new SmokePlan(
+                    "enhancedFakePlayerRejoin",
+                    "MC >= 1.21.1 && MC <= 26.3",
+                    "26.3",
+                    "scripts/powershell/fake-player-rejoin-smoke-26.3.ps1; scripts/powershell/server-startup-smoke-all.ps1",
+                    "Build and start an isolated server on every current build node; confirm the generated Mixin config "
+                    + "only enables FakePlayerRejoinVehicleMixin on 26.1+. On each node with a matching Carpet TIS release, "
+                    + "repeat the integration flow: "
+                    + "mount a fake player with a pig in a boat, log out/restart, rejoin at the saved location, then "
+                    + "rejoin at explicit coordinates in another dimension twice; disable the rule and check that the "
+                    + "TIS no-argument command remains available.",
+                    "The vehicle and non-player passenger are absent while the sole player is offline, restored "
+                    + "exactly once on repeated rejoin, and remain mounted after requested cross-dimension moves "
+                    + "with the same vehicle UUID. Older Carpet APIs complete coordinate rejoin on the first server "
+                    + "tick after login; modern Carpet uses its async callback and preserves the vehicle during load. "
+                    + "With the rule disabled, TIS's no-argument rejoin still spawns the fake player."),
+            new SmokePlan(
+                    "fgaUnicodeArgumentsSupportPlayerInventoryScreen",
+                    "MC == 26.3",
+                    "26.3",
+                    "scripts/powershell/unicode-player-inventory-screen-smoke-26.3.ps1",
+                    "In an isolated 26.3 server, enable fgaUnicodeArgumentsSupport; execute the test-only "
+                            + "fgaUnicodeScreenProbe command, which constructs and encodes an open-screen packet "
+                            + "whose player-sprite profile and fallback title contain the Chinese fake-player name "
+                            + "睡觉假人. The probe also verifies the transmitted component still displays that name.",
+                    "The packet codec encodes successfully, the visible title retains 睡觉假人, the embedded profile "
+                            + "has a valid ASCII name with its UUID unchanged, and the isolated server shuts down cleanly. "
+                            + "Confirm the real Carpet Org inventory command in a client with a Chinese-named fake player "
+                            + "as a separate manual check."),
+            new SmokePlan(
+                    "fakePlayerLongNamePlayerInfoEncoding",
+                    "MC >= 26.3 modern codec/handshake path; MC < 26.3 keeps the legacy buffer/handshake path",
+                    "26.3",
+                    "scripts/powershell/long-name-player-info-replay-smoke-26.3.ps1; manual FGA/vanilla multiplayer and Flashback recording smoke",
+                    "Start an isolated 26.3 server and first join with a client that also has FGA. While that client "
+                            + "remains connected, set fakePlayerNameLength to 32 from the server and summon a 17-character "
+                            + "fake player; verify the full name appears in TAB without a disconnect. Disconnect and "
+                            + "reconnect while the fake player remains online and verify initial player-list synchronization "
+                            + "still shows the full name. Then join with a client without FGA and verify it receives the "
+                            + "compatible short alias. Check server and client latest.log for player_info_update encode "
+                            + "errors, and confirm unrelated scoreboard/team prefixes still update normally. Run the replay "
+                            + "codec probe, which decodes incoming names and re-encodes received packets on another thread "
+                            + "for 17, 24, 32 Chinese, and 128-character names. Pass -FlashbackJar <installed Flashback jar> "
+                            + "to exercise AsyncReplaySaver's real packet queue and save a binary replay chunk. With Flashback recording enabled, also repeat "
+                            + "the multiplayer spawn/reconnect scenario and reopen the saved replay.",
+                    "The FGA client receives the original long fake-player name on initial sync and updates without "
+                            + "disconnecting; a vanilla client receives the <=16-character alias; no unrelated packet "
+                            + "gets the widened UTF limit and no player-info encoding error is logged. Replay re-encoding "
+                            + "preserves names, UUIDs, skin properties and bytes without a caller-provided scope; 129-character "
+                            + "names remain rejected, and encode/decode scopes are restored after success and failure."),
+            new SmokePlan(
+                    "fakePlayerLongNameMixedFgaVersions",
+                    "MC == 26.3; uses published FGA JARs, not current checkout classes",
+                    "26.3",
+                    "scripts/powershell/mixed-version-long-name-smoke-26.3.ps1",
+                    "Pass -ServerFgaJar <1.5.16 jar> and -ClientFgaJar <1.5.15 jar> with "
+                            + "-ExpectLongNameFailure to reproduce the legacy-client incompatibility. The opt-in client "
+                            + "probe connects only to an isolated loopback server; first summon FGAMixedShort, then "
+                            + "FGA_LongFake_0001 with fakePlayerNameLength=32. Repeat with the fixed 1.5.16 client jar "
+                            + "without -ExpectLongNameFailure; omit -ClientFgaJar and set -ExpectedProfileName FGA_Lon... "
+                            + "for the no-FGA-client alias control. Verify the runtime FGA version in both logs.",
+                    "Every client first joins and receives the short name. The legacy 26.3 FGA 1.5.15 client "
+                            + "currently disconnects on the complete 17-character profile name with a 16-character "
+                            + "decoder limit; this expected-failure control is not a compatibility pass. The fixed "
+                            + "1.5.16 client receives the full name, and the no-FGA client receives the short alias. "
+                            + "Both test processes stop after each run. This diagnostic does not add server-side "
+                            + "version negotiation; the modern full-name path requires the matching fixed client."),
+            new SmokePlan(
+                    "spectatorFreeTeleport",
+                    "MC >= 1.21 && MC <= 26.3; 1.21.1 and 1.21.3+ use distinct ServerPlayer.teleportTo signatures; 1.21.11+ use the updated dimension identifier API",
+                    "26.3",
+                    "scripts/powershell/spectator-free-teleport-smoke-26.3.ps1 (26.3); manual isolated-server smoke for other nodes",
+                    "On each target version, use an isolated server with Carpet TIS, AMS, and Carpet Org Addition installed; "
+                            + "enable spectatorFreeTeleport plus opPlayerNoCheat and preventAdministratorCheat. In false, "
+                            + "confirm non-OP access stays denied. In true, create non-OP and OP spectators and verify "
+                            + "self-only same/cross-dimension teleports while moving other entities remains rejected. In full, "
+                            + "run as OP and non-OP through survival, creative, adventure, and spectator; test /tp and "
+                            + "/teleport, @s and @a, moving another player, following a player across dimensions, and the "
+                            + "explicit dimension-coordinate branch. Repeat with TIS/AMS protections enabled and disabled.",
+                    "false keeps vanilla permission gates; true preserves self-only spectator behavior; full grants player "
+                            + "sources the complete vanilla teleport target semantics in every game mode, including cross-dimension "
+                            + "targets, selectors, and moving other entities; custom dimension coordinates remain world-bound; "
+                            + "only /tp and /teleport bypass TIS/AMS permission wrappers and the isolated server stops cleanly."),
+            new SmokePlan(
                     "unlimitedMultiplayerPlayers",
                     "MC >= 1.21",
                     "1.21.1",
@@ -94,6 +204,29 @@ final class FeatureSmokeTestPlanTest {
                     "The client accepts /player ... possess and /controlPlayer after the first join, logs the swapped state "
                             + "and the active controller, and does not report an unknown command."),
             new SmokePlan(
+                    "playerPossessionBounds",
+                    "MC >= 1.21 && MC <= 26.3",
+                    "26.3",
+                    "MANUAL: isolated multiplayer possession test",
+                    "Enable playerPossession; set playerPossessionDistance to a small value and verify a same-dimension "
+                            + "target outside that range is rejected while a target inside it is accepted; set the rule to -1; "
+                            + "then set playerPossessionCrossDimension false and verify a cross-dimension target is rejected, "
+                            + "before restoring it to true and verifying the existing cross-dimension session path.",
+                    "Distance and cross-dimension rules gate new sessions and active sessions are released when a rule change makes "
+                            + "the current session invalid; the default -1/true behavior remains backward compatible."),
+            new SmokePlan(
+                    "playerPossessionSignedChatSession",
+                    "MC >= 1.21 && MC <= 26.3",
+                    "26.3",
+                    "MANUAL: secure-chat multiplayer possession smoke test",
+                    "On an isolated online-mode 26.3 server with two authenticated real clients, enable playerPossession; "
+                            + "start possession from player A into player B, send distinct chat messages from both clients, "
+                            + "stop possession, and send one more message from each. Inspect client and server latest.log "
+                            + "throughout; do not disable secure-profile enforcement for the test.",
+                    "All messages are delivered under the sending connection's identity without invalid-signature or "
+                            + "profile-key validation errors during the swap or after restoration; possession still swaps "
+                            + "the intended body state."),
+            new SmokePlan(
                     "fireAspectOnTools",
                     "MC >= 1.21 && MC <= 26.3",
                     "26.2",
@@ -106,6 +239,31 @@ final class FeatureSmokeTestPlanTest {
                             + "Fire Aspect plus Fortune pickaxe produces smelted ore with the Fortune-enlarged count; "
                             + "the server stops cleanly without a Mixin injection failure."),
             new SmokePlan(
+                    "entityDropRemovalClickableRemoval",
+                    "MC >= 1.21 && MC <= 26.3",
+                    "26.3",
+                    "MANUAL: server startup plus clickable command output",
+                    "Enable entityDropRemoval; configure a namespaced entity with an item and allEquipment; run "
+                            + "/entityDropRemoval list and /entityDropRemoval list <entity>; click every red [-] "
+                            + "and green [+] button, click both all-drop action buttons, then repeat the same set/remove "
+                            + "and enableAllDrops/disableAllDrops operations by typing the commands.",
+                    "Namespaced entity and item IDs execute without a command parse error, allEquipment is removed "
+                            + "by its button, the all-drop buttons toggle the persistent allDrops state, and the configuration "
+                            + "disappears from both list views after enableAllDrops."),
+            new SmokePlan(
+                    "fullShulkerBoxCraftingRuleAndQuantity",
+                    "ported fix: MC >= 26.2 && MC <= 26.3; existing feature gate: MC >= 1.16.5 && MC <= 26.3",
+                    "26.3",
+                    "MANUAL: isolated integrated-server crafting-table smoke test",
+                    "Start an isolated singleplayer or integrated-server world with FGA on the client. Keep "
+                            + "fullShulkerBoxCrafting false; fill the piston recipe grid with nine shulker boxes "
+                            + "whose contents match the three planks, four cobblestone, iron ingot, and redstone slots; "
+                            + "verify no custom result can be taken. Set the rule to any without reconnecting and repeat "
+                            + "with 1728 matching items in every input box plus enough empty boxes; take the result once "
+                            + "and count every output, returned, and consumed box.",
+                    "The false rule produces no full-box result even in an integrated server; any produces exactly one "
+                            + "full piston box rather than three, consumes each recipe input box once, and conserves all boxes."),
+            new SmokePlan(
                     "foodCommandPermission",
                     "MC >= 1.21 && MC <= 26.3",
                     "26.3",
@@ -116,7 +274,18 @@ final class FeatureSmokeTestPlanTest {
                             + "does not refresh its command tree.",
                     "false hides and rejects the commands; true allows self and target clearing; onlyself allows non-OP self "
                             + "clearing but rejects non-OP targets while OPs can target; ops requires permission level 2; 0-4 "
-                            + "requires the configured minimum level; food and saturation are set to zero only for authorized targets."));
+                            + "requires the configured minimum level; food and saturation are set to zero only for authorized targets."),
+            new SmokePlan(
+                    "playerInfoTeamPrefixCompatibility",
+                    "MC >= 1.21 && MC <= 26.3",
+                    "26.3",
+                    "MANUAL: client/server TAB and Team packet smoke test",
+                    "With FGA installed on the server, keep playerHealthDisplay false and showControllerPrefix false; "
+                            + "join a real client, run !!zgm set 测试, confirm the prefix appears immediately without reconnecting, "
+                            + "then summon a bot_ fake player and confirm its 假人 label appears immediately. Repeat after "
+                            + "clearing the status and after changing it again; inspect the server log for packet or Mixin errors.",
+                    "ZaiGanMa Team prefixes and bot labels update immediately for the existing client, FGA long-name support "
+                            + "does not alter unrelated Team packets, and reconnecting is not required."));
 
     @Test
     void everyPlanContainsAnExecutableUpgradeProcedure() {

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "fga_unicode_open_screen_probe",
+  "version": "1.0.0",
+  "name": "FGA Unicode Open Screen Smoke Probe",
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      "carpet.fga.smoke.UnicodePlayerInventoryScreenProbe"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "=26.3",
+    "fabric-api": "*",
+    "carpet": ">=26.3",
+    "carpet-fga-addition": "*"
+  }
+}

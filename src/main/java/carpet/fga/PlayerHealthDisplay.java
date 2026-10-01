@@ -25,6 +25,7 @@ public final class PlayerHealthDisplay {
     private static final ThreadLocal<ServerPlayer> PACKET_RECEIVER = new ThreadLocal<>();
     private static final Map<UUID, HealthState> LAST_HEALTH = new HashMap<>();
     private static final Map<UUID, Boolean> LAST_SUBSCRIPTIONS = new HashMap<>();
+    private static final Map<UUID, Component> LAST_TEAM_NAMES = new HashMap<>();
     private static MinecraftServer server;
     private static String lastMode;
 
@@ -63,9 +64,21 @@ public final class PlayerHealthDisplay {
         for (ServerPlayer subject : players) {
             HealthState state = HealthState.of(subject);
             HealthState previous = LAST_HEALTH.put(subject.getUUID(), state);
-            if (active && !state.equals(previous)) broadcastUpdate(currentServer, subject);
+            boolean decorated = active;
+            //#if MC == 1.20.1 || MC == 1.21.1
+            decorated |= PlayerLoadDistanceCompat.hasOverride(subject);
+            //#endif
+            boolean nameChanged = false;
+            if (decorated) {
+                Component name = subject.getDisplayName().copy();
+                nameChanged = !name.equals(LAST_TEAM_NAMES.put(subject.getUUID(), name));
+            } else {
+                LAST_TEAM_NAMES.remove(subject.getUUID());
+            }
+            if (nameChanged || (active && !state.equals(previous))) broadcastUpdate(currentServer, subject);
         }
         LAST_HEALTH.keySet().removeIf(uuid -> currentServer.getPlayerList().getPlayer(uuid) == null);
+        LAST_TEAM_NAMES.keySet().removeIf(uuid -> currentServer.getPlayerList().getPlayer(uuid) == null);
     }
 
     public static boolean shouldDecorate(ServerPlayer viewer) {
@@ -75,6 +88,21 @@ public final class PlayerHealthDisplay {
 
     public static Component tabDisplayName(ServerPlayer subject, Component vanilla) {
         ServerPlayer viewer = PACKET_RECEIVER.get();
+        // Regression procedure on each supported version: with health decoration off,
+        // change a player's team prefix via !!zgm set and assign a newly spawned fake
+        // player to a prefixed team. Both must update without reconnecting.
+        // Repeat with health true/nofake and /log playerHealth; change prefix, suffix,
+        // color, membership and remove the team while health stays fixed. On 1.20.1
+        // and 1.21.1, also repeat with a player-load-distance override. Disable the
+        // decorations again and verify vanilla team rendering resumes.
+        boolean health = viewer != null && shouldDecorate(viewer)
+                && !("nofake".equals(FGASettings.playerHealthDisplay)
+                && subject instanceof carpet.patches.EntityPlayerMPFake);
+        //#if MC == 1.20.1 || MC == 1.21.1
+        if (!health && !PlayerLoadDistanceCompat.hasOverride(subject)) return vanilla;
+        //#else
+        //$$ if (!health) return vanilla;
+        //#endif
         Component base = vanilla != null ? vanilla : subject.getDisplayName();
         //#if MC == 1.20.1 || MC == 1.21.1
         base = PlayerLoadDistanceCompat.decorate(subject, base);
@@ -101,11 +129,13 @@ public final class PlayerHealthDisplay {
     }
 
     public static void remove(ServerPlayer player) {
+        LAST_TEAM_NAMES.remove(player.getUUID());
         LAST_HEALTH.remove(player.getUUID());
         LAST_SUBSCRIPTIONS.remove(player.getUUID());
     }
 
     public static void clear(MinecraftServer currentServer) {
+        LAST_TEAM_NAMES.clear();
         LAST_HEALTH.clear();
         LAST_SUBSCRIPTIONS.clear();
         PACKET_RECEIVER.remove();
@@ -126,7 +156,7 @@ public final class PlayerHealthDisplay {
 
     private static void broadcastUpdate(MinecraftServer currentServer, ServerPlayer subject) {
         currentServer.getPlayerList().broadcastAll(new ClientboundPlayerInfoUpdatePacket(
-                EnumSet.allOf(ClientboundPlayerInfoUpdatePacket.Action.class), List.of(subject)));
+                EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME), List.of(subject)));
     }
 
     private static MutableComponent healthLine(ServerPlayer player) {

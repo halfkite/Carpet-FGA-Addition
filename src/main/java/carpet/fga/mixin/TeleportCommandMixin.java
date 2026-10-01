@@ -19,10 +19,14 @@ import java.util.Collection;
 import java.util.function.Predicate;
 
 /**
- * Priority is intentionally low so this wraps other permission/anti-cheat modifies last
- * and keeps spectator free teleport effective above them on the vanilla /tp path.
+ * On 26.3 this must run after the TIS, AMS, and Carpet Org permission modifiers so the
+ * spectator exception wraps their final predicate instead of being wrapped and denied by them.
  */
+//#if MC < 26.3
 @Mixin(value = TeleportCommand.class, priority = 50)
+//#else
+//$$ @Mixin(value = TeleportCommand.class, priority = 2000)
+//#endif
 public abstract class TeleportCommandMixin {
     @ModifyArg(
             method = "register",
@@ -32,7 +36,11 @@ public abstract class TeleportCommandMixin {
                     remap = false
             ),
             index = 0,
+            //#if MC < 26.3
             require = 0
+            //#else
+            //$$ require = 2
+            //#endif
     )
     private static Predicate<CommandSourceStack> carpetFga$allowSpectatorFreeTeleport(
             Predicate<CommandSourceStack> original) {
@@ -46,13 +54,21 @@ public abstract class TeleportCommandMixin {
             }
             // TIS opPlayerNoCheat and AMS preventAdministratorCheat both turn the
             // vanilla permission predicate false. Restore the intended policy here:
-            // actual operators retain the complete vanilla command, while eligible
-            // non-operator spectators receive the self-only path.
+            // actual operators retain the complete vanilla command, full mode grants
+            // player sources the complete command, and true grants spectators self-only access.
             return SpectatorFreeTeleport.canUseTeleportCommand(source);
         };
     }
 
-    @Inject(method = "teleportToEntity", at = @At("HEAD"), require = 0)
+    @Inject(
+            method = "teleportToEntity",
+            at = @At("HEAD"),
+            //#if MC < 26.3
+            require = 0
+            //#else
+            //$$ require = 1
+            //#endif
+    )
     private static void carpetFga$restrictSpectatorTeleportToEntity(
             CommandSourceStack source,
             Collection<? extends Entity> targets,
@@ -61,7 +77,15 @@ public abstract class TeleportCommandMixin {
         SpectatorFreeTeleport.ensureSelfOnlyTargets(source, targets);
     }
 
-    @Inject(method = "teleportToPos", at = @At("HEAD"), require = 0)
+    @Inject(
+            method = "teleportToPos",
+            at = @At("HEAD"),
+            //#if MC < 26.3
+            require = 0
+            //#else
+            //$$ require = 1
+            //#endif
+    )
     private static void carpetFga$restrictSpectatorTeleportToPos(
             CommandSourceStack source,
             Collection<? extends Entity> targets,

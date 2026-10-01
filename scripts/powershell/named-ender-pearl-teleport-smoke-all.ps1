@@ -1,5 +1,7 @@
 param(
-    [string] $VersionList = ''
+    [string] $VersionList = '',
+    [string] $GradleJdk21 = '',
+    [switch] $Offline
 )
 
 $ErrorActionPreference = 'Stop'
@@ -10,6 +12,15 @@ $reportDir = Join-Path $root "scripts\logs\named-ender-pearl-teleport-smoke-all-
 $summaryPath = Join-Path $reportDir 'summary.json'
 $progressPath = Join-Path $reportDir 'progress.log'
 $jdk21 = 'C:\Program Files\Java\jdk-21.0.11'
+$toolchainArgument = ''
+$offlineArgument = if ($Offline) { ' --offline' } else { '' }
+if (-not [string]::IsNullOrWhiteSpace($GradleJdk21)) {
+    $jdk21 = (Resolve-Path -LiteralPath $GradleJdk21).Path
+    if (-not (Test-Path -LiteralPath (Join-Path $jdk21 'bin\javac.exe'))) {
+        throw "Not a JDK path: $jdk21"
+    }
+    $toolchainArgument = ' "-Dorg.gradle.java.installations.paths=' + $jdk21 + '"'
+}
 $jdk25 = 'C:\Program Files\Java\jdk-25.0.3'
 $allVersions = @(
     '1.21.1', '1.21.3', '1.21.4', '1.21.5',
@@ -54,9 +65,16 @@ function Wait-LogPattern([string] $path, [string] $pattern,
 }
 
 function Stop-ProcessTree([System.Diagnostics.Process] $process) {
-    if ($null -ne $process -and -not $process.HasExited) {
-        & taskkill.exe /PID $process.Id /T /F 2>$null | Out-Null
+    if ($null -eq $process) { return $true }
+    $process.Refresh()
+    if ($process.HasExited) { return $true }
+
+    try {
+        & taskkill.exe /PID $process.Id /T /F 2>&1 | Out-Null
+    } catch {
+        # The child may exit between Refresh and taskkill; verify the process below.
     }
+    try { return $process.WaitForExit(10000) } catch { return $false }
 }
 
 function Remove-TestWorld([string] $runRoot, [string] $testWorld) {
@@ -85,6 +103,10 @@ foreach ($version in $versions) {
     $worldPath = Join-Path $runDir $worldName
     $eulaPath = Join-Path $runDir 'eula.txt'
     $eulaBackup = "$eulaPath.before-named-ender-pearl-$stamp"
+    $hadEula = Test-Path -LiteralPath $eulaPath
+    $serverPropertiesPath = Join-Path $runDir 'server.properties'
+    $serverPropertiesBackup = "$serverPropertiesPath.before-named-ender-pearl-$stamp"
+    $hadServerProperties = Test-Path -LiteralPath $serverPropertiesPath
     $serverLog = Join-Path $reportDir "$version-server.log"
     $server = $null
     $serverReady = $false
@@ -97,18 +119,37 @@ foreach ($version in $versions) {
 
     Write-ProgressLine "START $version"
     New-Item -ItemType Directory -Force -Path $runDir | Out-Null
-    if (Test-Path -LiteralPath $eulaPath) {
-        Copy-Item -LiteralPath $eulaPath -Destination $eulaBackup
-    }
-    Set-Content -LiteralPath $eulaPath -Value 'eula=true' -Encoding ascii
-
     try {
+        if ($hadEula) {
+            Copy-Item -LiteralPath $eulaPath -Destination $eulaBackup
+        }
+        Set-Content -LiteralPath $eulaPath -Value 'eula=true' -Encoding ascii
+        if ($hadServerProperties) {
+            Copy-Item -LiteralPath $serverPropertiesPath -Destination $serverPropertiesBackup
+        }
+        $properties = if ($hadServerProperties) {
+            [System.IO.File]::ReadAllText($serverPropertiesPath)
+        } else {
+            ''
+        }
+        if ($properties -match '(?m)^generate-structures=') {
+            $properties = [regex]::Replace($properties, '(?m)^generate-structures=.*$', 'generate-structures=false')
+        } else {
+            $properties += "`ngenerate-structures=false"
+        }
+        if ($properties -match '(?m)^level-type=') {
+            $properties = [regex]::Replace($properties, '(?m)^level-type=.*$', 'level-type=minecraft\:flat')
+        } else {
+            $properties += "`nlevel-type=minecraft\:flat"
+        }
+        [System.IO.File]::WriteAllText($serverPropertiesPath, $properties, [System.Text.UTF8Encoding]::new($false))
+
         $env:JAVA_HOME = if ($version -like '26.*') { $jdk25 } else { $jdk21 }
         $env:Path = "$env:JAVA_HOME\bin;$env:Path"
         $startInfo = [Diagnostics.ProcessStartInfo]::new()
         $startInfo.FileName = 'cmd.exe'
         $startInfo.Arguments = '/d /s /c ""' + (Join-Path $root 'gradlew.bat') +
-            '" :' + $version + ':runServer --no-daemon --configure-on-demand --max-workers=1 --args="--port 0 --world ' +
+            '" :' + $version + ':runServer --no-daemon --configure-on-demand --max-workers=1' + $toolchainArgument + $offlineArgument + ' --args="--port 0 --world ' +
             $worldName + '" > "' + $serverLog + '" 2>&1"'
         $startInfo.WorkingDirectory = $root
         $startInfo.UseShellExecute = $false
@@ -184,18 +225,30 @@ foreach ($version in $versions) {
         $reason = $_.Exception.Message
     } finally {
         $serverText = Read-Log $serverLog
-        if ($null -ne $server -and -not $server.HasExited) {
-            Stop-ProcessTree $server
+        $serverStopped = $true
+        if ($null -ne $server) {
+            $server.Refresh()
+            if (-not $server.HasExited) { $serverStopped = Stop-ProcessTree $server }
         }
-        Remove-TestWorld $runDir $worldPath
-        if (Test-Path -LiteralPath $eulaPath) { Remove-Item -LiteralPath $eulaPath -Force }
-        if (Test-Path -LiteralPath $eulaBackup) {
-            Move-Item -LiteralPath $eulaBackup -Destination $eulaPath
+        if ($serverStopped) {
+            Remove-TestWorld $runDir $worldPath
+            if ($hadEula -and (Test-Path -LiteralPath $eulaBackup)) {
+                Move-Item -LiteralPath $eulaBackup -Destination $eulaPath -Force
+            } elseif (-not $hadEula -and (Test-Path -LiteralPath $eulaPath)) {
+                Remove-Item -LiteralPath $eulaPath -Force
+            }
+            if ($hadServerProperties -and (Test-Path -LiteralPath $serverPropertiesBackup)) {
+                Move-Item -LiteralPath $serverPropertiesBackup -Destination $serverPropertiesPath -Force
+            } elseif (-not $hadServerProperties -and (Test-Path -LiteralPath $serverPropertiesPath)) {
+                Remove-Item -LiteralPath $serverPropertiesPath -Force
+            }
+        } else {
+            $reason = 'test server did not stop; its world and temporary run configuration were preserved for safety'
         }
 
         $mixinFailure = $serverText -match 'Mixin apply failed|InvalidMixinException|InjectionError|Critical injection failure'
         $cleanStop = $serverText -match 'Stopping server'
-        $status = if ($serverReady -and $targetMoved -and $targetWentOffline -and $offlineThrowerDidNotMove -and $cleanStop -and -not $mixinFailure) { 'passed' } else { 'failed' }
+        $status = if ($serverStopped -and $serverReady -and $targetMoved -and $targetWentOffline -and $offlineThrowerDidNotMove -and $cleanStop -and -not $mixinFailure) { 'passed' } else { 'failed' }
         $results += [ordered]@{
             version = $version
             status = $status

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "fga_spectator_teleport_probe",
+  "version": "1.0.0",
+  "name": "FGA Spectator Teleport Smoke Probe",
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      "carpet.fga.smoke.SpectatorTeleportProbe"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "=26.3",
+    "fabric-api": "*",
+    "carpet": ">=26.3",
+    "carpet-fga-addition": "*"
+  }
+}

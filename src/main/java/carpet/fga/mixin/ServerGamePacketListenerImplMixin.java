@@ -1,4 +1,4 @@
-//#if MC >= 1.20.5
+//#if MC >= 1.20.5 && MC < 26.3
 package carpet.fga.mixin;
 
 import carpet.fga.FGAModDetector;

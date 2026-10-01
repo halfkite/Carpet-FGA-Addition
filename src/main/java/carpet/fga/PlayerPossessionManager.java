@@ -69,9 +69,24 @@ public final class PlayerPossessionManager {
         return controller != null && target != null
                 && !(controller instanceof EntityPlayerMPFake)
                 && canUsePlayerCommand(controller, currentServer)
+                && withinConfiguredBounds(controller, target)
                 && allows(FGASettings.playerPossession,
                 controllerIsOp,
                 target instanceof EntityPlayerMPFake);
+    }
+
+    /**
+     * Distance is meaningful only within one dimension. Cross-dimensional
+     * sessions are controlled by playerPossessionCrossDimension alone.
+     */
+    private static boolean withinConfiguredBounds(ServerPlayer controller, ServerPlayer target) {
+        boolean sameDimension = controller.level().dimension().equals(target.level().dimension());
+        if (!sameDimension) return FGASettings.playerPossessionCrossDimension;
+
+        double maximum = FGASettings.playerPossessionDistance;
+        if (maximum == -1.0D) return true;
+        if (!Double.isFinite(maximum) || maximum < 0.0D) return false;
+        return controller.distanceToSqr(target) <= maximum * maximum;
     }
 
     /** Keeps the commandPlayer gate tied to the login identity during possession. */
@@ -274,7 +289,8 @@ public final class PlayerPossessionManager {
             if (controller == null || target == null
                     || !allows(FGASettings.playerPossession,
                     isOriginalOp(controller, currentServer),
-                    target instanceof EntityPlayerMPFake)) {
+                    target instanceof EntityPlayerMPFake)
+                    || !withinConfiguredBounds(controller, target)) {
                 if (controller != null) end(controller, currentServer);
             }
         }

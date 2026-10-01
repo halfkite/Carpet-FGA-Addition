@@ -16,8 +16,8 @@ import java.lang.reflect.Field;
 import java.util.Collection;
 
 /**
- * Allows non-OP spectators to use /tp and /teleport on themselves only.
- * Takes priority over other non-operator cheat blocks for the vanilla teleport command path.
+ * Adds scoped permission exceptions to the vanilla /tp and /teleport commands.
+ * The full mode is limited to player command sources and these teleport roots.
  */
 public final class SpectatorFreeTeleport {
     private static final int GAMEMASTER_PERMISSION_LEVEL = 2;
@@ -69,7 +69,7 @@ public final class SpectatorFreeTeleport {
     }
 
     public static boolean isPermissionBypassingSpectator(CommandSourceStack source) {
-        if (!FGASettings.spectatorFreeTeleport) {
+        if (!"true".equals(FGASettings.spectatorFreeTeleport)) {
             return false;
         }
         if (!(source.getEntity() instanceof ServerPlayer player) || !player.isSpectator()) {
@@ -86,13 +86,26 @@ public final class SpectatorFreeTeleport {
 
     public static boolean canUseTeleportCommand(CommandSourceStack source) {
         return (isRealOperator(source) && !isOperatorCheatPreventionEnabled())
+                || isFullAccess(source)
                 || isPermissionBypassingSpectator(source);
     }
 
+    public static boolean isEnabled() {
+        return !"false".equals(FGASettings.spectatorFreeTeleport);
+    }
+
+    public static boolean isFullAccess(CommandSourceStack source) {
+        return "full".equals(FGASettings.spectatorFreeTeleport)
+                && source.getEntity() instanceof ServerPlayer;
+    }
+
     /**
-     * Allows entity-selector parsing/suggestions for free-teleport spectators so /tp @s ... works.
+     * Allows entity-selector parsing/suggestions for players granted teleport access.
      */
     public static boolean allowEntitySelectors(Object source) {
+        if (source instanceof CommandSourceStack stack && isFullAccess(stack)) {
+            return true;
+        }
         //#if MC >= 1.21.11
         //$$ if (source instanceof SharedSuggestionProvider provider && provider.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
         //#elseif MC >= 1.21.8
@@ -106,11 +119,10 @@ public final class SpectatorFreeTeleport {
     }
 
     /**
-     * Runtime selector permission bypass for free-teleport spectators.
-     * Multi-target teleport remains blocked by ensureSelfOnlyTargets.
+     * Runtime selector permission bypass for full-access players and self-only spectators.
      */
     public static boolean bypassSelectorPermissionCheck(CommandSourceStack source) {
-        return isPermissionBypassingSpectator(source);
+        return isFullAccess(source) || isPermissionBypassingSpectator(source);
     }
 
     public static void ensureSelfOnlyTargets(CommandSourceStack source, Collection<? extends Entity> targets)

@@ -33,7 +33,7 @@ public class FGAExtension implements CarpetExtension {
     private static final String MOD_ID = "carpet-fga-addition";
     private boolean previousBeeCollisionBoxRule;
     //#if MC >= 1.21 && MC <= 26.3
-    private boolean previousSpectatorFreeTeleportRule;
+    private String previousSpectatorFreeTeleportRule = "false";
     //#endif
 
     @Override
@@ -54,6 +54,9 @@ public class FGAExtension implements CarpetExtension {
         // Waiting until onServerClosed is too late and can persist the temporary position
         // of the possessed body as the controller's next-login position.
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> PlayerPossessionManager.clear());
+        //#if MC >= 1.21.1 && MC <= 26.3
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> FakePlayerRejoinCommand.clear());
+        //#endif
         //#endif
         //#if MC >= 1.21 && MC <= 26.3
         registerNetherPortalLightObserver();
@@ -91,6 +94,10 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onServerLoaded(MinecraftServer server) {
+        //#if MC >= 1.21 && MC <= 26.3
+        JoinNoticeConfig.load(server);
+        AnnouncementConfig.load(server);
+        //#endif
         //#if MC >= 1.20.1
         VillagerPerformanceConfig.load(server);
         //#endif
@@ -141,6 +148,12 @@ public class FGAExtension implements CarpetExtension {
         PlayerFoodCommand.register(dispatcher);
         PiglinBarterItemExclusionsCommand.register(dispatcher);
         //#endif
+        //#if MC >= 1.21 && MC <= 26.3
+        SpectatorCrossDimensionTeleportCommand.register(dispatcher);
+        //#endif
+        //#if MC >= 1.21.1 && MC <= 26.3
+        TeleportDimensionSuffixCommand.register(dispatcher);
+        //#endif
         RangePlayerCommand.register(dispatcher);
         //#if MC >= 1.21 && MC <= 26.3
         PlayerPossessionStatusCommand.register(dispatcher);
@@ -184,6 +197,12 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onTick(MinecraftServer server) {
+        //#if MC >= 1.21.1 && MC <= 26.3
+        FakePlayerRejoinCommand.tick(server);
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.3
+        AnnouncementManager.tick(server);
+        //#endif
         //#if MC <= 26.3
         DeathDropPreStackManager.clearTickCache();
         //#endif
@@ -226,7 +245,7 @@ public class FGAExtension implements CarpetExtension {
             BeeDimensions.refreshLoadedBees(server);
         }
         //#if MC >= 1.21 && MC <= 26.3
-        if (previousSpectatorFreeTeleportRule != FGASettings.spectatorFreeTeleport) {
+        if (!java.util.Objects.equals(previousSpectatorFreeTeleportRule, FGASettings.spectatorFreeTeleport)) {
             previousSpectatorFreeTeleportRule = FGASettings.spectatorFreeTeleport;
             server.getPlayerList().getPlayers().forEach(player -> server.getCommands().sendCommands(player));
         }
@@ -235,6 +254,10 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onServerClosed(MinecraftServer server) {
+        //#if MC >= 1.21 && MC <= 26.3
+        JoinNoticeConfig.clear();
+        AnnouncementConfig.clear();
+        //#endif
         //#if MC >= 1.21 && MC <= 26.3
         PlayerPossessionManager.clear();
         //#endif
@@ -300,7 +323,7 @@ public class FGAExtension implements CarpetExtension {
         RangeActionManager.clear();
         previousBeeCollisionBoxRule = false;
         //#if MC >= 1.21 && MC <= 26.3
-        previousSpectatorFreeTeleportRule = false;
+        previousSpectatorFreeTeleportRule = "false";
         //#endif
     }
 
@@ -371,8 +394,13 @@ public class FGAExtension implements CarpetExtension {
         //#if MC >= 1.19
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
             if (!"droppedItemStackLimit".equals(rule.name())
+                    //#if MC >= 1.21.1 && MC <= 26.3
+                    && !"enhancedFakePlayerRejoin".equals(rule.name())
+                    //#endif
                     //#if MC >= 1.21 && MC <= 26.3
                     && !"playerPossession".equals(rule.name())
+                    && !"playerPossessionDistance".equals(rule.name())
+                    && !"playerPossessionCrossDimension".equals(rule.name())
                     && !"commandPlayer".equals(rule.name())
                     && !"showControllerPrefix".equals(rule.name())
                     && !"permissionSwapsToo".equals(rule.name())
@@ -400,7 +428,10 @@ public class FGAExtension implements CarpetExtension {
             MinecraftServer server = CarpetServer.minecraft_server;
             if (server != null) {
                 //#if MC >= 1.21 && MC <= 26.3
-                if ("playerPossession".equals(rule.name()) || "commandPlayer".equals(rule.name())) {
+                if ("playerPossession".equals(rule.name())
+                        || "playerPossessionDistance".equals(rule.name())
+                        || "playerPossessionCrossDimension".equals(rule.name())
+                        || "commandPlayer".equals(rule.name())) {
                     PlayerPossessionManager.onRuleChanged();
                 }
                 if ("showControllerPrefix".equals(rule.name())) {
@@ -430,7 +461,13 @@ public class FGAExtension implements CarpetExtension {
      */
     private static void registerCommandTreeJoinRefresh() {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                server.execute(() -> refreshCommandTree(server)));
+                server.execute(() -> {
+                    refreshCommandTree(server);
+                    //#if MC >= 1.21 && MC <= 26.3
+                    JoinNoticeManager.onJoin(handler.player);
+                    AnnouncementManager.onJoin(handler.player);
+                    //#endif
+                }));
     }
     //#endif
 

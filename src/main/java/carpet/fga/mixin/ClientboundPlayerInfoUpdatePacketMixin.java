@@ -63,5 +63,6 @@ public abstract class ClientboundPlayerInfoUpdatePacketMixin {
             entries = List.copyOf(aliases);
         }
     }
+
 }
 //#endif

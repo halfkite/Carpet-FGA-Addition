@@ -48,10 +48,35 @@ public class FGASettings {
     /** FGA 自定义分类，会出现在 /carpet 菜单中作为可点击选项 */
     public static final String FGA = "FGA";
 
+    //#if MC >= 1.21.1 && MC <= 26.3
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}, options = {"false", "true"})
+    public static boolean enhancedFakePlayerRejoin = false;
+    //#endif
+
+    //#if MC >= 1.21 && MC <= 26.3
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+            options = {"false", "true"})
+    public static boolean customJoinNotice = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+            options = {"false", "true"})
+    public static boolean serverAnnouncements = false;
+    //#endif
+
     //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
             options = {"false", "true", "onlyfake", "opreal", "ops"})
     public static String playerPossession = "false";
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+            options = {"-1", "16", "32", "64", "128", "256", "1024"},
+            strict = false,
+            validators = FGASettings.PlayerPossessionDistanceValidator.class)
+    public static double playerPossessionDistance = -1.0D;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+            options = {"false", "true"})
+    public static boolean playerPossessionCrossDimension = true;
 
     //#if MC >= 1.21 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
@@ -1391,16 +1416,33 @@ public class FGASettings {
     //#if MC >= 1.21 && MC <= 26.3
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true", "full"},
+        strict = false,
+        validators = FGASettings.SpectatorFreeTeleportValidator.class,
         conditions = FGASettings.Minecraft1_20_1OrNewerCondition.class
     )
     //#else
     //$$ @Rule(
-        //$$ desc = "Allows non-OP spectators to use /tp and /teleport on themselves only",
+        //$$ desc = "Controls free /tp and /teleport access for spectators or all players",
         //$$ category = {FGA, FEATURE},
+        //$$ options = {"false", "true", "full"},
+        //$$ strict = false,
+        //$$ validate = FGASettings.SpectatorFreeTeleportValidator.class,
         //$$ condition = FGASettings.Minecraft1_20_1OrNewerCondition.class
     //$$ )
     //#endif
-    public static boolean spectatorFreeTeleport = false;
+    public static String spectatorFreeTeleport = "false";
+
+    public static class SpectatorFreeTeleportValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> currentRule,
+                               String newValue, String userInput) {
+            String value = newValue == null ? "" : newValue.trim().toLowerCase(java.util.Locale.ROOT);
+            if (Set.of("false", "true", "full").contains(value)) return value;
+            Messenger.m(source, "r spectatorFreeTeleport must be false, true, or full");
+            return null;
+        }
+    }
 
     //#if MC >= 1.19
     @carpet.api.settings.Rule(categories = {FGA, FEATURE},
@@ -2085,6 +2127,24 @@ public class FGASettings {
                 return newValue;
             }
             Messenger.m(source, "r droppedItemMergeDistance must be -1 or between 0 and 16");
+            return null;
+        }
+    }
+
+    public static class PlayerPossessionDistanceValidator extends Validator<Double> {
+        @Override
+        public Double validate(CommandSourceStack source,
+                               //#if MC >= 1.19
+                               CarpetRule<Double> currentRule,
+                               //#else
+                               //$$ ParsedRule<Double> currentRule,
+                               //#endif
+                               Double newValue, String userInput) {
+            if (newValue != null && Double.isFinite(newValue)
+                    && (newValue == -1.0D || (newValue >= 0.0D && newValue <= 1024.0D))) {
+                return newValue;
+            }
+            Messenger.m(source, "r playerPossessionDistance must be -1 or between 0 and 1024");
             return null;
         }
     }

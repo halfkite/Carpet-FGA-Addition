@@ -1,5 +1,134 @@
 # Minecraft 版本适配记录
 
+## 26.3 长名称假人玩家列表编码与解码
+
+- 问题：`fakePlayerNameLength` 设置为大于 16 后，长名称假人加入、实时同步或客户端重进后的玩家列表初始化可能触发 UTF 玩家名 16 字符限制；安装 FGA 与 Flashback 的客户端还会在录制线程重新编码收到的玩家列表包时崩溃，因为解码后的包没有服务端构造时的许可标记
+- 修复：只在长名称玩家列表数据包的写入/解码作用域内扩展 UTF 长度，并在 FGA 握手补发初始化列表时保留该包级许可；重新编码时也检查包中实际档案名称，兼容录制线程保存解码后的包；不扩大其他包（包括第三方记分板队伍前缀）的长度限制。未安装 FGA 的客户端仍使用兼容别名
+- 源码分支边界：`MC >= 26.3` 使用独立的 `ModernLongNameClientHandshakeMixin`、`ModernLongNameServerHandshakeMixin`、`ModernLongNamePlayerInfoEncodeMixin`、`ModernLongNamePlayerInfoDecodeMixin`、`ModernLongNameUtf8CodecMixin`；`MC < 26.3` 保留 `ClientPacketListenerMixin`、`ServerGamePacketListenerImplMixin`、`FriendlyByteBufMixin`、`FriendlyByteBufWriteMixin` 等旧版路径，注册互斥；共享玩家别名、名称装饰和 Payload 结构仍沿用原实现。根节点 1.21.1 的新分支源码和注册项使用 `//$$` 保持关闭
+- 实际适配版本：当前现代分支只有 26.3 构建节点；旧分支为 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`，没有向这些版本移植现代编解码；`26.3+` 是用户要求的代码分支边界，不代表尚不存在于矩阵中的后续版本已经适配或测试
+- 客户端/服务端要求：服务端安装 FGA；26.3 的完整长名称要求客户端也包含对应编解码修复，旧 1.5.15 客户端不兼容完整长名；未安装 FGA 的客户端兼容别名路径尚未在本轮实测；不改变规则默认值、配置、存档或网络协议
+- 源码测试流程：`src/test/java/carpet/fga/FeatureSmokeTestPlanTest.java` 中的 `fakePlayerLongNamePlayerInfoEncoding`；先让 FGA 客户端加入隔离 26.3 服务端，再将 `fakePlayerNameLength` 设为 32 并召唤 17 字符假人；验证实时 TAB 完整名称，假人保持在线时断开并重进后再次验证；执行 `scripts/powershell/long-name-player-info-replay-smoke-26.3.ps1`，在实际客户端中验证“解码收到的包→独立线程重新编码”，保留名称、UUID、皮肤属性和数据包字节，同时确认 129 字符名称及普通 16 字符字符串的负向校验；加上 `-FlashbackJar <已安装的 Flashback JAR>` 后，还会调用该模组实际 `AsyncReplaySaver` 队列保存长名玩家列表包；另测多人服务器中的录制与回放界面、无 FGA 客户端别名与第三方 Team 前缀
+- 拆分前代码验证：`:26.3:build`（包含 `:26.3:test`）通过；构建 `carpet-fga-addition-1.5.16+v2609280841-mc26.3.jar` 归档于 `mod-builds/20260928-084406/`；依赖节点编译不等于已移植现代编解码
+- 本轮分支拆分验证：`:26.3:build --offline --no-daemon --configure-on-demand --max-workers=1` 通过，包含 26.3 的 23 个自动测试（零失败、零跳过）；新增 `LongNameVersionBoundaryTest` 验证生成配置中的新旧编解码和连接 Mixin 互斥。前置任务完成当前 10 个矩阵节点的主源码编译；另逐节点检查生成的 Mixin JSON，9 个旧节点只注册旧路径，26.3 只注册现代路径；只有 26.3 执行本轮测试和打包，不能视为其他节点运行时通过。最终 JAR 归档于 `mod-builds/20260928-093623/carpet-fga-addition-1.5.16+v2609280933-mc26.3.jar`，确认包含 5 个现代 Mixin，不注册旧路径、不包含已撤回的旧类名或测试探针
+- 本轮分支拆分服务端冒烟：用 `scripts/gradle/published-fga-jar-smoke.init.gradle` 排除工作区主类，只加载上述归档 JAR；唯一一台回环隔离 26.3 测试服在 2026-09-28 09:40:56 启动到 `Done`，设置 `fakePlayerNameLength 32` 后，17 字符假人 `FGA_LongFake_0001` 于 09:41:41 正常上线，09:42:00 查询在线列表确认后移除并正常停服，运行任务退出码为 0；日志 `build/long-name-branch-smoke-26.3-20260928-093623/server/logs/latest.log`。该轮只验证服务端启动、现代 Mixin 相关类加载与长名假人创建，没有真实客户端连接，不代表客户端解码、握手补发或 Flashback 回归通过；日志中的 Windows OSHI 性能计数器和默认平坦生成配置诊断与本次 Mixin 无关
+- 前轮客户端/服务端冒烟：独立回环 26.3 开发运行环境中，测试客户端 `FGANameSmoke` 先加入；控制台设置 `fakePlayerNameLength 32` 并召唤 `FGA_LongFake_0001`；客户端实时 TAB 与假人在线期间重进后的 TAB 均显示完整名称，连接未断开。该轮没有验证 Flashback 重新编码；客户端和服务端均已正常关闭
+- 拆分前客户端录制回归：修复前使用 `-ExpectFailure`，实际客户端在独立编码线程中复现 17 字符名称的 `String too big`，对照报告 `scripts/logs/long-name-replay-smoke-26.3-20260928-083756/summary.txt`；修复后在隔离 26.3 开发客户端、Flashback `0.43.6` 中通过 12、17、24、32 个中文字符及 128 字符名称的编码/解码，名称、UUID、皮肤属性和包字节保持一致，129 字符输入被拒绝，普通字符串长度限制及线程作用域不泄漏；实际 `AsyncReplaySaver` 成功保存长名数据包片段，报告 `scripts/logs/long-name-replay-smoke-26.3-20260928-084834/summary.txt`；测试客户端正常退出，测试探针不进入发布 JAR。此结果属于拆分前实现，不替代本轮最终 JAR 的客户端回归
+- 尚未验证：拆分后的最终 JAR 客户端入服、长名在线期间重进和 Flashback 重新编码/录制回放，由用户进行客户端测试；无 FGA 客户端的别名显示、第三方记分板队伍前缀更新，以及其他 Minecraft 版本的运行时行为；本次没有将现代修复移植到 26.3 之前或尚未纳入矩阵的后续版本
+
+### 26.3 FGA 版本混用检查（旧客户端长名断连已复现）
+
+- 检查对象：26.3 服务端 FGA `1.5.16+v2609280841-mc26.3`、客户端 FGA `1.5.15+v2609251958-mc26.3`；两个模组版本都发送 `HandshakePayload(1)`，当前服务端只记录是否安装 FGA，不能由此识别客户端是否支持新的长名 UTF 路径
+- 源码结论与处理决定：1.5.15 客户端只有 `FriendlyByteBuf` 长度扩展，没有 26.3 新增的直接 UTF 玩家列表解码修复；当前服务端仍可能向它发送完整长名称。用户已放弃纯服务端兼容旧客户端的方向，保留上一版客户端/服务端编解码修复，不新增能力协商或旧版兜底
+- 测试流程：`scripts/powershell/mixed-version-long-name-smoke-26.3.ps1` 与 `src/test/java/carpet/fga/FeatureSmokeTestPlanTest.java` 的 `fakePlayerLongNameMixedFgaVersions`；加载指定发布 JAR，排除工作区主类，先验证短名，再召唤 17 字符假人；覆盖旧客户端、新客户端、无 FGA 客户端。已撤回测试中的强制短名降级入口；客户端/服务端测试探针均不进入发布 JAR，专用探针限定 `MC == 26.3`
+- 已完成用户客户端联机复现：隔离 26.3 服务端加载上述 1.5.16 JAR，用户实际客户端日志声明 FGA `1.5.15`；短名假人 `FGAMixedShort` 在线时用户于 2026-09-28 09:18:42 正常进服；09:19:10 控制台召唤 `FGA_LongFake_0001` 后客户端同秒断连。客户端报告 `disconnect-2026-09-28_09.19.10-client.txt` 明确显示 `player_info_update` 解码失败，根因 `The received string length is longer than maximum allowed (17 > 16)`，栈经过 `Utf8String.read` 和 `ByteBufCodecs$14.decode`，不是 Flashback 的录制重编码故障；服务端报告位于 `build/mixed-version-manual-26.3-20260928-091357/server/logs/latest.log`。09:20:08 已仅移除本次长名测试假人，避免用户重进再次断连
+- 自动化验证状态：本轮 `:26.3:build` 已重新编译客户端和服务端测试探针，26.3 自动测试通过；混用自动化脚本此前的启动器时机错误与默认白名单拒绝连接均属于测试环境失败，不计为兼容性测试结果，撤回降级入口后的联机脚本尚未重新执行。混用断连结论来自用户手动进服及双方日志，不是尚未通过的自动化联机脚本
+- 范围与待人工确认：当前 1.5.16 服务端与 1.5.15 客户端的完整长名路径已确认不兼容；本轮仅拆分实现分支，不改变握手通道 `carpet-fga-addition:handshake`、Payload 格式、规则默认值、配置、存档格式或权限；拆分后的客户端联机回归由用户进行，无 FGA 客户端对照、其他 Minecraft 节点的运行时行为及未来版本仍待验证
+
+## 假人物品分类异步召唤去重与库存守恒
+
+- 功能：`summon` 分类模式遇到异步假人档案预加载时，每个目标名只保留一个待处理召唤；复用已在线的分类假人，不重复登录/踢下线；目标生成未完成时不继续尝试后缀名字，避免无界创建请求。`quickopen` 行为不变
+- 源码预处理条件：`MC >= 1.21.1 && MC <= 26.3`；分类功能本身仍沿用其原有版本范围
+- 实际适配版本：`1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3`
+- 已完成编译/构建版本：以上 10 个发布节点均通过 `buildAllVersions`，自动测试任务通过；构建产物位于 `build/libs/20260927-191446/`，逐版本 JAR 及 SHA-256 归档于 `mod-builds/20260927-191800/` 至 `mod-builds/20260927-191800-10/`
+- 已完成服务端冒烟：隔离 26.3 服务端分别验证 `quickopen` 和异步预加载下的 `summon`；两种模式各 16 个物品均从源背包完整转入目标库存。`quickopen` 未登录目标；`summon` 只登录一个 `bulk_cobblestone`，没有编号后缀假人，然后在批次结束后下线并保存库存。服务端正常停止；脚本 `scripts/powershell/fake-player-item-sort-smoke-26.3.ps1`，报告 `scripts/logs/fake-player-item-sort-smoke-26.3-20260927-192059/summary.txt`
+- 客户端/服务端要求：仅服务端 FGA；未改变配置格式、规则默认值、存档格式或网络协议。自动召唤的分类假人会在当前批次完成后下线，库存保存在其 playerdata 中
+- 待人工确认：其他 9 个版本尚未分别启动隔离游戏服验证；真实服务器中切换至 `summon` 后的玩家可见消息与重登取物体验仍需人工确认
+
+## `/tp <坐标> <维度>` 后缀维度语法（全构建矩阵）
+
+- 功能：`/tp <x> <y> <z> <维度>` 和 `/teleport <x> <y> <z> <维度>` 将命令执行者传送到指定维度的坐标；沿用原版 `/tp` 坐标分支的反馈、权限和相对坐标语义，并检查目标世界边界
+- 源码预处理条件：`MC >= 1.21.1 && MC <= 26.3`
+- 客户端/服务端要求：仅服务端安装 FGA；无自定义网络协议、存档数据或配置变更；不改变 `spectatorFreeTeleport` 规则默认值及 `/tp` 根命令权限
+- 实际适配版本：当前构建矩阵全部 10 个节点；`/tp` 与 `/teleport` 分别挂接到原版命令树，兼容不同版本的别名结构
+- 已完成编译/测试/构建版本：以上 10 个节点均通过本轮 `buildAllVersions`，产物及 SHA-256 清单归档于 `mod-builds/20260928-123844`
+- 已完成服务端冒烟：10/10 节点在唯一命名的平坦测试存档中验证 `/tp <相对坐标> minecraft:the_nether`、`/teleport <绝对坐标> minecraft:overworld`、目标维度、相对坐标原点、无 Mixin 注入错误及正常停服；报告分别为 `scripts/logs/tp-dimension-suffix-smoke-all-20260928-121729/progress.log`（1.21.1、1.21.3、1.21.4、1.21.5、1.21.8、1.21.10）和 `scripts/logs/tp-dimension-suffix-smoke-all-20260928-122502/summary.json`（1.21.11、26.1.2、26.2、26.3）
+- 待人工确认：真实客户端的命令树展示与维度 Tab 补全
+
+## `spectatorFreeTeleport` 完整传送权限选项（1.5.16）
+
+- 功能：`spectatorFreeTeleport` 从布尔规则扩展为 `false`、`true`、`full`；`false` 保留原版权限，`true` 保留旁观者仅传送自己的旧行为，`full` 允许任意游戏模式的玩家使用完整 `/tp` 与 `/teleport`，包括多目标、传送其他实体和跨维度；`full` 仅对这两个命令绕过 TIS `opPlayerNoCheat` 与 AMS `preventAdministratorCheat` 的权限包装
+- 源码预处理条件：`MC >= 1.21 && MC <= 26.3`；命令权限包装、选择器权限和规则变更后的命令树刷新均使用共享实现
+- 实际适配版本：当前构建矩阵 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3`
+- 已完成编译/测试/构建版本：以上 10 个矩阵节点均由 `buildAllVersions` 完成 `compileJava`、`test`、`build`；归档于 `build/libs/20260927-161112`
+- 已完成服务端冒烟：26.3 隔离测试服启用 TIS `opPlayerNoCheat` 和 AMS `preventAdministratorCheat`；非 OP `false` 模式在生存、创造、冒险、旁观四种模式都没有 `/tp` 权限；`true` 模式非 OP、OP、取消 OP 的旁观假人均只能传送自己并可使用跨维路径；`full` 模式由非 OP 与 OP 分别在四种模式执行自传送、传送其他玩家、多目标选择、显式维度坐标传送、跟随异维玩家及跨维传送其他玩家，均通过；服务端正常关闭。脚本：`scripts/powershell/spectator-free-teleport-smoke-26.3.ps1`；报告：`scripts/logs/spectator-free-teleport-smoke-26.3-20260927-161808/summary.txt`
+- 客户端/服务端要求：只需服务端安装 FGA；不添加网络协议或客户端代码；规则默认值仍为 `false`，没有改变存档数据。规则值类型由布尔扩展为字符串，但旧配置文本 `false` / `true` 仍是有效选项
+- 待人工确认：尚未用真实图形客户端验证命令树同步和 Tab 补全；尚未用带既存 `spectatorFreeTeleport=true` Carpet 规则配置的重启测试验证旧配置读取；其余 9 个版本通过了构建和自动测试，但未逐个启动游戏内服务端冒烟
+
+## 旁观者跨维度传送
+
+- 功能：扩展 `spectatorFreeTeleport`；旁观者可用 `/tp <在线玩家>` 跟随异维玩家，也可用 `/tp in <维度> <x> <y> <z>` 和 `/teleport in <维度> <x> <y> <z>` 显式选择维度与坐标；显式坐标路径只移动执行者自身，并检查世界边界
+- 源码预处理条件：规则与命令为 `MC >= 1.21 && MC <= 26.3`；`1.21.1` 使用旧版 `ServerPlayer.teleportTo` 签名，`1.21.3+` 使用包含相对位置参数的签名；`1.21.11+` 使用更新后的维度标识符 API
+- 实际适配版本：当前构建矩阵 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3`
+- 已完成编译/构建版本：当前 10 节点 `buildAllVersions` 全部成功，包含各版本 `test` 和打包任务；产物归档于 `build/libs/20260927-141837`，另复制至 `mod-builds/20260927-141837`
+- 已完成服务端冒烟：`scripts/powershell/spectator-free-teleport-smoke-26.3.ps1` 在隔离 26.3 测试存档通过；启用 `spectatorFreeTeleport`、TIS `opPlayerNoCheat` 和 AMS `preventAdministratorCheat` 后，非 OP、OP、取消 OP 的旁观假人均成功传送至异维在线假人，并成功使用两种显式维度坐标语法；尝试 `/tp <其他玩家> <坐标>` 被拒绝且目标未移动，服务端正常关闭；最终共享 API 实现报告 `scripts/logs/spectator-free-teleport-smoke-26.3-20260927-142126/summary.txt`
+- 客户端/服务端要求：仅服务端安装 FGA；不改变规则默认值、配置格式、存档数据、网络协议或权限模型；显式坐标子命令只在规则开启且执行者为可用该规则的旁观玩家时开放
+- 尚未完成验证：真实客户端命令树同步、Tab 补全展示及坐标传送反馈视觉效果；其他 9 个矩阵版本尚未运行对应游戏内服务端冒烟
+
+## 增强假人重新上线（全构建矩阵）
+
+- 规则：`enhancedFakePlayerRejoin`，默认 `false`，需要服务端 Carpet TIS，客户端不要求安装 FGA
+- 功能：TIS `/player <名字> rejoin` 保留原版玩家存档中恢复的载具与非玩家乘客；增加 `rejoin at <坐标> [facing <朝向>] [in <维度>]`，恢复后移动整个载具树
+- 源码预处理条件：`MC >= 1.21.1 && MC <= 26.3`
+- 实际适配版本：当前构建矩阵全部 10 个节点；坐标重进逻辑使用共享实现，1.21.x 通过玩家上线后的服务端 tick 完成，26.1.2、26.2、26.3 才注册与现代 Carpet 回调匹配的载具保留 Mixin
+- 数据与权限：不新增配置格式或存档结构，不修改默认命令权限；关闭规则时保留 TIS 原命令；沿用原版仅在载具剩余一名玩家乘客时持久化载具的条件
+- 已完成编译/测试/构建版本：当前构建矩阵 10 个节点均通过本轮 `buildAllVersions`，逐版本测试、构建和 JAR 归档记录位于 `mod-builds/20260928-123844`
+- 已完成服务端冒烟：26.3 隔离测试存档、Carpet TIS `1.82.4` 下通过假人与猪同乘船、离线时载具离场、重启后原位恢复、同一载具 UUID 的跨维度指定坐标重进两次，以及规则关闭后 TIS 无参数命令继续可用；当前源码测试报告 `scripts/logs/fake-player-rejoin-smoke-26.3-20260928-123456/summary.txt`。坐标维度命令全矩阵服务端启动同时验证了所有节点 Mixin 配置无注入错误，报告见上方 `tp-dimension-suffix` 冒烟记录
+- 待人工确认：尚未用真实客户端验证朝向与视觉同步；其他 9 个版本尚未安装匹配的 Carpet TIS 执行完整载具重进实测；1.21.1–1.21.11 对应的 Carpet TIS 版本/API 兼容性需在目标服务端人工确认
+
+### 坐标重进重复提示修复（全构建矩阵）
+
+- 问题与修复：坐标重进的待处理状态此前依赖 TIS 异步 `ThreadLocal` 标记在假人创建回调中仍可读取；标记未跨回调保留时，目标重进已结束但状态未清除，后续每次执行都会提示 `A rejoin is already pending for this player`。现在旧 Carpet 版本在玩家确实上线后的首个服务端 tick 完成坐标重进，现代 Carpet 在异步回调中完成并清理；下次请求时还会清理过期、已在线或已不处于创建流程的残留项；普通 TIS 重进仍由现代回调按原标记保留载具
+- 源码预处理条件与适配版本：命令与规则 `MC >= 1.21.1 && MC <= 26.3`；仅 `MC >= 26.1 && MC <= 26.3` 注册载具保留 Mixin；旧 Carpet API 未提供创建中状态查询时，待处理标记最多保留 200 tick
+- 验证：26.3 当前源码的 `scripts/powershell/fake-player-rejoin-smoke-26.3.ps1 -SkipCompile` 在隔离服务器、Carpet TIS `1.82.4` 下通过普通重进、两次连续跨维坐标重进、相同载具 UUID 与猪乘客恢复、目标坐标检查及规则关闭后的 TIS 原命令；报告 `scripts/logs/fake-player-rejoin-smoke-26.3-20260928-123456/summary.txt`
+- 本轮全矩阵 `buildAllVersions` 通过，包含全部 10 个节点的编译、测试与构建；归档于 `mod-builds/20260928-123844`
+- 客户端 / 服务端影响：服务端修复，不新增客户端要求、配置格式、存档数据、网络协议、规则默认值或权限变化；尚未进行真实图形客户端测试
+- 待人工确认：其他版本安装匹配的 Carpet TIS 后，连续执行至少两次 `/player <名字> rejoin at <坐标> [in <维度>]`，确认不再出现重复待处理提示
+
+
+## 夺舍后聊天签名校验失败（1.5.16）
+
+- 问题：夺舍后发送聊天消息时客户端记录 `Received message with invalid signature`，并显示“聊天验证错误”；日志同时出现玩家档案公钥校验失败
+- 原因与修复：身体状态交换错误地连同 `RemoteChatSession` 一起互换，而签名会话属于各自的网络连接；现在夺舍与恢复身体状态时均保留连接原有聊天会话
+- 源码预处理条件：`MC >= 1.21 && MC <= 26.3`，修改位于共享的 `SwapSnapshot`
+- 实际适配版本：共享源码覆盖当前矩阵 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3`；本次按单版本基线先验证 `26.3`
+- 已完成编译/构建版本：Gradle 为生成 26.3 预处理产物编译了当前 10 个矩阵节点；`:26.3:test` 与 `:26.3:build` 通过，26.3 构建产物归档于 `mod-builds/20260927-115647`（仅 26.3 执行测试和打包任务）
+- 尚未完成单独构建验证版本：`1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`
+- 客户端/服务端要求：修复在服务端 FGA 的玩家身体状态交换路径；不改变客户端要求、配置格式、存档数据、网络协议、规则默认值或权限
+- 测试流程源码：`src/test/java/carpet/fga/FeatureSmokeTestPlanTest.java` 中的 `playerPossessionSignedChatSession`；需要两个已认证客户端的 secure-chat 多人冒烟，分别在夺舍前、夺舍中、恢复后发送消息，并检查客户端及服务端日志
+- 待人工确认：本地可用日志对应 26.3；日志中的客户端确有无效签名和公钥验证报错，服务端 `debug.log` 未找到，需真实 secure-chat 多人测试确认发送、签名状态与恢复行为；其他版本尚未单独运行测试或打包
+
+## Unicode 假人背包标题导致的 26.3 客户端断开（2026-09-27）
+
+- 问题：启用 `fgaUnicodeArgumentsSupport` 后，通过 Carpet Org 假人背包指令打开中文名假人背包时，服务端编码 `ClientboundOpenScreenPacket` 失败；`latest.log` 显示 `Player name contained disallowed characters`，异常资料名位于标题组件的玩家头像资料中
+- 修复：仅在打开容器包构造时递归检查标题组件；对头像资料中的非 `[A-Za-z0-9_]{1,16}` 名称生成基于原 UUID 的安全别名，同时保留原 UUID、皮肤属性和中文可见标题；普通玩家名不变
+- 源码预处理条件：`MC == 26.3`
+- 实际适配版本：`26.3`；其他版本不含依赖 26.3 组件 API 的修复类
+- 已完成编译/构建版本：`:26.3:test` 和 `:26.3:build` 通过；26.3 构建产物归档于 `mod-builds/20260927-111151`
+- 已完成服务端协议冒烟：隔离 26.3 服务端启用 `fgaUnicodeArgumentsSupport`，测试探针创建带中文头像资料和中文标题的 `ClientboundOpenScreenPacket`，使用对应 `STREAM_CODEC` 编码并解码成功；解码后标题仍为中文、头像资料名为合法 ASCII 且 UUID 不变，服务器干净退出；流程为 `scripts/powershell/unicode-player-inventory-screen-smoke-26.3.ps1`，报告为 `scripts/logs/unicode-player-inventory-screen-smoke-26.3-20260927-111333/summary.txt`
+- 客户端/服务端要求：服务端包标题在发送前处理；客户端无需安装 FGA；不改变规则默认值、配置格式、存档数据、协议结构或权限
+- 尚未完成验证：真实客户端安装 Carpet Org 后，用中文名假人实际打开其背包并确认客户端不再断开；其他版本无需该 26.3 专用补丁，但没有在本次单版本基线流程中重新运行全版本矩阵
+
+## 旁观者自身传送与反作弊规则兼容（2026-09-26）
+
+- 功能：修复 26.3 中 `spectatorFreeTeleport` 被 TIS `opPlayerNoCheat`、AMS `preventAdministratorCheat` 等后续命令权限包装器覆盖，导致 `/tp` 与 `/teleport` 对旁观者不可用的问题；非 OP 旁观者仍只能传送自己
+- 源码预处理条件：主体 `MC >= 1.21 && MC <= 26.3`；仅 `26.3` 将 `TeleportCommandMixin` 优先级提高到 `2000`，并将相关注入设为必需匹配；更早节点保留现有优先级与可选注入设置
+- 实际适配版本：行为修复及服务端冒烟仅验证 `26.3`；当前矩阵其他版本未进行单独运行测试
+- 已完成编译/构建版本：`:26.3:build`、`:26.3:test` 通过并生成 `1.5.15` 的 26.3 jar，归档于 `mod-builds/20260926-232006`；Preprocessor 构建依赖还编译了当前 10 个矩阵节点，但本次只构建并归档 26.3
+- 已完成服务端冒烟：隔离服务器安装 FGA、TIS、AMS、Carpet Org Addition，启用 `spectatorFreeTeleport`、`opPlayerNoCheat` 和 `preventAdministratorCheat`；非 OP 与 OP 旁观假人均成功用 `/tp @s`、`/teleport @s` 和 `/tp 玩家名` 传送自身，传送另一玩家被拒绝，服务器正常关闭；2026-09-27 再加入 GCA、REMS、Fabric Permissions API，并验证非 OP → OP → 取消 OP 后仍可传送自己；测试流程源码为 `scripts/powershell/spectator-free-teleport-smoke-26.3.ps1`，最新报告为 `scripts/logs/spectator-free-teleport-smoke-26.3-20260927-091312/summary.txt`
+- 客户端/服务端要求：仅服务端安装 FGA；不改变客户端要求、配置格式、存档数据、网络协议或规则默认值；仅修正 26.3 的命令权限 Mixin 应用顺序
+- 尚未完成验证：其余 9 个矩阵版本的独立构建/运行、真实客户端在旁观模式下的命令树同步，以及 OP 在不同反作弊规则组合下的行为；客户端日志显示 08:53 取消 OP 后发送了无参数 `tp` 并收到“不完整的命令”，本机服玩家存档在 09:00 与 09:03 均记录创造模式（`playerGameType=1`），尚不能据此确认 08:53 的实际游戏模式；客户端安装 FGA `1.5.15`，本机服加载 `1.5.15+v2609262316-mc26.3`
+
+## 进服提示与服务器公告跨版本适配（2026-09-26）
+
+- 功能：`customJoinNotice` 及 `/fga joinNotice` 欢迎语、RGB 颜色、开服日期；独立 `serverAnnouncements` 规则与 `/fga announcement`，支持题头、自动/指定编号、发布者、分钟时间戳、永久/限时、启用/隐藏、JSON 编辑与重载，以及进服/维度三维坐标范围进入触发
+- 源码预处理条件：`MC >= 1.21 && MC <= 26.3`
+- 实际适配版本：`1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3`
+- 已完成编译/构建版本：上述 10 个构建节点的 `buildAllVersions --configure-on-demand --max-workers=2` 均通过，包含每个节点的测试任务；最终构建归档位于 `build/libs/20260926-160354`
+- 已完成单元测试：公告时效解析、范围端点归一化、时间/发布者/题头/`/n` 格式和启用/隐藏/到期边界；进服日期和 RGB 欢迎语测试也在所有 10 个构建节点运行
+- 已完成服务端命令冒烟：26.3 隔离临时存档验证总规则、公告新建/编号、列表/详情、永久转限时、启用/停用、隐藏/显示、进服/区域触发切换、题头修改、JSON 重载/删除，以及欢迎语日期命令；报告为 `scripts/logs/server-startup-smoke-20260926-160600/summary.json`
+- 客户端/服务端要求：仅服务端安装 FGA；无需客户端模组，不新增网络协议；配置分别位于 `world/config/carpetfgaaddition/join-notice.json` 和 `world/config/carpetfgaaddition/announcements.json`
+- 尚未完成验证：真实客户端欢迎语颜色和点击填入聊天栏体验、日期 Tab 补全界面、真实玩家进服公告，以及在线玩家离开并再次进入指定坐标范围的游戏内行为；服务端命令冒烟不等同于客户端行为验证
+
 ## 附魔金胡萝卜名称组件格式修复（2026-09-20）
 
 - 功能：修复部分版本中 `enchantedGoldenCarrot` 合成结果把 `{"text":"附魔金胡萝卜","italic":false}` 当作普通文本显示的问题
@@ -112,8 +241,10 @@
 - 源码预处理条件：`MC >= 1.19.3` 的玩家信息包处理；`MC >= 1.20.2` 使用 `ModifyArg`，更早版本使用 `ModifyVariable`；`MC >= 1.20.5` 的服务器包发送路径在写包期间启用作用域
 - 实际适配版本：源码覆盖当前 `settings.json` 中的 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2` 和 `26.3`
 - 本轮基线：`26.3`；已加入源码冒烟流程，覆盖 MCDR ZaiGanMa `!!zgm set` 前缀、`bot_` 假人标签、清除/再次设置以及无需重连的客户端观察；当前矩阵 10 个版本均完成构建与服务端启动冒烟
-- TAB 前缀刷新补充：`MC == 1.21.1 || MC == 26.2`；未启用 FGA 名称装饰时保留 vanilla 的空 `displayName`，启用血量显示时跟踪队伍名称组件变化并仅发送 `UPDATE_DISPLAY_NAME`
-- 本次修复编译：`26.2` 主工作区 `:26.2:compileJava --no-daemon --console=plain --max-workers=1` 通过；`1.21.1` 基线构建及源码冒烟此前已完成，但真实 MCDR/GCA 客户端 TAB 显示仍待验证
+- TAB 前缀刷新补充：源码条件 `MC >= 1.19.4`，覆盖当前 10 个发布节点及 `1.19.4`、`1.20.1`、`1.20.4`、`1.20.6`、`1.21` 历史源码集；未启用 FGA 名称装饰时保留 vanilla 的空 `displayName`，启用血量显示时跟踪队伍名称组件变化并仅发送 `UPDATE_DISPLAY_NAME`；`1.20.1` 和 `1.21.1` 额外保留加载距离名称装饰
+- 本次修复已完成构建：当前 `settings.json` 的 10 个发布节点 `1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3` 均通过各自的 `build`（包含现有单元测试）；对应独立归档依次为 `mod-builds/20260925-194509`、`20260925-194650`、`20260925-194831`、`20260925-194952`、`20260925-195149`、`20260925-195321`、`20260925-195451`、`20260925-195642`、`20260925-195822`、`20260925-195938`
+- 尚未完成构建的历史源码集：`1.19.4`、`1.20.1`、`1.20.4`、`1.20.6`、`1.21` 不在当前 `settings.json` 构建矩阵内，只有源码条件覆盖，尚未完成 Gradle 构建或游戏内测试；`1.16.5`、`1.17.1`、`1.18.2`、`1.19.2` 不包含此玩家信息包功能
+- TAB 修复尚未适配版本：仓库中已包含此玩家信息包功能的源码集无；历史源码集的未构建状态如上
 - 回归步骤：健康显示关闭/开启、`nofake`、订阅 `playerHealth` 时，保持玩家不重连且血量不变，修改队伍前缀、后缀、颜色、成员并移除队伍；确认假人和真实玩家 TAB 名称即时更新
 - 客户端/服务端要求：保持现有要求；未新增自定义 Payload、配置格式、存档数据或权限变化；FGA 长名字兼容仍按原有客户端安装/别名路径处理
 - 尚未完成验证：真实 MCDR/ZaiGanMa 客户端冒烟及跨版本真实客户端行为

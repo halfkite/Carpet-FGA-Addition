@@ -1,0 +1,12 @@
+String runDirectory = System.getenv('FGA_UNICODE_OPEN_SCREEN_SMOKE_RUN_DIR')
+if (runDirectory == null || runDirectory.isBlank()) {
+    throw new GradleException('FGA_UNICODE_OPEN_SCREEN_SMOKE_RUN_DIR must point to an isolated test directory')
+}
+
+gradle.afterProject { project ->
+    if (project.path == ':26.3') {
+        project.loom.runs.named('server') {
+            runDir runDirectory
+        }
+    }
+}

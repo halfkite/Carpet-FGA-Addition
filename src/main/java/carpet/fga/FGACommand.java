@@ -27,6 +27,10 @@ public final class FGACommand {
                 .executes(FGACommand::help)
                 .then(Commands.literal("help").executes(FGACommand::help))
                 .then(Commands.literal("status").executes(FGACommand::status));
+        //#if MC >= 1.21 && MC <= 26.3
+        root.then(JoinNoticeCommand.root("joinNotice"));
+        root.then(AnnouncementCommand.root("announcement"));
+        //#endif
         redirect(root, "droppedItemStackLimit", dispatcher);
         redirect(root, "dropPreStack", dispatcher);
         //#if MC >= 1.21 && MC <= 26.3
@@ -78,6 +82,10 @@ public final class FGACommand {
 
     private static int help(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context) {
         MutableComponent out = FGACompat.literal("FGA Help / FGA 帮助\n").withStyle(ChatFormatting.GOLD);
+        //#if MC >= 1.21 && MC <= 26.3
+        line(out, "/fga joinNotice help", "配置进服欢迎语和开服日期提示 / configure join welcome and opening date");
+        line(out, "/fga announcement help", "管理服务器公告、时效和触发范围 / manage announcements, expiry and trigger scope");
+        //#endif
         line(out, "/fga droppedItemStackLimit help", "地面物品堆叠上限 / ground item stack limit");
         line(out, "/fga dropPreStack help", "掉落物预堆叠 / drop pre-stacking");
         //#if MC >= 1.21 && MC <= 26.3

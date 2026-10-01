@@ -1,3 +1,4 @@
+//#if MC < 26.3
 package carpet.fga.mixin;
 
 import net.minecraft.network.FriendlyByteBuf;
@@ -29,3 +30,4 @@ public abstract class FriendlyByteBufMixin {
         return maxLength == 16 ? 128 : maxLength;
     }
 }
+//#endif

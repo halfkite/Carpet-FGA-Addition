@@ -1,0 +1,36 @@
+// Load only the selected published FGA JAR from the isolated mods directory,
+// not this checkout's current main classes/resources. Does not change normal builds.
+String smokeDirectory = System.getenv('FGA_PUBLISHED_JAR_SMOKE_RUN_DIR')
+if (smokeDirectory == null || smokeDirectory.isBlank()) {
+    throw new GradleException('FGA_PUBLISHED_JAR_SMOKE_RUN_DIR must name an isolated test directory')
+}
+
+gradle.afterProject { project ->
+    if (project.path == ':26.3') {
+        project.loom.runs.named('server') { runDir smokeDirectory }
+        project.loom.runs.named('client') { runDir smokeDirectory }
+    }
+}
+
+gradle.projectsEvaluated {
+    def project = gradle.rootProject.project(':26.3')
+    ['runServer', 'runClient'].each { taskName ->
+            project.tasks.named(taskName).configure {
+                def mainOutput = project.sourceSets.main.output.files
+                classpath = classpath.filter { !mainOutput.contains(it) }
+                doFirst {
+                    systemProperties.remove('fabric.classPathGroups')
+                    jvmArgs = jvmArgs.findAll { !it.startsWith('-Dfabric.classPathGroups=') }
+                    String endpoint = System.getenv('FGA_MIXED_VERSION_SMOKE_ENDPOINT')
+                    if (endpoint != null && !endpoint.isBlank()) {
+                        systemProperty 'fga.mixedVersion.endpoint', endpoint
+                    }
+                    String expected = System.getenv('FGA_MIXED_VERSION_SMOKE_EXPECTED_NAME')
+                    if (expected != null && !expected.isBlank()) {
+                        systemProperty 'fga.mixedVersion.expectedName', expected
+                    }
+                    println "FGA_PUBLISHED_JAR_SMOKE: removed current checkout's main output for ${taskName}"
+                }
+            }
+    }
+}
