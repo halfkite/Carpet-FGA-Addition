@@ -838,6 +838,7 @@ ops：需要 OP 2 及以上<br>
 ### 玩家加载距离(playerLoadDistance) · [相关指令](commands.md#cmd-player-load-distance)
 
 控制每名玩家的区块发送与跟踪距离，不改变模拟距离<br>
+false：禁用命令并保持原版视距，只有从启用切到关闭时清理已应用的 FGA 覆盖<br>
 true：允许所有玩家使用<br>
 ops：需要 OP 2 及以上<br>
 0-4：设置命令的最低权限等级

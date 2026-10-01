@@ -239,6 +239,7 @@
     "carpet.rule.playerLoadDistance.desc":  "Controls per-player chunk sending and tracking distance without changing simulation distance",
     "carpet.rule.playerLoadDistance.extra.0":  "Use /playerLoadDistance help; temporary overrides expire on restart unless persistent is appended",
     "carpet.rule.playerLoadDistance.extra.1":  "-1 keeps only the center chunk weakly loaded, 0 keeps the center strongly loaded and a 3x3 weak area, 1-32 sets a radius, and none removes player loading",
+    "carpet.rule.playerLoadDistance.extra.2":  "false disables the commands and leaves vanilla view distance alone, cleaning up applied FGA overrides only when switching from enabled to disabled",
     "carpet.rule.mapLoadCommandPermission.name": "Map Load Command Permission",
     "carpet.rule.mapLoadCommandPermission.desc": "Controls access to /mapLoad and /fga mapLoad",
     "carpet.rule.mapLoadCommandPermission.extra.0": "false: disables the commands",

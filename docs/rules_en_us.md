@@ -781,7 +781,7 @@ The client must have FGA installed to start survival breaking
 
 ### Player Load Distance(playerLoadDistance) · [Related command](commands_en.md#cmd-player-load-distance)
 
-Controls per-player chunk sending and tracking distance without changing simulation distance<br>`false`: disables the related commands<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum command permission level<br>Use `/playerLoadDistance help` for command help; append `persistent` to save across restarts<br>A non-op player's setting only affects their own chunk loading and no longer raises the server-wide view distance; raising the global view distance requires an operator<br>`-1` weakly loads only the center chunk, `0` strongly loads the center and keeps a 3x3 weak-loading area, `1-32` sets the chunk radius, and `none` removes the player loading view
+Controls per-player chunk sending and tracking distance without changing simulation distance<br>`false`: disables the commands and leaves vanilla view distance alone, cleaning up applied FGA overrides only when switching from enabled to disabled<br>`true`: allows all players<br>`ops`: requires OP level 2 or higher<br>`0-4`: sets the minimum command permission level<br>Use `/playerLoadDistance help` for command help; append `persistent` to save across restarts<br>A non-op player's setting only affects their own chunk loading and no longer raises the server-wide view distance; raising the global view distance requires an operator<br>`-1` weakly loads only the center chunk, `0` strongly loads the center and keeps a 3x3 weak-loading area, `1-32` sets the chunk radius, and `none` removes the player loading view
 
 - Type: `Permission string`
 - Default: `false`

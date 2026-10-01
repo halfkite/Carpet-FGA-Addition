@@ -31,15 +31,13 @@ public final class PlayerLoadDistanceManager {
     private static final TicketType<String> LOAD_TICKET = TicketType.create(
             "carpet_fga_player_load", Comparator.<String>naturalOrder());
     private static MinecraftServer server;
-    private static int originalViewDistance;
-    private static int appliedViewDistance;
+    private static final PlayerLoadDistanceLifecycle LIFECYCLE = new PlayerLoadDistanceLifecycle();
 
     private PlayerLoadDistanceManager() {}
 
     public static synchronized void load(MinecraftServer current) {
         server = current;
-        originalViewDistance = current.getPlayerList().getViewDistance();
-        appliedViewDistance = originalViewDistance;
+        LIFECYCLE.reset();
         TEMPORARY.clear();
         TICKETS.clear();
         APPLIED.clear();
@@ -57,6 +55,11 @@ public final class PlayerLoadDistanceManager {
 
     public static synchronized void tick(MinecraftServer current) {
         if (server != current) return;
+        if (!enabled()) {
+            releaseOverrides();
+            return;
+        }
+        LIFECYCLE.activate(current.getPlayerList().getViewDistance());
         updateGlobalViewDistance();
         for (ServerPlayer player : current.getPlayerList().getPlayers()) apply(player);
         APPLIED.keySet().removeIf(uuid -> current.getPlayerList().getPlayer(uuid) == null);
@@ -89,7 +92,8 @@ public final class PlayerLoadDistanceManager {
 
     public static synchronized int effective(ServerPlayer player) {
         int configured = configured(player);
-        if (configured == Integer.MIN_VALUE) return Math.min(originalViewDistance, Math.max(2, player.requestedViewDistance()));
+        int baseline = LIFECYCLE.active() ? LIFECYCLE.baseline() : player.server.getPlayerList().getViewDistance();
+        if (configured == Integer.MIN_VALUE) return Math.min(baseline, Math.max(2, player.requestedViewDistance()));
         if (configured == NONE) return NONE;
         if (configured == -1) return -1;
         if (configured == 0) return 0;
@@ -127,6 +131,10 @@ public final class PlayerLoadDistanceManager {
     }
 
     public static synchronized void onLogin(ServerPlayer player) {
+        if (!enabled()) {
+            releaseOverrides();
+            return;
+        }
         APPLIED.remove(player.getUUID());
         applyAll();
         Map<UUID, PlayerLoadDistanceConfig.Entry> values = PlayerLoadDistanceConfig.snapshot();
@@ -141,44 +149,36 @@ public final class PlayerLoadDistanceManager {
     public static synchronized void reapply(ServerPlayer player) { if (enabled()) apply(player); }
 
     public static synchronized void onLogout(ServerPlayer player) {
+        if (!LIFECYCLE.active()) return;
         clearTickets(player.getUUID());
         APPLIED.remove(player.getUUID());
         refreshTab();
     }
 
     public static synchronized void clear() {
-        if (server != null && originalViewDistance > 0) server.getPlayerList().setViewDistance(originalViewDistance);
-        if (server != null) {
-            server.getPlayerList().getPlayers().forEach(PlayerLoadDistanceManager::restorePlayer);
-        }
+        releaseOverrides();
         for (UUID uuid : Set.copyOf(TICKETS.keySet())) clearTickets(uuid);
         TEMPORARY.clear();
         TICKETS.clear();
         APPLIED.clear();
         PlayerLoadDistanceConfig.clear();
         server = null;
-        originalViewDistance = 0;
-        appliedViewDistance = 0;
+        LIFECYCLE.reset();
     }
 
     private static void applyAll() {
         if (!enabled()) {
-            if (server != null && originalViewDistance > 0) {
-                server.getPlayerList().setViewDistance(originalViewDistance);
-                server.getPlayerList().getPlayers().forEach(PlayerLoadDistanceManager::restorePlayer);
-            }
-            for (UUID uuid : Set.copyOf(TICKETS.keySet())) clearTickets(uuid);
-            APPLIED.clear();
-            refreshTab();
+            releaseOverrides();
             return;
         }
+        LIFECYCLE.activate(server.getPlayerList().getViewDistance());
         updateGlobalViewDistance();
         server.getPlayerList().getPlayers().forEach(PlayerLoadDistanceManager::apply);
     }
 
     private static void updateGlobalViewDistance() {
         if (!enabled()) return;
-        int maximum = originalViewDistance;
+        int maximum = LIFECYCLE.baseline();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             int value = configured(player);
             // Only operators may raise the server-wide view distance; a non-op's larger
@@ -188,10 +188,24 @@ public final class PlayerLoadDistanceManager {
             }
         }
         maximum = Math.min(32, maximum);
-        if (maximum != appliedViewDistance) {
-            server.getPlayerList().setViewDistance(maximum);
-            appliedViewDistance = maximum;
+        if (maximum != LIFECYCLE.lastGlobalDistance()) {
+            boolean changed = server.getPlayerList().getViewDistance() != maximum;
+            if (changed) server.getPlayerList().setViewDistance(maximum);
+            LIFECYCLE.globalApplied(maximum, changed);
         }
+    }
+
+    /** Disabled callbacks are no-ops; unwind only a previous active rule session. */
+    private static void releaseOverrides() {
+        if (server == null || !LIFECYCLE.active()) return;
+        LIFECYCLE.release(server.getPlayerList().getViewDistance()).ifPresent(
+                distance -> server.getPlayerList().setViewDistance(distance));
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (APPLIED.containsKey(player.getUUID())) restorePlayer(player);
+        }
+        for (UUID uuid : Set.copyOf(TICKETS.keySet())) clearTickets(uuid);
+        APPLIED.clear();
+        refreshTab();
     }
 
     private static void apply(ServerPlayer player) {
@@ -251,7 +265,7 @@ public final class PlayerLoadDistanceManager {
         ChunkMapPlayerLoadDistanceAccessor map = (ChunkMapPlayerLoadDistanceAccessor) player.serverLevel().getChunkSource().chunkMap;
         if (isDetached(APPLIED.get(player.getUUID()))) map.carpetFga$updatePlayerStatus(player, true);
         map.carpetFga$applyChunkTrackingView(player, ChunkTrackingView.of(player.chunkPosition(),
-                Math.min(originalViewDistance, Math.max(2, player.requestedViewDistance()))));
+                Math.min(server.getPlayerList().getViewDistance(), Math.max(2, player.requestedViewDistance()))));
     }
 
     private static boolean isDetached(AppliedState state) {

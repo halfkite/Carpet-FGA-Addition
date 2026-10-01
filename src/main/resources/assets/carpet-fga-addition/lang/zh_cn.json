@@ -244,6 +244,7 @@
     "carpet.rule.playerLoadDistance.desc":  "控制每名玩家的区块发送与跟踪距离，不改变模拟距离",
     "carpet.rule.playerLoadDistance.extra.0":  "使用 /playerLoadDistance help 查看命令，末尾加 persistent 才会跨重启保存",
     "carpet.rule.playerLoadDistance.extra.1":  "-1 仅弱加载中心区块，0 强加载中心并保留 3x3 弱加载，1-32 设置区块半径，none 移除玩家加载",
+    "carpet.rule.playerLoadDistance.extra.2":  "false 禁用命令并保持原版视距，只有从启用切到关闭时清理已应用的 FGA 覆盖",
     "carpet.rule.mapLoadCommandPermission.name": "地图加载命令权限",
     "carpet.rule.mapLoadCommandPermission.desc": "控制 /mapLoad 和 /fga mapLoad 的使用权限",
     "carpet.rule.mapLoadCommandPermission.extra.0": "false：禁用命令",

@@ -1,0 +1,9 @@
+String runDirectory = System.getenv('FGA_DISTANCE_SMOKE_RUN_DIR')
+if (runDirectory == null || runDirectory.isBlank()) {
+    throw new GradleException('FGA_DISTANCE_SMOKE_RUN_DIR must name an isolated test directory')
+}
+gradle.afterProject { project ->
+    if (project.path == ':1.21.1') {
+        project.loom.runs.named('server') { runDir runDirectory }
+    }
+}

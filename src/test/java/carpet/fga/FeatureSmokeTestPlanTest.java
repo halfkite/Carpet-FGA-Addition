@@ -36,6 +36,17 @@ final class FeatureSmokeTestPlanTest {
      * history.
      */
     private static final List<SmokePlan> PLANS = List.of(
+            new SmokePlan("playerLoadDistanceDisabled", "MC == 1.21.1", "1.21.1",
+                    "scripts/powershell/player-load-distance-rule-off-smoke-1.21.1.ps1 plus MANUAL: Minecraft 1.21 client",
+                    "Use a disposable server at view distance 10, leave the rule false and simulate the integrated "
+                            + "server raising it to 16. Repeat login, logout, rule notification, ticks and manager shutdown "
+                            + "without distance changes. Enable, apply OP global and none overrides, then disable and "
+                            + "check cleanup happens once. Change vanilla distance between sessions and through another "
+                            + "writer; never restore stale startup values. In a 1.21 singleplayer test world keep render "
+                            + "distance 16, repeatedly spawn/kill fake players with the rule false, and inspect screen and logs.",
+                    "Disabled callbacks preserve vanilla view distance, tickets and tracking overrides are released "
+                            + "only after an active session, other writers are preserved, and the real client no longer "
+                            + "rebuilds its renderer in a 10/16 oscillation."),
             //#if MC == 26.3
             //$$ new SmokePlan("playersortInventoryMissingRouteDiscovery", "MC == 26.3", "26.3",
             //$$         "scripts/powershell/fake-player-item-sort-smoke-26.3.ps1 plus MANUAL: projection client",

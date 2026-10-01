@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fga_player_load_distance_probe",
+  "version": "1.0.0",
+  "name": "FGA Player Load Distance Test Probe",
+  "environment": "server",
+  "entrypoints": {"server": ["carpet.fga.smoke.PlayerLoadDistanceProbe"]},
+  "depends": {"fabricloader": ">=0.15.11", "minecraft": "=1.21.1", "fabric-api": "*", "carpet-fga-addition": "*"}
+}
