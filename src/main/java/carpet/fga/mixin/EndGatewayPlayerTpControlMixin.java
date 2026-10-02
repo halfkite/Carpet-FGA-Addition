@@ -28,29 +28,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
         //#endif
 )
 public abstract class EndGatewayPlayerTpControlMixin {
+    // Upgrade check: run EndPortalMixinTargetTest and the isolated server-startup smoke.
+    // Gameplay: test a fake in a real gateway with PlayerTpEndControl=true/false,
+    // then control + per-player gateway deny/allow; verify blocked/vanilla teleportation.
     //#if MC >= 1.21
     //#if MC >= 1.21.5
     //#if MC >= 1.21.10
     //$$ @Inject(
-    //$$         method = "method_9548(Lnet/minecraft/class_2680;Lnet/minecraft/class_1937;Lnet/minecraft/class_2338;Lnet/minecraft/class_1297;Lnet/minecraft/class_10774;Z)V",
+    //$$         method = "entityInside",
     //$$         at = @At("HEAD"),
-    //$$         cancellable = true,
-    //$$         require = 0,
-    //$$         remap = false
+    //$$         cancellable = true
     //$$ )
     //$$ private void carpetFga$controlPlayerGateway(BlockState state, Level level, BlockPos pos, Entity entity,
     //$$                                             InsideBlockEffectApplier effectApplier, boolean flag, CallbackInfo ci) {
-    //$$     carpetFga$controlPlayerGateway(level, entity, ci);
-    //$$ }
-    //$$
-    //$$ @Inject(
-    //$$         method = "method_9548(Lnet/minecraft/class_2680;Lnet/minecraft/class_1937;Lnet/minecraft/class_2338;Lnet/minecraft/class_1297;Lnet/minecraft/class_10774;)V",
-    //$$         at = @At("HEAD"),
-    //$$         cancellable = true,
-    //$$         require = 0
-    //$$ )
-    //$$ private void carpetFga$controlPlayerGatewayLegacy(BlockState state, Level level, BlockPos pos, Entity entity,
-    //$$                                                     InsideBlockEffectApplier effectApplier, CallbackInfo ci) {
     //$$     carpetFga$controlPlayerGateway(level, entity, ci);
     //$$ }
     //#else

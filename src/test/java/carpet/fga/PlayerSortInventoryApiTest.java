@@ -160,9 +160,15 @@
 //$$         return UUID.nameUUIDFromBytes(("OfflinePlayer:"+name).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 //$$     }
 //$$     @Test void filenameIndexFindsSparseOverflowWithoutPrimaryOrIntermediateFiles() {
-//$$         assertEquals(List.of("玻璃_1","玻璃_17","玻璃_box_999"),PlayerSortInventoryApi.existingMaterialCandidates(
+//$$         assertEquals(List.of("玻璃_17","玻璃_1","玻璃_box_999"),PlayerSortInventoryApi.existingMaterialCandidates(
 //$$                 List.of("玻璃","玻璃_box"),Set.of(offlineId("玻璃_1"),offlineId("玻璃_17"),offlineId("玻璃_box_999"))));
 //$$         assertEquals(List.of(),PlayerSortInventoryApi.existingMaterialCandidates(List.of("玻璃"),Set.of(offlineId("other"))));
+//$$     }
+//$$     @Test void primaryPrecedesOverflowWithinEachInventoryFamily() {
+//$$         assertEquals(List.of("玻璃","玻璃_999","玻璃_17","玻璃_1","玻璃_box","玻璃_box_2"),
+//$$                 PlayerSortInventoryApi.existingMaterialCandidates(List.of("玻璃","玻璃_box"),
+//$$                         Set.of(offlineId("玻璃"),offlineId("玻璃_999"),offlineId("玻璃_17"),
+//$$                                 offlineId("玻璃_1"),offlineId("玻璃_box"),offlineId("玻璃_box_2"))));
 //$$     }
 //$$     @Test void discoveryHasBoundsAndDistinctMissingAndShortageStatuses() {
 //$$         assertThrows(IllegalArgumentException.class,()->PlayerSortInventoryApi.existingMaterialCandidates(

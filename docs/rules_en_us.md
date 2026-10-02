@@ -457,6 +457,8 @@ Sets the game time in seconds for a small Sulfur Cube to grow into a medium one;
 
 Makes matching plants ignore vanilla survival restrictions and allows them to be placed in air or on any block<br>`false`: disabled<br>`true`: matches all supported plant candidates<br>`[]`: clears the matching list<br>Block ID list: matches only listed blocks; namespaces may be omitted
 
+All current build nodes preserve vanilla survival checks during terrain generation to prevent naturally floating plants; the isolated server smoke test ran on 1.21.1, while other nodes were build-validated but not individually tested in-game; existing floating plants are not automatically removed
+
 - Type: `String`
 - Default: `false`
 - Options: `false`, `true`, `[]`, `block ID list`

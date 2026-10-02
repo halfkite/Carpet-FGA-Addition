@@ -194,6 +194,7 @@
     "carpet.rule.resilientBlocks.name": "堅韌方塊",
     "carpet.rule.resilientBlocks.desc": "自定義方塊被放置時不檢查下方方塊型別，收到更新時不檢查自身狀態",
     "carpet.rule.resilientPlants.desc": "讓匹配的花草忽略原版存活限制，可以放在空氣位置或任意方塊上",
+    "carpet.rule.resilientPlants.extra.0": "所有目前構建節點均保留地形生成的原版存活檢查；僅1.21.1執行隔離伺服器冒煙測試，其他節點已完成構建驗證但未逐一進行遊戲內測試；不會自動清理既有浮空植物",
     "carpet.rule.comparatorThroughBlocks.name": "比較器隔方塊檢測容器訊號",
     "carpet.rule.comparatorThroughBlocks.desc": "允許比較器隔著配置的前方方塊讀取後方容器訊號，例如 [chain,piston]，不改變其他紅石行為",
     "carpet.rule.comparatorThroughBlocks.extra.0": "g false：保持原版，不隔方塊讀取；[方塊ID]：僅當前方塊在列表中時讀取後方容器訊號",

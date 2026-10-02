@@ -76,29 +76,34 @@ final class FakePlayerItemSortCommandLocalizationTest {
     }
 
     @Test
-    void refactoredSetupAndAdministrationAreOnlyEnabledForThe26_3Baseline() {
-        //#if MC == 26.3
+    void sharedConfigurationKeysDoNotDetermineCommandVisibility() {
         assertEquals(11, FakePlayerItemSortConfig.setupFields().size());
         assertTrue(FakePlayerItemSortConfig.permissionCommands().containsAll(
                 List.of("all", "help", "setup", "stock", "permission", "restart", "sort", "summonNotices")));
-        //#else
-        //$$ assertEquals(0, FakePlayerItemSortConfig.setupFields().size());
-        //$$ assertFalse(FakePlayerItemSortConfig.permissionCommands().contains("stock"));
-        //#endif
     }
 
     @Test
-    void refactored26_3CommandTreeRetainsExistingAndNewCommands() {
-        //#if MC == 26.3
+    void commandTreePreservesTheLayoutOfEachBuildNode() {
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
         var root = FakePlayerItemSortCommand.root("playersort").build();
         // The root node compiles raw sources; it must retain its original layout.
         if (!FakePlayerItemSortCommand.usesGroupedSettings()) {
             assertTrue(root.getChild("set") == null);
-            for (String command : List.of("mode", "setting", "format", "workers", "dashboard")) {
+            for (String command : List.of("mode", "setting", "format")) {
                 assertTrue(root.getChild(command) != null, "missing baseline command: " + command);
             }
+            //#if MC == 1.21.1
+            assertTrue(root.getChild("workers") != null);
+            assertTrue(root.getChild("dashboard") != null);
+            //#else
+            //$$ assertTrue(root.getChild("workers") == null);
+            //$$ assertTrue(root.getChild("dashboard") == null);
+            //$$ assertTrue(root.getChild("setup") == null);
+            //$$ assertTrue(root.getChild("language") == null);
+            //$$ assertTrue(root.getChild("stock") == null);
+            //$$ assertTrue(root.getChild("permission") == null);
+            //#endif
             assertTrue(root.getChild("whitelist").getChild("mode") != null);
             return;
         }
@@ -124,8 +129,5 @@ final class FakePlayerItemSortCommandLocalizationTest {
         for (String command : List.of("continuous", "stop", "restart")) {
             assertTrue(playerSort.getChild(command) != null, "missing /player <fake> bot_sort " + command);
         }
-        //#else
-        //$$ assertFalse(FakePlayerItemSortConfig.permissionCommands().contains("stock"));
-        //#endif
     }
 }

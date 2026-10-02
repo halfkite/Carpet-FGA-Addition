@@ -18,28 +18,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(EndPortalBlock.class)
 public abstract class EndPortalPlayerTpControlMixin {
+    // Upgrade check: run EndPortalMixinTargetTest, then server-startup-smoke-all.ps1
+    // for the changed node in a disposable world. Both portal injections are required.
+    // Gameplay: with PlayerTpEndControl=true, a fake must not enter or exit the End;
+    // with false, repeat and verify vanilla teleportation. Never use a production save.
     //#if MC >= 1.21.5
     //#if MC >= 1.21.10
     //$$ @Inject(
-    //$$         method = "method_9548(Lnet/minecraft/class_2680;Lnet/minecraft/class_1937;Lnet/minecraft/class_2338;Lnet/minecraft/class_1297;Lnet/minecraft/class_10774;Z)V",
+    //$$         method = "entityInside",
     //$$         at = @At("HEAD"),
-    //$$         cancellable = true,
-    //$$         require = 0,
-    //$$         remap = false
+    //$$         cancellable = true
     //$$ )
     //$$ private void carpetFga$controlPlayerEndPortal(BlockState state, Level level, BlockPos pos, Entity entity,
     //$$                                                 InsideBlockEffectApplier effectApplier, boolean flag, CallbackInfo ci) {
-    //$$     carpetFga$controlPlayerEndPortal(level, entity, ci);
-    //$$ }
-    //$$
-    //$$ @Inject(
-    //$$         method = "method_9548(Lnet/minecraft/class_2680;Lnet/minecraft/class_1937;Lnet/minecraft/class_2338;Lnet/minecraft/class_1297;Lnet/minecraft/class_10774;)V",
-    //$$         at = @At("HEAD"),
-    //$$         cancellable = true,
-    //$$         require = 0
-    //$$ )
-    //$$ private void carpetFga$controlPlayerEndPortalLegacy(BlockState state, Level level, BlockPos pos, Entity entity,
-    //$$                                                       InsideBlockEffectApplier effectApplier, CallbackInfo ci) {
     //$$     carpetFga$controlPlayerEndPortal(level, entity, ci);
     //$$ }
     //#else

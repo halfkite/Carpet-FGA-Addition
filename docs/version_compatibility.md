@@ -1,16 +1,75 @@
 # Minecraft 版本适配记录
 
+## 完整构建错误与末地传送注入修复（2026-10-01）
+
+- 范围：当前全部10个构建节点：1.21.1、1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2、26.3
+- 假人分类测试更正：共享配置常量不代表命令注册范围，旧测试错误地要求非26.3的设置字段为空；改为验证各构建节点实际命令树，保留1.21.1旧布局、26.3分组布局及中间版本功能门控，不改变实际命令或权限
+- 26.3库存候选测试更正：保持既有“首位优先、同类分号库存从大到小”行为，修正过时的升序断言，新增首位与盒装库存顺序回归
+- 末地传送：EndPortal/EndGateway的entityInside在1.21.5起增加InsideBlockEffectApplier，1.21.10起再增加boolean；使用真实命名方法和对应参数，移除不匹配的intermediary描述符与可选fallback，恢复required注入；新增反射签名回归测试
+- 端侧要求、配置/存档格式、网络协议、规则默认值与权限不变；服务端功能不要求客户端安装FGA
+- 验证命令：Gradle Wrapper逐节点执行 `:1.21.1:build :1.21.3:build :1.21.4:build :1.21.5:build :1.21.8:build :1.21.10:build :1.21.11:build :26.1.2:build :26.2:build :26.3:build --no-daemon --configure-on-demand --max-workers=1`，完整构建成功，全部362项测试通过，0失败/错误，没有使用排除测试参数
+- 当前完整构建与归档（每个目录包含JAR和SHA-256清单；先前归档保留）：
+
+  | Minecraft | 测试通过数 | 归档目录 |
+  |---|---|---|
+  | 1.21.1 | 40 | `mod-builds/20261001-190423/` |
+  | 1.21.3 | 33 | `mod-builds/20261001-190423-2/` |
+  | 1.21.4 | 33 | `mod-builds/20261001-190423-3/` |
+  | 1.21.5 | 33 | `mod-builds/20261001-190535/` |
+  | 1.21.8 | 33 | `mod-builds/20261001-190535-2/` |
+  | 1.21.10 | 33 | `mod-builds/20261001-190536/` |
+  | 1.21.11 | 33 | `mod-builds/20261001-190627/` |
+  | 26.1.2 | 33 | `mod-builds/20261001-190627-2/` |
+  | 26.2 | 36 | `mod-builds/20261001-190627-3/` |
+  | 26.3 | 55 | `mod-builds/20261001-190628/` |
+
+- 1.21.10/1.21.11完整编译不再输出EndPortal/EndGateway目标方法警告；JDK原生访问与第三方JOML的Unsafe弃用警告仍存在，不是FGA注入失败
+- 服务端启动冒烟：`scripts/powershell/server-startup-smoke-all.ps1 -VersionList '1.21.10,1.21.11,26.1.2,26.2,26.3' -GradleJdk21 <本机JDK21> -CommandList 'carpet PlayerTpEndControl true;;carpet PlayerTpEndControl control;;carpet PlayerTpEndControl false' -Offline`，五个临时开发服务端均启动到Done，三种规则值均切换成功并干净停机，5/5通过，无Mixin注入错误；报告 `scripts/logs/server-startup-smoke-20261001-190628/summary.json`
+- 验证边界：启动检查验证required注入加载，不等于真实客户端传送验收；没有测试客户端进出末地/折跃门，手动步骤写入两个Mixin及FeatureSmokeTestPlanTest；临时测试存档已清理，真实存档未改动，端侧与网络要求不变
+- 环境日志：26.2/26.3开发启动时OSHI报告Windows Perflib英文性能计数器缺失；26.x还出现Loader/JAVA_25兼容级别警告，但均完成启动与正常停服，没有为消除环境提示修改系统注册表或升级依赖
+- 日志与待人工确认：检查本机1.21.10/1.21.11/26.3实例路径，均未找到debug.log；真实客户端传送与完整整合包兼容待验收；原有高版本playerLoadDistance规则字段可见但运行逻辑只接入1.21.1的不一致仍保留，本轮未移植或更改该规则门控；未发现本轮新增的源码/文档/构建/许可证声明不一致
+
+## 坚韧的花草不干预地形生成（1.21.1 基线）
+
+- 原因：ResilientPlantBlockStateMixin 在 canSurvive 入口无条件覆盖匹配植物的存活判定，地形装饰的 SimpleBlockFeature 也调用此入口，导致空中落点通过检查
+- 范围：原规则仍为 `MC >= 1.20.1 && MC <= 26.3`；生成隔离扩展到全部当前构建节点 `MC >= 1.21 && MC <= 26.3`（1.21.1、1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2、26.3）。兼容产物支持 Minecraft 1.21/1.21.1；1.21.1 为游戏内探针基线，其余节点已逐一构建验证
+- 行为：WorldGenRegion 保留原版植物存活检查；正常 ServerLevel/客户端世界的放置和邻居更新仍按原规则运行；不能使用 WorldGenLevel 作为排除条件，因为 ServerLevel 同时实现该接口
+- 移植方式：在同一个共享 Mixin 中用 WorldGenRegion 区分区块装饰上下文，不复制整类、不改变 canSurvive 注入点；`FeatureSmokeTestPlanTest` 记录全部构建节点及 1.21.1 基线运行步骤
+- 端侧要求、配置/存档格式、网络协议、规则默认值和权限均不变；不扫描或删除既有浮空植物，不触碰真实存档
+- 全版本构建验证：
+
+  | Minecraft | 验证结果 | 归档目录 |
+  |---|---|---|
+  | 1.21.1 | `build` 全部通过；39项测试通过；WorldGenRegion 假人地形冒烟通过 | `mod-builds/20261001-180056/` |
+  | 1.21.3 | 主源码编译、remap/assemble、`FeatureSmokeTestPlanTest` 通过；当时完整 `build` 有2项既有假人分类配置常量断言失败（不代表命令树泄漏），现已修复并完整构建通过，见顶部记录 | `mod-builds/20261001-182808/` |
+  | 1.21.4 | assemble 与 `FeatureSmokeTestPlanTest` 通过 | `mod-builds/20261001-183132/` |
+  | 1.21.5 | assemble 与 `FeatureSmokeTestPlanTest` 通过 | `mod-builds/20261001-183140/` |
+  | 1.21.8 | assemble 与 `FeatureSmokeTestPlanTest` 通过 | `mod-builds/20261001-183320/` |
+  | 1.21.10 | assemble 与 `FeatureSmokeTestPlanTest` 通过；编译输出4条既有末地传送 Mixin 目标方法警告 | `mod-builds/20261001-183429/` |
+  | 1.21.11 | assemble 与 `FeatureSmokeTestPlanTest` 通过；编译输出4条既有末地传送 Mixin 目标方法警告 | `mod-builds/20261001-183558/` |
+  | 26.1.2 | assemble 与 `FeatureSmokeTestPlanTest` 通过 | `mod-builds/20261001-183826/` |
+  | 26.2 | assemble 与 `FeatureSmokeTestPlanTest` 通过 | `mod-builds/20261001-183945/` |
+  | 26.3 | assemble 与 `FeatureSmokeTestPlanTest` 通过 | `mod-builds/20261001-184209/` |
+
+- 逐个检查各节点预处理后的 Mixin 源码，均包含 `WorldGenRegion` 判断；除 1.21.1 基线外，本次没有在每个版本启动游戏或运行真实区块生成冒烟，因此其他节点只确认编译与打包，不宣称游戏内测试通过
+- 验证：`:1.21.1:build --no-daemon --configure-on-demand --max-workers=1` 成功，39项自动测试通过、0失败；`git diff --check`、PowerShell解析通过；基线包 `mod-builds/20261001-161934/carpet-fga-addition-1.6.0+v2610011618-mc1.21-1.21.1.jar`，SHA-256 `c9868d61d7680010d9ea1d3a2934d1df85178c31e71fb775eec0d5f85ebfe941`
+- 冒烟：`scripts/powershell/resilient-plants-worldgen-smoke-1.21.1.ps1` 隔离开发服务端探针52项检查通过，并在新建测试存档召唤 Carpet 假人 `FgaPlantProbe`；启用规则后传送经过12个相邻新生成区块，505个 BushBlock 均通过反射调用的原版 `BlockBehaviour.canSurvive` 支撑检查，unsupported=0；探针请求假人断开，测试存档完成保存，服务器正常停机。最终报告 `scripts/logs/resilient-plants-1.21.1-20261001-175851/summary.txt`。最初超长假人名被 Carpet 拒绝；远距离扫描虽通过但测试服保存超时，缩短假人移动间距后最终完整通过；逐区块扫描在隔离服报告一次约43 ticks延迟，仅为测试探针同步扫描开销
+- 最终复构建：`:1.21.1:build --no-daemon --configure-on-demand --max-workers=1` 成功，39项测试0失败/错误；最终归档 `mod-builds/20261001-180056/carpet-fga-addition-1.6.0+v2610011800-mc1.21-1.21.1.jar`，SHA-256 `fd20d8e09371216d633bbb95243243bba8a905ded939c8d50128779623c417d3`，确认测试探针未进入发布 JAR
+- 测试边界：探针使用真正的 WorldGenRegion 类型和原版特征方法，但用已加载的测试区块替代异步生成缓存；不是实际客户端新地形观察，也不是生产 JAR 在完整整合包中的测试；首轮误用只读 ImposterProtoChunk 导致支持落点写入断言失败，修正测试夹具后重跑，不把首轮计为通过；流程写入 Mixin 注释、ResilientPlantsProbe、FeatureSmokeTestPlanTest 和独立脚本
+- 日志：已检查本机 1.21 与 26.3 实例日志位置，未找到 debug.log；已有 latest.log 没有本次浮空现象的明确记录，根因由当前源码调用路径确认
+- 待人工确认：真实客户端生成新地形及手动放置验收；26.3库存排序过时测试断言已在后续完整构建修复，见顶部记录
+
 ## 玩家加载距离关闭时不干预视距（1.21.1 基线）
 
 - 日志依据：`latest (6).log` 为 Minecraft 1.21 + FGA 1.5.15 单人游戏，假人上线附近反复出现视距10→16与渲染线程重启；原版内置服务器按客户端视距更新，FGA 的关闭分支却在登录/规则回调恢复启动时视距；日志所指实例位于外部 E 盘，本机无法读取其 debug.log
-- 范围：仅 `MC == 1.21.1` 的 Manager 和新增生命周期状态类，1.21/1.21.1 使用同一兼容 JAR；实际构建/服务端验证基线为1.21.1，真实1.21客户端闪烁仍待复测；1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2、26.3 不新增此实现
+- 范围：关闭态修复仅适用于当前实际接入 `PlayerLoadDistanceManager` 的 `MC == 1.21.1`，并兼容 Minecraft 1.21/1.21.1；`PlayerLoadDistanceCompat` 的 1.20.1 旧实现不在 `settings.json` 当前构建矩阵中。已核对 1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2、26.3：这些版本没有接入该管理器、命令或玩家视距 Mixin，因此不存在此 FGA 关闭分支改写视距的执行路径；本次不把该功能扩展移植到这些版本。注意 `playerLoadDistance` 规则字段本身仍按 `MC >= 1.20.1 && MC <= 26.3` 声明，但其运行逻辑被门控到 1.20.1/1.21.1；较新节点出现无执行逻辑的规则属于既有源码范围不一致，需另行决定是否隐藏规则或移植功能
 - 行为：false 的加载、登录、Tick、重复规则通知及停服不改写原版视距/跟踪；进入启用状态才捕获当前基线，启用→关闭只释放FGA实际应用过的状态一次；全局视距已被原版/其他扩展改写时不覆盖；释放玩家跟踪时采用当前全局视距，不恢复过期启动值
 - 配置、网络、客户端要求、存档格式、规则默认值和权限不变；持久化偏好保留，关闭规则不删除配置
 - 验证：`:1.21.1:build --no-daemon --configure-on-demand --max-workers=1` 成功，39项自动测试通过、0失败（新增6项生命周期测试）；`git diff --check`、PowerShell解析通过；基线归档 `mod-builds/20261001-151259/carpet-fga-addition-1.6.0+v2610011508-mc1.21-1.21.1.jar`，SHA-256 `e56b68000bd5118dfddc0a120d3423df5b5285834a02ca5644b0a6bf9577e7a4`
 - 冒烟：`scripts/powershell/player-load-distance-rule-off-smoke-1.21.1.ps1` 隔离开发服务端探针通过，报告 `scripts/logs/player-load-distance-1.21.1-20261001-151541/summary.txt`；模拟启动10、原版调16，反复关闭回调/退出清理不改16，启用后24→关闭16；none清理、新基线20、外部写入12保留均通过，正常停机；首轮召唤参数错误导致未执行探针，修正后重跑，未记首轮为通过
-- 验证边界：此次使用1.21.1开发运行环境，不是实际1.21整合包客户端；真人客户端反复召唤/下线假人并观察画面及渲染日志仍需人工验证，流程写入 `FeatureSmokeTestPlanTest` 及探针源码；其他构建节点未运行
-- Git：旧分支快照864644d已合入并推送 main，主分支提交0cc2f8c；本修复在 codex/fix-player-load-distance-disabled，不直接合入主分支
-- 已知不一致：此前26.3库存排序升序测试与倒序实现仍不一致，本次不修改该测试或库存实现
+- 验证边界：此次使用1.21.1开发运行环境，不是实际1.21整合包客户端；真人客户端反复召唤/下线假人并观察画面及渲染日志仍需人工验证，流程写入 `FeatureSmokeTestPlanTest` 及探针源码；其余节点只确认代码被门控排除并完成本次构建矩阵编译，不代表运行时客户端/服务端测试
+- Git：本修复由提交 e632a64 开始，随后与 1.6.0 的后续修复及更新日志一并推送到 main
+- 回归记录：此前26.3库存排序升序断言与倒序实现不一致，已在本次完整构建修正测试并增加覆盖
 
 ## 模组版本号调整为 1.6.0（2026-10-01）
 

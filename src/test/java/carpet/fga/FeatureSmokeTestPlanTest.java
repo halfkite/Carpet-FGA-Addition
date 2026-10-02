@@ -36,6 +36,29 @@ final class FeatureSmokeTestPlanTest {
      * history.
      */
     private static final List<SmokePlan> PLANS = List.of(
+            new SmokePlan("playerTpEndControlInjectionSignatures", "MC >= 1.21 && MC <= 26.3", "1.21.10",
+                    "scripts/powershell/server-startup-smoke-all.ps1 -VersionList <node> plus MANUAL: disposable portal world",
+                    "Run EndPortalMixinTargetTest and full build on the changed node. Start a disposable server, "
+                            + "switch PlayerTpEndControl through true, control and false, and verify clean shutdown "
+                            + "without failed required portal/gateway injections. In a disposable world use a fake "
+                            + "to enter and exit the End and use a gateway: true blocks all three; false preserves "
+                            + "vanilla; control respects per-player enter/exit/gateway deny and allow.",
+                    "Actual method signatures match four arguments before 1.21.5, five from 1.21.5, and six "
+                            + "from 1.21.10; required injections apply at startup. Startup alone does not prove "
+                            + "the manual teleport behavior passed."),
+            new SmokePlan("resilientPlantsWorldGeneration", "MC >= 1.21 && MC <= 26.3; build nodes: 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11, 26.1.2, 26.2, 26.3", "1.21.1",
+                    "scripts/powershell/resilient-plants-worldgen-smoke-1.21.1.ps1",
+                    "Run the 52-check WorldGenRegion/SIMPLE_BLOCK fixture for false, true, [dandelion,sunflower] "
+                            + "and []. On its disposable seeded server summon `/player FgaPlantProbe spawn at "
+                            + "0 100 0`, then run `fgaPlantsTerrainProbe FgaPlantProbe 12`. The fake teleports "
+                            + "across twelve nearby, newly generated chunks with resilientPlants true; scan every BushBlock in "
+                            + "each chunk using the original vanilla BlockBehaviour.canSurvive implementation. Confirm "
+                            + "the probe requests fake disconnection and the server shuts down cleanly. For manual client verification, "
+                            + "enable the rule in a disposable world, explore fresh meadow/plains terrain, then check "
+                            + "manual placement and support removal. Never run this test on a production save.",
+                    "All twelve chunks contain candidates and every generated BushBlock passes vanilla support checks; "
+                            + "the synthetic placement fixture, runtime matching, and neighbor-update checks pass, "
+                            + "fake disconnection is requested, and the disposable server stops cleanly."),
             new SmokePlan("playerLoadDistanceDisabled", "MC == 1.21.1", "1.21.1",
                     "scripts/powershell/player-load-distance-rule-off-smoke-1.21.1.ps1 plus MANUAL: Minecraft 1.21 client",
                     "Use a disposable server at view distance 10, leave the rule false and simulate the integrated "

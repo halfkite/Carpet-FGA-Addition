@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "fga_resilient_plants_probe",
+  "version": "1.0.0",
+  "name": "FGA Resilient Plants Test Probe",
+  "environment": "server",
+  "entrypoints": {"server": ["carpet.fga.smoke.ResilientPlantsProbe"]},
+  "depends": {"fabricloader": ">=0.15.11", "minecraft": "=1.21.1", "fabric-api": "*", "carpet-fga-addition": "*"}
+}

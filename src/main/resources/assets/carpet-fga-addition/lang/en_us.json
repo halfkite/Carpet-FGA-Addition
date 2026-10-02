@@ -191,6 +191,7 @@
     "carpet.rule.resilientBlocks.name":  "Resilient Blocks",
     "carpet.rule.resilientBlocks.desc":  "Configured blocks skip the below-block support check when placed and ignore block updates instead of checking their own state",
     "carpet.rule.resilientPlants.desc":  "Lets matching plants ignore vanilla survival restrictions and be placed without normal support",
+    "carpet.rule.resilientPlants.extra.0": "All current build nodes preserve vanilla survival checks during terrain generation; the isolated server smoke test ran on 1.21.1, while other nodes were build-validated but not individually tested in-game. Existing floating plants are not automatically removed",
     "carpet.rule.comparatorThroughBlocks.name": "Comparator Container Signal Through Blocks",
     "carpet.rule.comparatorThroughBlocks.desc": "Lets comparators read an analog container signal through configured front blocks such as [chain,piston] without changing their other redstone behavior",
     "carpet.rule.comparatorThroughBlocks.extra.0": "g false: keeps vanilla behavior and does not read through blocks; [block_id]: reads the container behind the comparator only when the front block is listed",
