@@ -28,6 +28,13 @@
       "github_asset_id": 604996949,
       "jar_name": "carpet-fga-addition-1.6.0-mc1.21.5.jar",
       "sha256": "64e625cc96766ba98441f9d9af707d705f7b118e5b79c8fc9b70eebe11418a98"
+    },
+    {
+      "build_project": "1.21.8",
+      "curseforge_file_id": "9035311",
+      "github_asset_id": 604996955,
+      "jar_name": "carpet-fga-addition-1.6.0-mc1.21.6-1.21.8.jar",
+      "sha256": "cc59aaba22755b95d12c5fff52a9a03a3b12c51663331ca9ee5ada8b6e69d4fc"
     }
   ],
   "release_commit": "18685cbc57b100d428b0736c4073683928281d21",
