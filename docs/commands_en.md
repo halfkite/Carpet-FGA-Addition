@@ -1,6 +1,6 @@
 # Carpet FGA Addition Commands
 
-> Documentation version: `1.5.16`
+> Documentation version: `1.6.1`
 
 ## Spectator cross-dimension teleport
 
@@ -103,7 +103,9 @@ Available in Minecraft `1.21+`
 
 Related rules: `mapLoadCommandPermission`
 
-Available in Minecraft `1.21.1`
+Available on current build nodes `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2` and `26.3`
+
+After the last task completes, stops or is cancelled, remaining map-loading tickets continue to be released at the existing limit of 32 per task per tick without requiring another task to start
 
 Client requirement: none (server side only), player facing text is resolved on the server in the server language
 
@@ -181,6 +183,8 @@ Preferences are saved by UUID at `world/config/carpetfgaaddition/player-tp-end-c
 ### `/regenerateTerrain`
 
 Related rules: `voidWorldGeneration`, `terrainRegenerationCommandPermission`
+
+Tasks and unconsumed regeneration marks belong to the current server run and are discarded when it closes, including when the same client process opens another save. `create` still regenerates lazily on the next chunk load. The load hook is registered on current build nodes 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11, 26.1.2, 26.2 and 26.3; consult the version compatibility record for actual build and gameplay verification.
 
 ```text
 /regenerateTerrain create from <x1> <z1> <x2> <z2>

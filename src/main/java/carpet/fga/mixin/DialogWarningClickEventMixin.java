@@ -34,6 +34,11 @@
 //$$         return original.call(instance, typeKey, type, codec).xmap(Function.identity(), clickEvent -> {
 //$$             if (FGASettings.removeDialogWarning
 //$$                     && clickEvent instanceof ClickEvent.RunCommand(String command)) {
+//#if MC == 26.3
+//$$                 if (!command.startsWith("/") || !DialogWarning.isServerCommand(command)) {
+//$$                     return clickEvent;
+//$$                 }
+//#endif
 //$$                 CompoundTag tag = new CompoundTag();
 //$$                 tag.putString(DialogWarning.COMMAND_KEY, command);
 //$$                 return DialogWarning.customClickAction(tag);

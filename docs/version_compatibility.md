@@ -1,5 +1,89 @@
 # Minecraft 版本适配记录
 
+## 1.6.1 九项玩家、载具与世界规则跨版本适配（已完成代码验证）
+
+- 九项规则：`abnormalDisconnectNotice`、`vehicleJump`、`doubleBarrelCapacity`、`playerVehicleCapacity`、`vehicleNoCramming`、`iceFormationChances`、`fastEating`、`noSnowAccumulation`、`flatBedrock`；模组版本为 `1.6.1`
+- 主要源码与 Mixin 条件：`MC >= 1.21.1 && MC <= 26.3`；各规则实际进入当前十个构建节点，范围之外的中间版本不因此自动视为已构建或验证
+- 实际构建节点：`1.21.1`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.8`、`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3`
+- 尚未适配的当前构建节点：无；这不推定当前矩阵以外的 Minecraft 版本已支持
+- JAR 文件名声明的兼容目标（不是逐子版本验证）：1.21.1 构建产物为 `1.21–1.21.1`，1.21.3 为 `1.21.2–1.21.3`，1.21.4、1.21.5、1.21.11、26.2、26.3 各为对应单版本，1.21.8 为 `1.21.6–1.21.8`，1.21.10 为 `1.21.9–1.21.10`，26.1.2 为 `26.1–26.1.2`
+- 跨版本分支已按实际 API 边界处理：1.21.1 使用旧玩家输入和矿车跳跃路径；1.21.3 起使用新输入包及服务端伤害方法；1.21.5 起区块写入使用整数标志；1.21.6 起木桶读取使用 `ValueInput`；26.1 起船/矿车包名变化；26.3 使用 `buildTerrain` 收尾基岩，较早节点使用 `buildSurface`
+- 根源码已包含完整规则实现，避免 1.21.1 仅因后续版本预处理代码被注释而出现“构建成功但规则缺席”；已同步检查 `FGASettings`、规则注册、Mixin JSON、语言资源、规则文档、选项测试和版本矩阵
+- 各节点执行 `build`（含 `test`）结果：1.21.1 为 51 项；1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2 各 44 项；26.2 为 47 项；26.3 为 72 项；总计 427 项，全部通过，无失败、错误或跳过
+- 十个节点的隔离开发服务器均启动到 `Done`、接受九条规则设置并干净停服；检查日志没有新增 Mixin 注入错误。报告目录：`scripts/logs/new-feature-port-smoke-1_21_1-20261003-133652-467`、`scripts/logs/new-feature-port-smoke-1_21_3-20261003-131715-430`、`scripts/logs/new-feature-port-smoke-1_21_4-20261003-132014-415`、`scripts/logs/new-feature-port-smoke-1_21_5-20261003-132213-337`、`scripts/logs/new-feature-port-smoke-1_21_8-20261003-132401-695`、`scripts/logs/new-feature-port-smoke-1_21_10-20261003-133029-915`、`scripts/logs/new-feature-port-smoke-1_21_11-20261003-133119-066`、`scripts/logs/new-feature-port-smoke-26_1_2-20261003-133214-315`、`scripts/logs/new-feature-port-smoke-26_2-20261003-133300-219`、`scripts/logs/new-feature-port-smoke-26_3-20261003-133416-595`
+- 可选的 VisibleTraders 类缺失警告在 1.21.x 启动中出现；26.2 和 26.3 的隔离日志有 Windows Perflib/OSHI 系统报告错误。这些环境诊断没有阻止服务器启动、规则注册或干净关闭
+- 十个 JAR 均已用 `build-game-mods` 归档流程复制到独立时间戳目录，清单包含 SHA-256：`mod-builds/20261003-133652`（1.21.1）、`mod-builds/20261003-131711`（1.21.3）、`mod-builds/20261003-132014`（1.21.4）、`mod-builds/20261003-132213`（1.21.5）、`mod-builds/20261003-132401`（1.21.8）、`mod-builds/20261003-133030`（1.21.10）、`mod-builds/20261003-133030-2`（1.21.11）、`mod-builds/20261003-133030-3`（26.1.2）、`mod-builds/20261003-133030-4`（26.2）、`mod-builds/20261003-133031`（26.3）
+- 服务端需要安装 FGA，客户端不需要安装 FGA；不新增自定义网络协议、配置格式或权限，不改变默认值。木桶仍需通过 `setDefault` 与重启切换，基岩规则只改新生成或指定重生成的正常地形区块
+- 已有 26.3 专项隔离探针覆盖桶容量、乘客上限、挤压伤害与消耗时长；本轮十版本启动检查不等于真人客户端、真实天气抽样、载具输入同步或实际重启存档验收。详细步骤见 `docs/player_vehicle_world_validation.md`
+- 26.3 的 `removeDialogWarning` 聊天及 Org 高亮命令路由修复继续保留在其原有版本条件中，本次九项规则适配没有扩大该修复范围
+
+## 2026-10-03 移除确认时保留聊天与客户端指令（26.3 基线）
+
+- 规则仍由 `MC >= 1.21.8` 注册，本轮修复门控为 `MC == 26.3`；实际修复版本仅 `26.3`；1.21.8、1.21.10、1.21.11、26.1.2、26.2 尚未移植；1.21.1、1.21.3、1.21.4、1.21.5 无该规则
+- 日志证据：26.3 实例 `latest.log` 中启用 `removeDialogWarning` 后点击 `!!spbridge config backup on` 被当成 Minecraft 命令而报错；未找到该实例 `debug.log`；本地 Org 1.46.0 JAR 的 `HighlightCommand` 注册为 Fabric 客户端命令，默认名为 `highlight`
+- 原因与修复：点击事件与对话框编码无条件替换所有 RunCommand/CommandTemplate，自定义回包直接调用服务端命令调度器，跳过客户端及聊天拦截；26.3 聊天点击仅重写服务端已注册的 `/` 命令，对话框保留可省略 `/` 的已注册服务端命令，未知根节点及聊天/客户端模板保持原事件；动态动作缺少对话框上下文时保留原动作
+- 文件：`DialogWarning.java`、两个编码 Mixin、4项命令识别单测、独立 published-JAR 编码探针与冒烟脚本、三种语言、两份规则文档和本记录；未修改 Mixin required、注入签名、服务器执行权限、配置格式或默认值
+- 端侧：服务端安装 FGA 即可，不新增客户端安装要求，聊天插件与 Org 客户端指令仍需要其原有客户端处理；自定义 Payload ID/方向与格式不变，不修改存档或已有世界
+- 已完成代码验证：`:26.3:build --no-daemon --configure-on-demand --max-workers=1 --offline` 成功，全部72项单测通过（本轮新增4项）、0失败/错误/跳过；`git diff --check` 通过；其余节点仅可能由预处理/测试类路径触发依赖任务，不将其记作本修复的适配或完整构建验证
+- 最终归档：`mod-builds/20261003-113623/carpet-fga-addition-1.6.0+v2610031134-mc26.3.jar`，SHA-256 `e3ee31b2af9107cfee0b9d29fcca31a71d5920cc3d4b252683cf9c3ffb875fbc`；包含原 required 编码 Mixin 与更新后的三种语言说明，不含测试或探针类
+- 归档包冒烟：`dialog-warning-routing-smoke-26.3.ps1` 使用上述实际归档 JAR，在独立测试服务器完成42项编码检查并正常停服，报告 `scripts/logs/dialog-warning-routing-smoke-26.3-20261003-113633-615/summary.txt`；覆盖 `!!spbridge`、Org默认及更名高亮命令、正常服务端命令、建议/复制事件、静态及动态对话框、文本/布尔输入元数据、上下文清理与关闭恢复；没有连接真人客户端，不据此声明游戏内点击或 Org 图形高亮已通过
+- 待人工确认：Org 高亮的真实客户端显示、MCDR聊天按钮、普通服务端命令和动态对话框点击；服务端无法识别客户端/服务端同名命令，详见 `docs/dialog_warning_validation.md`
+- 本轮修正原规则描述与错误点击行为的不一致；规则文档既有版本标题与构建 `mod_version=1.6.0` 的不一致未调整；保留 Drex remove-dialog-warning 的 MIT 来源与 NOTICE，不修改许可证或 README
+
+## 2026-10-02 玩家、载具与世界功能首版
+
+- 本节记录跨版本移植前的 26.3 初始基线；当前适配范围与结果以本文顶部的 1.6.1 记录为准
+- 分支：`codex/player-vehicle-world-features`，保留上一轮审查修复
+- 九项规则：`abnormalDisconnectNotice`、`vehicleJump`、`doubleBarrelCapacity`、`playerVehicleCapacity`、`vehicleNoCramming`、`iceFormationChances`、`fastEating`、`noSnowAccumulation`、`flatBedrock`，全部默认关闭
+- 源码门控：`MC == 26.3`，仅适配 `26.3`；1.21.1、1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2 尚未适配此批功能，不将预处理依赖执行误记为功能验证
+- 基线流程：先完成 26.3 构建、时间戳归档与验证，按 build-game-mods 技能等待用户确认首版后再移植其余节点
+- 行为：玩家超时/错误提示不推断普通 EOF；进食/饮用最多8 Tick；玩家座位预设4/8或自定义正整数，超过24提示无挤压伤害规则；自然结冰浮冰/蓝冰概率互斥且总和不超过100；禁止自然雪层生成与加厚，清雪命令已取消
+- 木桶：启动快照，启停须 setDefault 与重启；检查 TIS largeBarrel（本地 TIS 1.82.4 类字段证据），TIS 已开启时不重复扩展；关闭时仍读取所有54个存档槽位，扩展物品未取完的木桶保留54格以防丢失
+- 平坦基岩：1–5层，仅正常噪声地形生成阶段，主世界底部多余基岩改深板岩，下界底部/顶部改下界岩；指定重生成仍经过生成阶段，已有区块不扫描；虚空规则优先保持全空，不触碰结构数据阶段
+- 端侧与数据：仅服务端实现，使用原版输入/速度/乘客/容器数据包，不新增自定义协议或权限；木桶使用原版 Items 槽位0–53，不新增配置文件；不更改其他规则默认值，不自动改动既有地形
+- 木桶容量保护：扩展格取空后仍保持本次加载期间的54格容量，避免菜单及传输接口缓存失效；下一次重启或区块加载时才恢复27格；实际六行菜单、取空时槽位读取、关闭后的容量稳定性及空扩展格再次读取回归均通过
+- 最终代码验证：`:26.3:build --no-daemon --configure-on-demand --max-workers=1 --offline` 成功，68项单测、0失败/错误/跳过（新增6项）；`git diff --check` 成功，生产包含12个新增 required Mixin 与三种语言描述，不含探针或测试类
+- 最终归档：`mod-builds/20261003-004529/carpet-fga-addition-1.6.0+v2610030042-mc26.3.jar`，SHA-256 `054afff36834eab583fbca672c5bbbcc7282487d12c39b76734d7badd639dd58`；本批其余成功构建也按技能归档到独立时间戳目录，未覆盖旧包
+- 隔离开发服务端验证：基础环境36项检查通过，报告 `scripts/logs/player-vehicle-world-smoke-26.3-20261003-004529-922/summary.txt`；同装TIS 1.82.4时37项检查通过，报告 `scripts/logs/player-vehicle-world-smoke-26.3-20261003-004737-413/summary.txt`；覆盖27格存档扩容、54格保存/读取、关闭快照后的非空扩展格保护、取空时容量稳定与下次加载恢复、破坏木桶包含第54格的完整掉落、主世界/下界基岩替换与层数、乘客上限/驾驶者、载具挤压开关、面包/牛奶8 Tick及关闭恢复；TIS检查模拟启动读取其 largeBarrel=true 后FGA避让，不等于双桶迁移完整验收
+- 测试边界：探针补发客户端加载完成包让Carpet假人退出26.3原版加载免伤；不把假人当作真人客户端验收；使用开发运行环境与独立测试存档，无新增客户端安装要求，不声称已用归档包连接真人客户端
+- 待人工确认：真人载具跳跃与矿车两种移动模式、客户端乘客显示、自然天气/生成行为与概率、异常退出输出、真正停服重启后的木桶、漏斗/GUI/TIS旧双桶迁移，见 `docs/player_vehicle_world_validation.md`；切换到TIS双桶前须取完FGA扩展格物品；其余9节点未移植
+- 已有文档标记差异：规则/命令文档页眉仍为1.5.16，构建配置mod_version为1.6.0；没有擅自调整发布版本或历史记录，文档版本标记待确认；本批行为说明、源码门控与适配记录一致，许可证声明未变化
+
+## 地形生命周期、地图票据与虚空结构数据修复（2026-10-02）
+
+- 基线：26.3；按仓库共享代码覆盖要求同步全部受影响节点，不把单版本构建当作其他节点验证
+- 范围：1.21.1、1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2、26.3
+- 地形生命周期：原主体条件 `MC == 1.20.1 || MC >= 1.21 && MC <= 26.3` 不变；关闭与新世界加载前清空 LIVE、REGENERATE_ON_LOAD、CLEANUP_AFTER_LOAD 及玩家/进度条引用，完成回调与清理互斥，避免同一客户端进程切换存档后沿用旧任务
+- 地图票据：主体条件仍为 `MC >= 1.21 && MC <= 26.3`；活动任务为空时仍先回收 DRAINING，保持 32/tick 限速、FULL/10 秒释放条件及普通任务流程
+- 26.3 重生成：实际游戏 JAR 中 scheduleChunkLoad(ChunkPos)、createEmptyChunk(ChunkPos) 和 levelHeightAccessor 字段仍存在；将 ChunkMapRegenerationMixin、ChunkMapRegenerationAccessor、ChunkAccessLevelAccessor 与管理器维度识别扩展到 `MC >= 1.21 && MC <= 26.3`，保留 required 和 defaultRequire=1
+- 虚空世界：保留群系及结构起点、引用、分块与范围数据，不放置地形、超平坦地层、特征或构成结构的任何方块；补注册 26.3 遗漏的 ChunkGeneratorVoidDecorationMixin，新增 FlatLevelSourceVoidMixin（`MC >= 1.21 && MC <= 26.3`，26.3 使用 buildTerrain，较早节点使用 fillFromNoise）；不取消 createStructures/createReferences/createBiomes；指定重生成区块仍按正常地形生成
+- 同步：规则中英文文档、三种现有语言描述、命令生命周期说明、FeatureSmokeTestPlanTest 与 `docs/terrain_generation_validation.md`；不更改历史发布记录
+- 端侧：服务端安装 FGA 即可，客户端不需要安装；配置/存档格式、网络协议、规则默认值与权限不变；规则影响新生成方块，重生成命令仍会永久修改指定地形，不自动清除既有区块或玩家方块
+- 日志：检查本机 1.21.1/26.3 Fabric 实例 logs/debug.log、latest.log；没有 debug.log，latest.log 没有审查项 1/4/5 的直接复现记录；不使用其他加载器的 debug.log 作为 FGA 证据
+- 代码验证：新增 TerrainRegenerationLifecycleTest、MapLoadReleaseLifecycleTest、TerrainGenerationMixinTargetTest；26.3 新增 7 项与完整 62 项测试均通过，`:26.3:build --no-daemon --configure-on-demand --max-workers=1 --offline` 成功；归档 `mod-builds/20261002-225024/`，生产 JAR 含全部 required 生成钩子，不含测试/探针类
+- 26.3 启动冒烟：复用 server-startup-smoke-all.ps1，在可丢弃测试存档启动到 Done，切换虚空规则 true/false、查询重生成任务，正常停服；报告 `scripts/logs/server-startup-smoke-20261002-225024/summary.json`，属于开发运行环境启动验证，不等于归档包的游戏内功能验收
+- 1.21.1 启动冒烟：相同临时存档流程完成 Done、虚空规则 true/false 切换、任务查询和正常停服；报告 `scripts/logs/server-startup-smoke-20261002-230417/summary.json`；其余 8 节点未启动游戏或服务端
+- 全版本构建：逐节点执行 `:<版本>:build --no-daemon --configure-on-demand --max-workers=1 --offline`，全部 10 节点的 compileJava、资源处理、打包与全部现有测试成功，共 432 项测试、0 失败/错误；各节点包含新增 7 项回归，不排除现有测试
+
+  | Minecraft | 测试通过数 | 归档目录 |
+  |---|---|---|
+  | 1.21.1 | 47 | `mod-builds/20261002-225408/` |
+  | 1.21.3 | 40 | `mod-builds/20261002-225447/` |
+  | 1.21.4 | 40 | `mod-builds/20261002-225546/` |
+  | 1.21.5 | 40 | `mod-builds/20261002-225648/` |
+  | 1.21.8 | 40 | `mod-builds/20261002-225751/` |
+  | 1.21.10 | 40 | `mod-builds/20261002-225905/` |
+  | 1.21.11 | 40 | `mod-builds/20261002-230055/` |
+  | 26.1.2 | 40 | `mod-builds/20261002-230132/` |
+  | 26.2 | 43 | `mod-builds/20261002-230202/` |
+  | 26.3 | 62 | `mod-builds/20261002-225024/` |
+
+- 尚未完成构建：当前 10 个节点无；历史 1.20.1 不在 settings.json 中，本轮不声称其编译或游戏验证完成
+- 归档与静态验证：`git diff --check` 通过；全部 10 个安装 JAR 的 SHA-256 与独立清单一致，含 required 生成钩子与更新后的规则描述，不含测试/探针类；三种语言 JSON 与新增文件空白检查通过；兼容产物的声明范围沿用现有构建属性，本轮只在明确列出的节点运行检查
+- 环境提示：Gradle 守护进程缓存仍引用本机已删除的临时 JDK，26.3 开发启动有既有 OSHI/Perflib 错误与性能统计空值异常；构建和启动均成功，不为消除提示修改个人环境、系统注册表或项目依赖
+- 待人工确认：同进程切换存档、地图任务结束后真实票据卸载、26.3 惰性重生成、普通/超平坦世界全空气与结构元数据存盘和刷怪判定；详见验收文档
+- 既有不一致更正：26.3 命令可见但加载钩子未注册、虚空噪声拦截已注册但装饰拦截缺失、超平坦地层未受规则控制；本轮修正这些源码与规则说明之间的差异；审查项 2/3（QuickCraft 装备校验与离线副手格式）未修改
+
 ## 完整构建错误与末地传送注入修复（2026-10-01）
 
 - 范围：当前全部10个构建节点：1.21.1、1.21.3、1.21.4、1.21.5、1.21.8、1.21.10、1.21.11、26.1.2、26.2、26.3

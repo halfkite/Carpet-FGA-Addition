@@ -46,6 +46,12 @@
 //$$                 return action;
 //$$             }
 //$$             if (action instanceof CommandTemplate(ParsedTemplate template)) {
+//#if MC == 26.3
+//$$                 String command = ((DialogWarningParsedTemplateAccessor) template).carpetFga$getRaw();
+//$$                 if (!DialogWarning.isServerCommand(command) || DialogWarning.DIALOG_SCOPE.get() == null) {
+//$$                     return action;
+//$$                 }
+//#endif
 //$$                 CompoundTag tag = new CompoundTag();
 //$$                 tag.putString(DialogWarning.COMMAND_KEY, ((DialogWarningParsedTemplateAccessor) template).carpetFga$getRaw());
 //$$                 tag.putBoolean(DialogWarning.DYNAMIC_KEY, true);
@@ -71,6 +77,11 @@
 //$$                 return DialogWarning.customDialogAction(tag);
 //$$             }
 //$$             if (action instanceof StaticAction(ClickEvent.RunCommand(String command))) {
+//#if MC == 26.3
+//$$                 if (!DialogWarning.isServerCommand(command)) {
+//$$                     return action;
+//$$                 }
+//#endif
 //$$                 CompoundTag tag = new CompoundTag();
 //$$                 tag.putString(DialogWarning.COMMAND_KEY, command);
 //$$                 return DialogWarning.customDialogAction(tag);

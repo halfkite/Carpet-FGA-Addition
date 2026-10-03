@@ -3,6 +3,28 @@
     "package": "carpet.fga.mixin",
     "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
     "mixins": [
+        //#if MC >= 1.21.1 && MC <= 26.3
+        "NaturalWeatherFeaturesMixin",
+        "NaturalWorldgenFeaturesMixin",
+        "FastEatingMixin",
+        "DoubleBarrelCapacityMixin",
+        "AbnormalDisconnectNoticeMixin",
+        "FlatBedrockGenerationMixin",
+        //#if MC >= 1.21.3 && MC <= 26.3
+        //$$ "PlayerVehicleInputMixin",
+        //#endif
+        "PlayerBoatFeaturesMixin",
+        "PlayerVehicleCapacityMixin",
+        "PlayerMinecartInteractionMixin",
+        "VehicleNoCrammingMixin",
+        //#endif
+        //#if MC >= 1.21.3 && MC <= 26.3
+        //$$ "PlayerMinecartJumpMixin",
+        //#endif
+        //#if MC == 1.21.1
+        "LegacyPlayerVehicleInputMixin",
+        "LegacyPlayerMinecartJumpMixin",
+        //#endif
         //#if MC >= 1.21 && MC <= 26.3
         "PossessionTrackedEntityAccessor",
         "PossessionChunkMapAccessor",
@@ -69,7 +91,11 @@
         "ChunkGeneratorVoidDecorationMixin"
         //#endif
         //#if MC >= 26.3
-        //$$ ,"NoiseBasedChunkGeneratorVoidMixin"
+        //$$ ,"NoiseBasedChunkGeneratorVoidMixin",
+        //$$ "ChunkGeneratorVoidDecorationMixin"
+        //#endif
+        //#if MC >= 1.21 && MC <= 26.3
+        ,"FlatLevelSourceVoidMixin"
         //#endif
         //#if MC >= 1.20.1
         ,"VillagerTradeOnlyMixin",
@@ -99,7 +125,7 @@
         //#if MC >= 1.20.1 && MC <= 26.3
         ,"ChunkMapLoadedChunksAccessor"
         //#endif
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         ,"ChunkMapRegenerationAccessor",
         "ChunkAccessLevelAccessor",
         "ChunkMapRegenerationMixin"

@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.5.16`
+> Documentation version: `1.6.1`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default
 
@@ -298,13 +298,13 @@ Immediately clears vehicle speed when the driver leaves a minecart or boat<br>`f
 
 ### Void World Generation(voidWorldGeneration) · [Related command](commands_en.md#cmd-regenerate-terrain)
 
-Makes newly generated chunks void while retaining biome and structure-location data; terrain can be regenerated with the related command
+Retains biome data and structure starts, references and bounding boxes in newly generated chunks so structures remain locatable and recognizable, while placing no terrain, flat layers, features or blocks that form structures; terrain can be regenerated with the related command
 
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21+`
+- Effective versions (current build nodes): `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2` and `26.3`
 
 ### Terrain Regeneration Command Permission(terrainRegenerationCommandPermission) · [Related command](commands_en.md#cmd-regenerate-terrain)
 
@@ -403,7 +403,9 @@ Maps the client-visible IDs of the Overworld, Nether, and End to separate minima
 
 ### Remove Command Confirmation Warning(removeDialogWarning)
 
-Removes the confirmation warning for server-sent run-command clicks and dialog actions. Only available on Minecraft 1.21.8 and newer.
+Removes the confirmation warning for server-sent run-command clicks and dialog actions; available on current build nodes 1.21.8, 1.21.10, 1.21.11, 26.1.2, 26.2 and 26.3
+
+On Minecraft 26.3, chat buttons bypass confirmation only for `/` commands registered in the server command tree; chat instructions such as `!!spbridge` and client commands absent from that tree such as Org `/highlight` keep their native handling; dialogs support server commands with an optional `/` and preserve native client/chat templates; client/server command name conflicts cannot be distinguished on the server; this fix has not been ported to other versions
 
 - Type: `Boolean`
 - Default: `false`
@@ -860,3 +862,99 @@ Enables fake-player item sorting. On Minecraft 26.3, use `/fga playersort` for f
 Sorter settings are stored in `world/config/carpetfgaaddition/fake-player-item-sort.json`. `summon` uses online Carpet fake players; `quickopen` reads and writes offline playerdata directly. On 26.3, first enablement displays a bilingual setup wizard. Legacy `fakePlayerItemSort*` Carpet settings are migrated to the JSON file on first load and are no longer registered as rules.
 
 ## Configuration files
+
+
+## Player, Vehicle and World Rules
+
+### abnormalDisconnectNotice
+
+Announces identifiable real-player timeouts or connection errors; true broadcasts to chat, console logs only, false disables extra notices; ordinary EOF is not classified as abnormal
+
+- Default: `false`
+- Options: `false / true / console`
+- Categories: `FGA`, `FEATURE`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only; see the validation guide for in-game checks
+
+### vehicleJump
+
+The first player passenger can jump with a boat or rideable minecart; requires ground or the water surface for boats, ground or rails for carts, with a cooldown and no midair jumps
+
+- Default: `false`
+- Options: `false / true`
+- Categories: `FGA`, `FEATURE`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only; see the validation guide for in-game checks
+
+### doubleBarrelCapacity
+
+Snapshots 54-slot barrel capacity on server startup; enabling and disabling require restart and carpet setDefault; active TIS largeBarrel owns expansion; disabled barrels with overflow stay at 54 slots for the current load lifetime; emptied overflow returns to 27 slots after restart or chunk reload
+
+- Default: `false`
+- Options: `false / true`
+- Categories: `FGA`, `FEATURE`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only; see the validation guide for in-game checks
+
+### playerVehicleCapacity
+
+Sets total passenger capacity on boats including chest boats and rideable minecarts; only players gain extra seats; presets 4 and 8 or a custom positive integer; false keeps vanilla; the first passenger remains the driver; above 24 recommends vehicleNoCramming
+
+- Default: `false`
+- Options: `false / 4 / 8 / custom positive integer`
+- Categories: `FGA`, `FEATURE`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only; see the validation guide for in-game checks
+
+### vehicleNoCramming
+
+Prevents entity cramming damage to living passengers of boats including chest boats and rideable minecarts; other damage remains vanilla
+
+- Default: `false`
+- Options: `false / true`
+- Categories: `FGA`, `FEATURE`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only; see the validation guide for in-game checks
+
+### iceFormationChances
+
+For natural water freezing and chunk-generation freezing, accepts packed-ice percentage,blue-ice percentage as two integers from 0 to 100 whose sum is at most 100; the remainder is regular ice; false keeps vanilla; existing ice and placed blocks are unchanged
+
+- Default: `false`
+- Options: `false / 0,0 / 30,10`
+- Categories: `FGA`, `FEATURE`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only; see the validation guide for in-game checks
+
+### fastEating
+
+Players eat and drink in at most 8 ticks; already faster consumables are not slowed; hunger checks and item effects remain vanilla; other use actions such as bows and shields are unchanged
+
+- Default: `false`
+- Options: `false / true`
+- Categories: `FGA`, `FEATURE`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only; see the validation guide for in-game checks
+
+### noSnowAccumulation
+
+Prevents weather-driven snow layers and increases, and naturally generated snow layers in new chunks; existing snow, player placement and snow golems remain unchanged; weather and freezing are preserved
+
+- Default: `false`
+- Options: `false / true`
+- Categories: `FGA`, `FEATURE`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only; see the validation guide for in-game checks
+
+### flatBedrock
+
+Applies only during new or explicitly regenerated normal noise terrain; true keeps 1 layer, custom values allow 1 to 5 layers; replaces excess Overworld floor bedrock with deepslate and Nether floor and roof bedrock with netherrack; existing chunks are unchanged and void generation stays empty
+
+- Default: `false`
+- Options: `false / true / 1–5`
+- Categories: `FGA`, `FEATURE`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: server-side FGA only; see the validation guide for in-game checks
+
+Keep TIS largeBarrel fixed after the startup check and restart to change barrel settings; restarting does not empty overflow, which must be removed before uninstalling the mods
+Extra player passengers use vanilla attachment positions and may share a seat; non-player capacity is not expanded

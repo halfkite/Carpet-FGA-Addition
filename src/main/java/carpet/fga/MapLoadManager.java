@@ -113,8 +113,13 @@ public final class MapLoadManager {
      * ticket from a chunk that is still generating can leave it stuck in the unload queue forever
      * (it then burns CPU every tick without finishing).
      */
-    private static final List<Task> DRAINING = new ArrayList<>();
+    private static final List<TicketRelease> DRAINING = new ArrayList<>();
     private static final int RELEASE_PER_TICK = 32;
+
+    @FunctionalInterface
+    interface TicketRelease {
+        boolean release(int limit);
+    }
     /**
      * A chunk that has not reached FULL within this long after we asked for it keeps blocking the
      * in-flight budget, so its ticket is handed back as well. Without this a chunk whose generation
@@ -135,7 +140,7 @@ public final class MapLoadManager {
     }
 
     public static void tick(MinecraftServer server) {
-        if (TASKS.isEmpty()) return;
+        // The last task can finish or stop while it still owns chunk tickets.
         drainReleases();
         if (TASKS.isEmpty()) return;
         long share = Math.max(MIN_TASK_BUDGET_NANOS, GLOBAL_TICK_BUDGET_NANOS / TASKS.size());
@@ -162,10 +167,9 @@ public final class MapLoadManager {
 
     private static void drainReleases() {
         if (DRAINING.isEmpty()) return;
-        Iterator<Task> iterator = DRAINING.iterator();
+        Iterator<TicketRelease> iterator = DRAINING.iterator();
         while (iterator.hasNext()) {
-            Task task = iterator.next();
-            if (task.releaseUnneededTickets(null, RELEASE_PER_TICK)) iterator.remove();
+            if (iterator.next().release(RELEASE_PER_TICK)) iterator.remove();
         }
     }
 
@@ -361,7 +365,7 @@ public final class MapLoadManager {
         return messages;
     }
 
-    private static final class Task {
+    private static final class Task implements TicketRelease {
         private final ServerPlayer player;
         private final ServerLevel level;
         private final MapItem mapItem;
@@ -696,6 +700,11 @@ public final class MapLoadManager {
             }
             countMapChunks();
             FGACompat.displayClientMessage(player, text("carpet.fga.map_load.progress", 100, mode.id(), mapReady, mapTotal), true);
+        }
+
+        @Override
+        public boolean release(int limit) {
+            return releaseUnneededTickets(null, limit);
         }
 
         /**

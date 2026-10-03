@@ -30,6 +30,22 @@
 //$$     public static ClickEvent customClickAction(CompoundTag tag) {
 //$$         return new ClickEvent.Custom(ACTION_ID, Optional.of(tag));
 //$$     }
+//#if MC == 26.3
+//$$
+//$$     /** Keep client-only commands on the native click path instead of executing them on the server. */
+//$$     public static boolean isServerCommand(String command) {
+//$$         var server = carpet.CarpetServer.minecraft_server;
+//$$         return server != null && hasServerCommandRoot(command,
+//$$                 root -> server.getCommands().getDispatcher().getRoot().getChild(root) != null);
+//$$     }
+//$$
+//$$     static boolean hasServerCommandRoot(String command, java.util.function.Predicate<String> registeredRoot) {
+//$$         int start = command.startsWith("/") ? 1 : 0;
+//$$         int end = command.indexOf(' ', start);
+//$$         String root = command.substring(start, end < 0 ? command.length() : end);
+//$$         return !root.isEmpty() && registeredRoot.test(root);
+//$$     }
+//#endif
 //$$ }
 //#else
 //#if MC >= 1.21.8

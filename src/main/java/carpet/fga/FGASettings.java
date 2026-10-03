@@ -49,6 +49,73 @@ public class FGASettings {
     public static final String FGA = "FGA";
 
     //#if MC >= 1.21.1 && MC <= 26.3
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}, options = {"false", "true", "console"})
+    public static String abnormalDisconnectNotice = "false";
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE})
+    public static boolean vehicleJump = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}, validators = RestartBarrelValidator.class)
+    public static boolean doubleBarrelCapacity = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}, options = {"false", "4", "8"},
+            strict = false, validators = PlayerVehicleCapacityValidator.class)
+    public static String playerVehicleCapacity = "false";
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE})
+    public static boolean vehicleNoCramming = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}, options = {"false", "0,0", "30,10"},
+            strict = false, validators = IceFormationChancesValidator.class)
+    public static String iceFormationChances = "false";
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE})
+    public static boolean fastEating = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE})
+    public static boolean noSnowAccumulation = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE}, options = {"false", "true", "1", "2", "3", "4", "5"},
+            strict = false, validators = FlatBedrockValidator.class)
+    public static String flatBedrock = "false";
+
+    public static class RestartBarrelValidator extends Validator<Boolean> {
+        @Override
+        public Boolean validate(CommandSourceStack source, CarpetRule<Boolean> rule, Boolean value, String input) {
+            if (source != null && value != doubleBarrelCapacity) {
+                source.sendSuccess(() -> FGAText.text("carpet-fga-addition.features.barrel.restart"), false);
+            }
+            return value;
+        }
+    }
+
+    public static class PlayerVehicleCapacityValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> rule, String value, String input) {
+            if (!NewFeatureOptions.validCapacity(value)) return null;
+            if (source != null && NewFeatureOptions.capacity(value) > 24 && !vehicleNoCramming) {
+                source.sendSuccess(() -> FGAText.text("carpet-fga-addition.features.vehicle.crammingAdvice"), false);
+            }
+            return value;
+        }
+    }
+
+    public static class IceFormationChancesValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> rule, String value, String input) {
+            return NewFeatureOptions.validIce(value) ? value : null;
+        }
+    }
+
+    public static class FlatBedrockValidator extends Validator<String> {
+        @Override
+        public String validate(CommandSourceStack source, CarpetRule<String> rule, String value, String input) {
+            return NewFeatureOptions.validBedrock(value) ? value : null;
+        }
+    }
+    //#endif
+
+    //#if MC >= 1.21.1 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE}, options = {"false", "true"})
     public static boolean enhancedFakePlayerRejoin = false;
     //#endif
@@ -1320,7 +1387,7 @@ public class FGASettings {
     )
     //#else
     //$$ @Rule(
-        //$$ desc = "Makes newly generated chunks void while retaining biome and structure-location data",
+        //$$ desc = "Keeps biome and structure starts, references and bounding boxes in newly generated chunks while placing no blocks, including blocks that form structures",
         //$$ category = {FGA, FEATURE}
     //$$ )
     //#endif

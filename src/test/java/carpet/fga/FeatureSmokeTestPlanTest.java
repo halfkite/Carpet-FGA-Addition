@@ -36,6 +36,16 @@ final class FeatureSmokeTestPlanTest {
      * history.
      */
     private static final List<SmokePlan> PLANS = List.of(
+            new SmokePlan("terrainLifecycleAndVoidStructureData", "MC >= 1.21 && MC <= 26.3", "26.3",
+                    "MANUAL: docs/terrain_generation_validation.md",
+                    "Run TerrainRegenerationLifecycleTest, MapLoadReleaseLifecycleTest and TerrainGenerationMixinTargetTest. "
+                            + "In disposable worlds test same-process world switching with lazy marks and unfinished clear tasks, "
+                            + "stop the last mapLoad task and observe ticket release, regenerate an unloaded saved chunk on 26.3, "
+                            + "and generate void chunks in normal and flat worlds with structures enabled. Inspect all block sections "
+                            + "and structure starts/references, then save and reload. Keep marked regeneration separate from void generation.",
+                    "No old task reaches the next world; idle ticks keep releasing tickets; 26.3 regeneration removes a saved "
+                            + "marker and produces normal terrain; unmarked void chunks contain only air while retaining biome data "
+                            + "and valid structure metadata before and after reload. Builds alone do not prove in-game behavior."),
             new SmokePlan("playerTpEndControlInjectionSignatures", "MC >= 1.21 && MC <= 26.3", "1.21.10",
                     "scripts/powershell/server-startup-smoke-all.ps1 -VersionList <node> plus MANUAL: disposable portal world",
                     "Run EndPortalMixinTargetTest and full build on the changed node. Start a disposable server, "

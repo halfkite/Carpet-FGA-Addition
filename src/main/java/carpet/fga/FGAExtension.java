@@ -38,6 +38,9 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onGameStarted() {
+        //#if MC >= 1.21.1 && MC <= 26.3
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> BarrelCapacityManager.load());
+        //#endif
         VillagerBreedingAnimalization.registerRuleObserver();
         registerFgaCommandTreeRefreshObserver();
         //#if MC == 26.3
@@ -260,6 +263,9 @@ public class FGAExtension implements CarpetExtension {
 
     @Override
     public void onServerClosed(MinecraftServer server) {
+        //#if MC >= 1.21.1 && MC <= 26.3
+        BarrelCapacityManager.clear();
+        //#endif
         //#if MC == 26.3
         //$$ PlayerSortInventoryApi.clear();
         //#endif

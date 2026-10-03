@@ -1,0 +1,9 @@
+String runDirectory = System.getenv('FGA_PLAYER_WORLD_SMOKE_RUN_DIR')
+if (runDirectory == null || runDirectory.isBlank()) {
+    throw new GradleException('FGA_PLAYER_WORLD_SMOKE_RUN_DIR must point to an isolated test directory')
+}
+gradle.afterProject { project ->
+    if (project.path == ':26.3') {
+        project.loom.runs.named('server') { runDir runDirectory }
+    }
+}

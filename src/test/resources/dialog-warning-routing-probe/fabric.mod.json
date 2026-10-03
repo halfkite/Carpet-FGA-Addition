@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "fga-dialog-warning-routing-probe",
+  "version": "1.0.0",
+  "environment": "server",
+  "entrypoints": { "server": ["carpet.fga.smoke.DialogWarningRoutingProbe"] },
+  "depends": { "carpet-fga-addition": "*", "fabric-api": "*", "carpet": "*" }
+}

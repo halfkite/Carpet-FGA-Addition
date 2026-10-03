@@ -128,7 +128,7 @@ public final class TerrainRegenerationManager {
      * Called by the chunk load hook after it answered a load with a fresh empty chunk, so the run
      * knows this chunk was really generated again instead of being reused from memory.
      */
-    public static void markRegenerated(ChunkPos pos, String dimension) {
+    public static synchronized void markRegenerated(ChunkPos pos, String dimension) {
         long key = chunkKey(pos);
         for (Map.Entry<String, Set<Long>> entry : REGENERATE_ON_LOAD.entrySet()) {
             if (dimension != null && !entry.getKey().equals(dimension)) continue;
@@ -151,7 +151,7 @@ public final class TerrainRegenerationManager {
 
     /** Dimension a chunk is generated in, or null when the chunk does not expose it. */
     private static String dimensionOf(net.minecraft.world.level.chunk.ChunkAccess chunk) {
-        //#if MC >= 1.21 && MC <= 26.2
+        //#if MC >= 1.21 && MC <= 26.3
         Object accessor = ((carpet.fga.mixin.ChunkAccessLevelAccessor) chunk).carpetFga$levelHeightAccessor();
         return accessor instanceof ServerLevel level ? level.dimension().location().toString() : null;
         //#else
@@ -923,6 +923,16 @@ public final class TerrainRegenerationManager {
     }
 
     private static void clearMemory() {
+        // Closed worlds own their tickets; discard every task and player reference before
+        // another integrated server can reuse the same dimensions and chunk coordinates.
+        for (LiveState state : LIVE.values()) {
+            if (state.bossBar != null) state.bossBar.removeAllPlayers();
+            state.bossBar = null;
+            state.owner = null;
+        }
+        LIVE.clear();
+        REGENERATE_ON_LOAD.clear();
+        CLEANUP_AFTER_LOAD.clear();
         TASKS.clear(); DRAFTS.clear(); configPath = null; worldRoot = null;
         invalid = false;
     }

@@ -1,0 +1,11 @@
+String runDirectory = System.getenv('FGA_NEW_FEATURE_PORT_SMOKE_RUN_DIR')
+String projectPath = System.getenv('FGA_NEW_FEATURE_PORT_SMOKE_PROJECT')
+if (runDirectory == null || runDirectory.isBlank() || projectPath == null || projectPath.isBlank()) {
+    throw new GradleException('FGA_NEW_FEATURE_PORT_SMOKE_RUN_DIR and FGA_NEW_FEATURE_PORT_SMOKE_PROJECT are required')
+}
+
+gradle.afterProject { project ->
+    if (project.path == projectPath) {
+        project.loom.runs.named('server') { runDir runDirectory }
+    }
+}
