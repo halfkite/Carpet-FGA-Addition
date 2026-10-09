@@ -51,6 +51,16 @@ public final class PlayerPossessionCommand {
                 .then(Commands.literal("stop").executes(PlayerPossessionCommand::stop));
     }
 
+    public static LiteralArgumentBuilder<CommandSourceStack> fgaNode() {
+        return Commands.literal("possess")
+                .requires(source -> PlayerPossessionManager.canUsePossessionCommand(source.getPlayer()))
+                .then(Commands.literal("stop").executes(PlayerPossessionCommand::stopCurrent))
+                .then(Commands.argument("player", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .suggests((context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                                suggestNames(context.getSource(), java.util.List.of()), builder))
+                        .executes(PlayerPossessionCommand::start));
+    }
+
     private static int start(CommandContext<CommandSourceStack> context) {
         ServerPlayer actor = context.getSource().getPlayer();
         if (actor == null) return fail(context, "denied");
@@ -63,6 +73,11 @@ public final class PlayerPossessionCommand {
     private static int stop(CommandContext<CommandSourceStack> context) {
         ServerPlayer actor = context.getSource().getPlayer();
         return actor != null && PlayerPossessionManager.stop(actor, getString(context, "player"))
+                ? 1 : fail(context, "no_session");
+    }
+
+    private static int stopCurrent(CommandContext<CommandSourceStack> context) {
+        return PlayerPossessionManager.stopCurrent(context.getSource().getPlayer())
                 ? 1 : fail(context, "no_session");
     }
 

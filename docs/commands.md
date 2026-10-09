@@ -1,6 +1,6 @@
 # Carpet FGA Addition 命令
 
-> 文档版本：`1.6.1`
+> 文档版本：`1.6.2`
 
 ## 旁观者跨维度传送
 
@@ -140,7 +140,11 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 ```text
 /player <name> possess         # 操控指定名称的在线玩家或假人
 /player <name> possess stop    # 结束当前夺舍关系
+/fga possess <name>            # 通过 FGA 入口开始夺舍
+/fga possess stop              # 结束当前夺舍关系，无需填写目标名
 ```
+
+服务器夺舍权限同时受 `playerPossession` 和 Carpet 的 `commandPlayer` 控制。单人世界服主在预先启用 `playerPossession` 后，可通过 `/fga possess <name>` 开始夺舍、通过 `/fga possess stop` 结束会话，无需开放局域网；普通服务器仍遵守 `commandPlayer`
 
 <a id="cmd-control-player"></a>
 

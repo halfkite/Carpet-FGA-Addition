@@ -1,6 +1,6 @@
 # Carpet FGA Addition Commands
 
-> Documentation version: `1.6.1`
+> Documentation version: `1.6.2`
 
 ## Spectator cross-dimension teleport
 
@@ -141,7 +141,9 @@ Effective versions: `1.21+`. Install FGA on the server; both participants may us
 
 - `/player <name> possess` follows the PlayerControl reference implementation: it swaps the live entities' game state, identity, position, view, inventory, containers and riding relationship while the controller keeps its own connection and command source.
 - `/player <target-name> possess stop` ends that session for either participant.
+- `/fga possess <name>` starts possession through FGA's command root; `/fga possess stop` ends the current session without a target name.
 - `playerPossession` defaults to `false`. `true` allows all targets; `onlyfake` restricts everyone, including OPs, to fake targets; `opreal` restricts real targets to OPs; `ops` restricts all possession to OPs. Carpet `commandPlayer` also applies.
+- Servers apply Carpet `commandPlayer` to possession. In singleplayer, the world owner can use `/fga possess <name>` while `playerPossession` is enabled without opening the world to LAN. The FGA entry exposes only the possession actions; other Carpet `/player` commands retain their original permission checks.
 - Both entities and UUIDs remain in place. They continue normal world simulation, and damage, movement, experience and item changes during the session remain with the current entity state. Stopping swaps the states back without copying or writing offline player data.
 - Self-possession, overlapping sessions and nested possession are rejected. PlayerControl's fake-player `kill()` lifecycle releases the session; FGA handles disconnects, permission loss and rule shutdown.
 - In Minecraft 1.21.1, logout ends possession before the player is saved and removed. Each body retains its current position when ownership is restored; logout does not bring the bodies together.

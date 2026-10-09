@@ -46,10 +46,22 @@ public final class PlayerPossessionManager {
     }
 
     public static boolean isOp(MinecraftServer currentServer, com.mojang.authlib.GameProfile profile) {
+        if (isSingleplayerOwner(currentServer, profile)) return true;
         //#if MC >= 1.21.10
         //$$ return currentServer.getPlayerList().isOp(new NameAndId(profile));
         //#else
         return currentServer.getPlayerList().isOp(profile);
+        //#endif
+    }
+
+    /** The integrated singleplayer owner may use possession without opening LAN. */
+    public static boolean isSingleplayerOwner(MinecraftServer currentServer,
+                                              com.mojang.authlib.GameProfile profile) {
+        if (currentServer == null || profile == null) return false;
+        //#if MC >= 1.21.10
+        //$$ return currentServer.isSingleplayerOwner(new NameAndId(profile));
+        //#else
+        return currentServer.isSingleplayerOwner(profile);
         //#endif
     }
 
@@ -91,21 +103,25 @@ public final class PlayerPossessionManager {
 
     /** Keeps the commandPlayer gate tied to the login identity during possession. */
     private static boolean canUsePlayerCommand(ServerPlayer controller, MinecraftServer currentServer) {
+        if (controller == null) return false;
+        if (isSingleplayerOwner(currentServer, controller.getGameProfile())) return true;
         if (!isParticipant(controller)) {
+            // Name-resolution sources have no command permissions on newer versions.
             return CommandHelper.canUseCommand(
                     //#if MC == 1.21.1
                     controller.createCommandSourceStack(),
                     //#else
-                    //$$ controller.createCommandSourceStackForNameResolution(controller.serverLevel()),
+                    //$$ controller.createCommandSourceStack(),
                     //#endif
                     CarpetSettings.commandPlayer);
         }
         if (currentServer == null) return false;
+        com.mojang.authlib.GameProfile original = SWAPS.originalProfile(controller.getUUID(), currentServer);
+        if (isSingleplayerOwner(currentServer, original)) return true;
         String value = String.valueOf(CarpetSettings.commandPlayer);
         if ("true".equals(value)) return true;
         if ("false".equals(value)) return false;
         int required = "ops".equals(value) ? 2 : parsePermissionLevel(value);
-        com.mojang.authlib.GameProfile original = SWAPS.originalProfile(controller.getUUID(), currentServer);
         return required >= 0 && original != null
                 && PossessionPermissionContext.withOriginalPermission(
                         //#if MC >= 1.21.11
@@ -115,6 +131,12 @@ public final class PlayerPossessionManager {
                         //#else
                         () -> currentServer.getProfilePermissions(original) >= required);
                         //#endif
+    }
+
+    public static boolean canUsePossessionCommand(ServerPlayer player) {
+        return player != null && (isParticipant(player)
+                || !"false".equals(FGASettings.playerPossession)
+                && canUsePlayerCommand(player, CarpetServer.minecraft_server));
     }
 
     private static int parsePermissionLevel(String value) {
@@ -214,7 +236,10 @@ public final class PlayerPossessionManager {
         if (currentServer == null) return;
         for (UUID id : SWAPS.getAllParticipantIds()) {
             ServerPlayer player = currentServer.getPlayerList().getPlayer(id);
-            if (player != null) currentServer.getPlayerList().sendPlayerPermissionLevel(player);
+            if (player != null) {
+                currentServer.getPlayerList().sendPlayerPermissionLevel(player);
+                currentServer.getCommands().sendCommands(player);
+            }
         }
     }
 
@@ -269,6 +294,14 @@ public final class PlayerPossessionManager {
         return true;
     }
 
+    public static boolean stopCurrent(ServerPlayer actor) {
+        MinecraftServer currentServer = CarpetServer.minecraft_server;
+        if (actor == null || currentServer == null || !isParticipant(actor)
+                || SWAPS.getSwapPartner(actor.getUUID()).isEmpty()) return false;
+        end(actor, currentServer);
+        return true;
+    }
+
     public static void endFor(ServerPlayer player) {
         if (player != null && isParticipant(player)) end(player, CarpetServer.minecraft_server);
     }
@@ -304,6 +337,8 @@ public final class PlayerPossessionManager {
         CONTROLLERS.remove(partnerId);
         PlayerSwapManager.SwapResult result = SWAPS.release(actor, currentServer);
         if (!result.success()) return;
+        currentServer.getCommands().sendCommands(actor);
+        if (other != null) currentServer.getCommands().sendCommands(other);
         refreshDisplayNames(currentServer);
         if (actor.isAlive() && !actor.isRemoved()) actor.sendSystemMessage(text(actor, "ended"));
         if (other != null && other.isAlive() && !other.isRemoved()) other.sendSystemMessage(text(other, "ended"));

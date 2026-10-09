@@ -1,56 +1,23 @@
 //#if MC >= 1.20.1 && MC <= 26.3
 package carpet.fga;
 
+import carpet.CarpetServer;
+import carpet.api.settings.CarpetRule;
 import net.fabricmc.loader.api.FabricLoader;
 
-import java.lang.reflect.Method;
-
-/** Optional compatibility with both package generations of Carpet AMS Addition. */
+/** Reads the current Carpet rule independently of AMS internal settings classes. */
 final class AmsLargeShulkerBoxCompat {
     private static final String MOD_ID = "carpet-ams-addition";
-    private static final LazyRuleAccess RULE = findRule();
 
     private AmsLargeShulkerBoxCompat() {
     }
 
     static boolean isEnabled() {
-        return RULE != null && RULE.isEnabled();
-    }
-
-    private static LazyRuleAccess findRule() {
-        if (!FabricLoader.getInstance().isModLoaded(MOD_ID)) return null;
-        for (String className : new String[]{
-                "carpetamsaddition.CarpetAMSAdditionLazySettings",
-                "club.mcams.carpet.AmsServerLazySettings"
-        }) {
-            LazyRuleAccess access = LazyRuleAccess.create(className);
-            if (access != null) return access;
-        }
-        return null;
-    }
-
-    private record LazyRuleAccess(Method method, Object rule) {
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        private static LazyRuleAccess create(String className) {
-            try {
-                ClassLoader loader = AmsLargeShulkerBoxCompat.class.getClassLoader();
-                Class<?> settingsClass = Class.forName(className, false, loader);
-                Class<? extends Enum> ruleClass = Class.forName(className + "$Rule", false, loader)
-                        .asSubclass(Enum.class);
-                Object rule = Enum.valueOf(ruleClass, "LARGE_SHULKER_BOX");
-                return new LazyRuleAccess(settingsClass.getMethod("isEnabled", ruleClass), rule);
-            } catch (ReflectiveOperationException | LinkageError ignored) {
-                return null;
-            }
-        }
-
-        private boolean isEnabled() {
-            try {
-                return Boolean.TRUE.equals(method.invoke(null, rule));
-            } catch (ReflectiveOperationException | LinkageError ignored) {
-                return false;
-            }
-        }
+        if (!FabricLoader.getInstance().isModLoaded(MOD_ID)) return false;
+        var settingsManager = CarpetServer.settingsManager;
+        if (settingsManager == null) return false;
+        CarpetRule<?> rule = settingsManager.getCarpetRule("largeShulkerBox");
+        return rule != null && Boolean.TRUE.equals(rule.value());
     }
 }
 //#endif

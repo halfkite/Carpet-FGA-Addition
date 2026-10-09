@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.6.1`
+> Documentation version: `1.6.2`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default
 
@@ -44,7 +44,8 @@ Possession uses PlayerControl's online entity state swap; the fake player's `kil
 `onlyfake` allows every player to possess fake players only<br>
 `opreal` allows regular players to possess fake players while operators may possess fake or real players<br>
 `ops` allows operators only to possess fake or real players<br>
-The feature also obeys Carpet `commandPlayer` entry permission. Its implementation and main code come from the [PlayerControl](https://modrinth.com/mod/playercontrol) mod (CC0-1.0), and it is server-side only
+Servers apply Carpet `commandPlayer` entry permission. In singleplayer, the world owner can use `/fga possess <name>` after enabling this rule, without opening the world to LAN. The FGA entry exposes only possession actions; other Carpet `/player` commands keep their original permissions<br>
+The implementation and main code come from the [PlayerControl](https://modrinth.com/mod/playercontrol) mod (CC0-1.0), and it is server-side only
 
 - Type: `Enum`
 - Default: `false`
@@ -405,7 +406,7 @@ Maps the client-visible IDs of the Overworld, Nether, and End to separate minima
 
 Removes the confirmation warning for server-sent run-command clicks and dialog actions; available on current build nodes 1.21.8, 1.21.10, 1.21.11, 26.1.2, 26.2 and 26.3
 
-On Minecraft 26.3, chat buttons bypass confirmation only for `/` commands registered in the server command tree; chat instructions such as `!!spbridge` and client commands absent from that tree such as Org `/highlight` keep their native handling; dialogs support server commands with an optional `/` and preserve native client/chat templates; client/server command name conflicts cannot be distinguished on the server; this fix has not been ported to other versions
+On these build nodes, chat buttons bypass confirmation only for `/` commands registered in the server command tree; chat instructions such as `!!spbridge` and client commands absent from that tree such as Org `/highlight` keep their native handling; dialogs support server commands with an optional `/` and preserve native client/chat templates; client/server command name conflicts cannot be distinguished on the server
 
 - Type: `Boolean`
 - Default: `false`
@@ -660,7 +661,7 @@ Enables villager performance optimization and controls `/villagerPerformance` pe
 
 ### Hostile Mob Inventory Access(hostileMobInventoryAccess)
 
-While holding nothing in either hand, sneak-right-click a hostile mob to open its six equipment slots
+On current build nodes, while holding nothing in either hand, sneak-right-click a hostile mob to open its six equipment slots and eight-slot persistent backpack; backpack contents drop when the mob dies
 
 - Type: `Boolean`
 - Default: `false`

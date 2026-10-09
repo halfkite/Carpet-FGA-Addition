@@ -56,6 +56,7 @@ public final class FGACommand {
         redirect(root, "playerLoadDistance", dispatcher);
         //#endif
         //#if MC >= 1.21 && MC <= 26.3
+        root.then(PlayerPossessionCommand.fgaNode());
         // Register this branch directly instead of looking up the root command
         // during extension registration.  This keeps /fga mapLoad present when
         // the client command tree is rebuilt after its independent permission rule changes.

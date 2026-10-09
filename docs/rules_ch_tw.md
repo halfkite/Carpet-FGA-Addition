@@ -1,6 +1,6 @@
 # Carpet FGA Addition 規則
 
-> 文件版本：`1.6.1`
+> 文件版本：`1.6.2`
 
 所有規則透過 `/carpet <規則名> <值>` 管理。未特別說明時，規則預設關閉
 
@@ -44,7 +44,8 @@
 規則值為 `onlyfake` 時所有玩家僅可控制假人<br>
 規則值為 `opreal` 時普通玩家僅可控制假人，OP 可控制假人或真人<br>
 規則值為 `ops` 時僅 OP 可控制假人或真人<br>
-本功能同時遵守 Carpet `commandPlayer` 入口許可權，功能和主要程式碼來源於模組 [PlayerControl](https://modrinth.com/mod/playercontrol)（CC0-1.0）本功能為純服務端實現
+伺服器同時遵守 Carpet `commandPlayer` 入口許可權；單人世界服主預先啟用本規則後，可使用 `/fga possess <名字>` 開始操控，無需開放區域網路<br>
+功能和主要程式碼來源於模組 [PlayerControl](https://modrinth.com/mod/playercontrol)（CC0-1.0）本功能為純服務端實現
 
 - 型別：`列舉`
 - 預設值：`false`
@@ -713,7 +714,7 @@ ops：需要 OP 2 及以上<br>
 
 ### 敵對生物物品欄訪問(hostileMobInventoryAccess)
 
-雙手空手潛行右鍵敵對生物，開啟其六個裝備槽
+在目前支援建置節點中，雙手空手潛行右鍵敵對生物，開啟其六個裝備槽和八格可持久化背包，生物死亡時掉落背包物品
 
 - 型別：`布林`
 - 預設值：`false`

@@ -181,7 +181,9 @@ public final class PossessionTest implements ModInitializer {
             PlayerPossessionManager.tick(server);
             check(PlayerPossessionManager.isParticipant(body),
                     "commandPlayer gate keeps the original controller identity");
-            check(PlayerPossessionManager.stop(body, "PossessionBot"), "permission-swapping session exits");
+            check(runCommand("fga possess stop", body) == 1, "FGA stop works after losing OP permission");
+            check(!PlayerPossessionManager.isParticipant(body), "permission-swapping session exits");
+            check(server.getProfilePermissions(body.getGameProfile()) >= 2, "stop restores controller permission");
             server.getPlayerList().deop(body.getGameProfile());
             CarpetSettings.commandPlayer = "true";
         });

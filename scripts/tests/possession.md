@@ -18,12 +18,20 @@ Use a new test world and two vanilla 1.21.1 clients, A and B; keep a third obser
 2. Verify that A's live entity has the fake's position, game mode, inventory, effects, XP, ender chest and riding state, while the fake entity has A's state. Check that both entity UUIDs and connections stay unchanged and that the fake does not disconnect.
 3. While the session is active, move or damage either entity from the server or an observer. Exit and verify that the current state on each entity is exchanged back, including damage, movement and item changes made during the session.
 4. Open inventories and external containers before starting; confirm both are closed. During the session test inventory, crafting, chests, trading, hotbar/offhand and riding, then verify no item duplication or loss on exit.
-5. Enable `true` and possess B. B must stay connected, see its swapped body, and receive an explanatory message. Verify B can chat and use `/player B possess stop`.
-6. Test `false`, `true`, `onlyfake`, `opreal` and `ops` with both OP and non-OP A against fake and real targets. Test Carpet `commandPlayer`, completion, self/overlapping/nested sessions, de-op during possession and rule disable.
-7. Possess an OP target as a non-OP. Verify commands still execute as A and retain A's permission level and position; target operator status must not authorize command-block or other privileged edits.
+5. Enable `true` and possess B. B must stay connected, see its swapped body, and receive an explanatory message. Verify B can chat and use `/fga possess stop` to end the session.
+6. Test `false`, `true`, `onlyfake`, `opreal` and `ops` with both OP and non-OP A against fake and real targets. With `commandPlayer=ops` and `playerPossession=onlyfake`, confirm OP A can start possession of a Carpet fake player and non-OP A cannot; with `commandPlayer=true`, confirm non-OP A can start it. Set `permissionSwapsToo=false`, start possession of a non-OP fake, confirm the controller's command permissions follow the fake, `/player` remains gated by `commandPlayer`, and `/fga possess stop` still works and restores the original command tree. Test completion, self/overlapping/nested sessions, de-op during possession and rule disable.
+7. With `permissionSwapsToo=true`, possess an OP target as a non-OP. Verify commands still execute as A and retain A's permission level and position; target operator status must not authorize command-block or other privileged edits.
 8. Start across dimensions, travel through Nether/End portals while possessed, and exit. Check chunk loading, weather, effects, containers and teleport confirmations on both clients. Verify normal signed chat before, during and after possession on an online-mode test server.
 9. Test both participants dying, disconnecting, being kicked, fake-player `kill()` and a server restart. Verify the reference PlayerControl lifecycle releases the session when the fake kill path runs, with no duplicate items or persistent possession state. Automatic actions must not resume after exit.
+10. For each supported version, create a singleplayer world with cheats disabled and `playerPossession=onlyfake` preconfigured as the rule default. Without opening the world to LAN, verify `/fga possess <fake>` starts control and `/fga possess stop` ends it. Verify other Carpet commands remain unavailable, then repeat on a dedicated server and confirm `commandPlayer` still gates possession.
 
 中文要点：实现采用参考模组的在线实体状态交换，保留双方实体、UUID 和连接，不复制背包或写入离线数据；状态交换期间的伤害、移动和物品变化随实体保留；OP 权限策略由 `permissionSwapsToo` 控制；跨维度、容器、断线和死亡必须实测。服务端测试通过不能替代以上客户端验收。
 
 The logout regression calls vanilla PlayerList.remove with separated, moved bodies and asserts that both real-target and fake-target sessions end without co-locating the bodies. Graphical disconnect/reconnect remains a manual check.
+
+## 1.6.2 verification — 2026-10-09
+
+All ten build nodes passed their builds and 529 JUnit checks; see `build/verification-1.6.2-20261009-115004/summary.json`
+The isolated 1.21.1 server fixture passed 82 checks, including `/fga possess stop` after losing OP and restoration of the original permission level; see `build/verification-1.6.2-20261009-115004/possession-1.21.1.log`
+Singleplayer-owner handling uses GameProfile on 1.21.1, 1.21.3, 1.21.4, 1.21.5 and 1.21.8, and NameAndId on 1.21.10, 1.21.11, 26.1.2, 26.2 and 26.3
+Graphical no-LAN singleplayer tests and multiplayer command-tree display remain manual acceptance items
