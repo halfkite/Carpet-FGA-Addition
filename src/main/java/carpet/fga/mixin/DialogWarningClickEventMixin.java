@@ -34,7 +34,7 @@
 //$$         return original.call(instance, typeKey, type, codec).xmap(Function.identity(), clickEvent -> {
 //$$             if (FGASettings.removeDialogWarning
 //$$                     && clickEvent instanceof ClickEvent.RunCommand(String command)) {
-//#if MC == 26.3
+//#if MC >= 1.21.8 && MC <= 26.3
 //$$                 if (!command.startsWith("/") || !DialogWarning.isServerCommand(command)) {
 //$$                     return clickEvent;
 //$$                 }

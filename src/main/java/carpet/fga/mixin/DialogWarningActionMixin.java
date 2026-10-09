@@ -46,7 +46,7 @@
 //$$                 return action;
 //$$             }
 //$$             if (action instanceof CommandTemplate(ParsedTemplate template)) {
-//#if MC == 26.3
+//#if MC >= 1.21.8 && MC <= 26.3
 //$$                 String command = ((DialogWarningParsedTemplateAccessor) template).carpetFga$getRaw();
 //$$                 if (!DialogWarning.isServerCommand(command) || DialogWarning.DIALOG_SCOPE.get() == null) {
 //$$                     return action;
@@ -77,7 +77,7 @@
 //$$                 return DialogWarning.customDialogAction(tag);
 //$$             }
 //$$             if (action instanceof StaticAction(ClickEvent.RunCommand(String command))) {
-//#if MC == 26.3
+//#if MC >= 1.21.8 && MC <= 26.3
 //$$                 if (!DialogWarning.isServerCommand(command)) {
 //$$                     return action;
 //$$                 }

@@ -2,7 +2,7 @@
 
 ## 实现与代码验证
 
-本轮仅修复 Minecraft 26.3 的 `removeDialogWarning`，规则默认仍为 false；服务端已注册的 `/` 聊天按钮命令继续免确认，其他点击保留原事件，让客户端聊天插件和 Fabric 客户端命令继续处理；对话框的已注册服务端命令允许省略 `/`
+本轮将 `removeDialogWarning` 的聊天命令路由修复同步到 1.21.8、1.21.10、1.21.11、26.1.2、26.2 和 26.3；规则默认仍为 false。以上构建节点中，服务端命令树已注册的 `/` 聊天按钮命令免确认，其他点击保留原事件，让客户端聊天插件和 Fabric 客户端命令继续处理；对话框的已注册服务端命令允许省略 `/`
 
 涉及 `DialogWarning.java`、`DialogWarningClickEventMixin.java` 和 `DialogWarningActionMixin.java`，不修改服务器自定义回包执行权限；查询服务端根命令节点，不扫描世界，不持有命令树缓存
 
@@ -13,6 +13,8 @@
 .\scripts\powershell\dialog-warning-routing-smoke-26.3.ps1 -Java25Home <Java25目录> -FgaJar <归档JAR>
 git diff --check
 ```
+
+2026-10-04 跨版本验证：`buildAllVersions` 在当前十个构建节点均成功，529 项测试全部通过；四项命令路由单测在 1.21.8、1.21.10、1.21.11、26.1.2、26.2、26.3 均参与测试。最终 26.3 归档包完成 42 项隔离服务端编码冒烟，报告 `scripts/logs/dialog-warning-routing-smoke-26.3-20261004-225304-965/summary.txt`；JAR 位于 `mod-builds/20261004-225150/carpet-fga-addition-1.6.1+v2610042245-mc26.3.jar`，SHA-256 `7b8f6321a11aad33d12fa5563e3b24d5a2a19289cb23752c85f2d7ee3a120fa2`
 
 冒烟在 `build/dialog-warning-routing-smoke-26.3-<时间>/` 创建独立测试服务器，不使用真实世界或玩家数据；使用已有 published-fga-jar-smoke init 脚本移除当前源码主输出，只加载指定归档 JAR；探针覆盖点击、静态对话框、动态模板、输入元数据、上下文清理和关闭规则后恢复，报告在 `scripts/logs/` 中
 
@@ -37,4 +39,4 @@ git diff --check
 
 服务端无法判断一个已注册根命令是否同时被客户端同名命令覆盖；若 Org 自定义高亮命令名与服务端已有命令冲突，应使用独立的客户端命令名
 
-其余版本尚未移植本修复；编译和序列化检查不等于游戏内验收
+以上六个构建节点会执行路由单测，完整构建矩阵和各版本测试数记录在 `docs/version_compatibility.md`。真实客户端点击、Org 图形高亮和完整 MCDR 整合包仍需人工验收；编译与编码冒烟不等于游戏内验收

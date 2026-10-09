@@ -1,4 +1,4 @@
-//#if MC == 26.3
+//#if MC >= 1.21.8 && MC <= 26.3
 //$$ package carpet.fga;
 //$$
 //$$ import com.mojang.brigadier.CommandDispatcher;
