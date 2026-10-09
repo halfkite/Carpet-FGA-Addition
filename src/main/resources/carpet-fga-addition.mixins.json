@@ -46,6 +46,7 @@
         //#endif
         "LivingEntityMixin",
         "MobMixin",
+        "MobBackpackMixin",
         "PiglinAiMixin",
         //#if MC >= 1.19.3
         "ClientboundPlayerInfoUpdatePacketMixin",

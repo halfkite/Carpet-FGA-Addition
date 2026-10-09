@@ -5,6 +5,7 @@
 //$$ import com.google.gson.JsonParser;
 //$$ import net.minecraft.world.entity.LivingEntity;
 //$$ import net.minecraft.world.entity.Entity;
+//$$ import net.minecraft.world.entity.Mob;
 //$$ import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
 //$$ import net.minecraft.world.entity.vehicle.minecart.Minecart;
 //$$ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
@@ -31,6 +32,7 @@
 //$$         check(DoubleBarrelCapacityMixin.class, BarrelBlockEntity.class);
 //$$         check(AbnormalDisconnectNoticeMixin.class, ServerGamePacketListenerImpl.class);
 //$$         check(FlatBedrockGenerationMixin.class, NoiseBasedChunkGenerator.class);
+//$$         check(MobBackpackMixin.class, Mob.class);
 //$$     }
 //$$
 //$$     @Test void allBaselineHooksRemainRequiredAndPackaged() throws Exception {
@@ -45,7 +47,7 @@
 //$$                     "FastEatingMixin", "DoubleBarrelCapacityMixin", "AbnormalDisconnectNoticeMixin",
 //$$                     "FlatBedrockGenerationMixin", "PlayerVehicleInputMixin", "PlayerBoatFeaturesMixin",
 //$$                     "PlayerVehicleCapacityMixin", "PlayerMinecartInteractionMixin", "PlayerMinecartJumpMixin",
-//$$                     "VehicleNoCrammingMixin")));
+//$$                     "VehicleNoCrammingMixin", "MobBackpackMixin")));
 //$$         }
 //$$     }
 //$$
@@ -55,7 +57,8 @@
 //$$             if (annotation == null) continue;
 //$$             Class<?>[] args = method.getParameterTypes();
 //$$             for (String name : annotation.method()) {
-//$$                 assertNotNull(target.getDeclaredMethod(name, Arrays.copyOf(args, args.length - 1)));
+//$$                 String methodName = name.split("\\(", 2)[0];
+//$$                 assertNotNull(target.getDeclaredMethod(methodName, Arrays.copyOf(args, args.length - 1)));
 //$$             }
 //$$         }
 //$$     }

@@ -21,7 +21,9 @@ public final class MobEquipmentMenu extends ChestMenu {
         for (int index = 0; index < MobEquipmentContainer.CONTAINER_SIZE; index++) {
             if (!MobEquipmentContainer.isEquipmentIndex(index)) {
                 Slot original = slots.get(index);
-                Slot unavailable = new UnavailableSlot(container, index, original.x, original.y);
+                Slot unavailable = MobEquipmentContainer.isBackpackIndex(index)
+                        ? new BackpackSlot(container, index, original.x, original.y)
+                        : new UnavailableSlot(container, index, original.x, original.y);
                 unavailable.index = original.index;
                 slots.set(index, unavailable);
             }
@@ -61,7 +63,9 @@ public final class MobEquipmentMenu extends ChestMenu {
     public ItemStack quickMoveStack(Player player, int index) {
         if (index < MobEquipmentContainer.CONTAINER_SIZE
                 && !MobEquipmentContainer.isEquipmentIndex(index)) {
-            return ItemStack.EMPTY;
+            return MobEquipmentContainer.isBackpackIndex(index)
+                    ? super.quickMoveStack(player, index)
+                    : ItemStack.EMPTY;
         }
         return super.quickMoveStack(player, index);
     }
@@ -77,9 +81,9 @@ public final class MobEquipmentMenu extends ChestMenu {
     }
 
     private static boolean isUnavailableMenuSlot(int slotId) {
-        return slotId >= 0
-                && slotId < MobEquipmentContainer.CONTAINER_SIZE
-                && !MobEquipmentContainer.isEquipmentIndex(slotId);
+        return slotId >= 0 && slotId < MobEquipmentContainer.CONTAINER_SIZE
+                && !MobEquipmentContainer.isEquipmentIndex(slotId)
+                && !MobEquipmentContainer.isBackpackIndex(slotId);
     }
 
     private static final class UnavailableSlot extends Slot {
@@ -103,5 +107,21 @@ public final class MobEquipmentMenu extends ChestMenu {
             return false;
         }
         //#endif
+    }
+
+    private static final class BackpackSlot extends Slot {
+        private BackpackSlot(Container container, int index, int x, int y) {
+            super(container, index, x, y);
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 64;
+        }
+
+        @Override
+        public int getMaxStackSize(ItemStack stack) {
+            return Math.min(64, stack.getMaxStackSize());
+        }
     }
 }

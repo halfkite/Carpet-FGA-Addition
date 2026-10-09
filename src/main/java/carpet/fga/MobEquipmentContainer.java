@@ -6,6 +6,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.ContainerHelper;
 
 public final class MobEquipmentContainer implements Container {
     public static final int CONTAINER_SIZE = 36;
@@ -37,57 +39,74 @@ public final class MobEquipmentContainer implements Container {
                 return false;
             }
         }
+        for (ItemStack stack : carpetFga$backpackItems()) {
+            if (!stack.isEmpty()) return false;
+        }
         return true;
     }
 
     @Override
     public ItemStack getItem(int index) {
         int equipmentIndex = equipmentIndex(index);
-        return equipmentIndex >= 0
-                ? mob.getItemBySlot(SLOTS[equipmentIndex])
-                : new ItemStack(Items.BARRIER);
+        if (equipmentIndex >= 0) {
+            return mob.getItemBySlot(SLOTS[equipmentIndex]);
+        }
+        int backpackIndex = backpackIndex(index);
+        if (backpackIndex >= 0) return carpetFga$backpackItems().get(backpackIndex);
+        return new ItemStack(Items.BARRIER);
     }
 
     @Override
     public ItemStack removeItem(int index, int count) {
         int equipmentIndex = equipmentIndex(index);
-        if (equipmentIndex < 0 || count <= 0) {
+        if (count <= 0) {
             return ItemStack.EMPTY;
         }
-        ItemStack equipped = getItem(index);
-        ItemStack removed = equipped.split(count);
-        if (equipped.isEmpty()) {
-            mob.setItemSlot(SLOTS[equipmentIndex], ItemStack.EMPTY);
+        if (equipmentIndex >= 0) {
+            ItemStack equipped = getItem(index);
+            ItemStack removed = equipped.split(count);
+            if (equipped.isEmpty()) {
+                mob.setItemSlot(SLOTS[equipmentIndex], ItemStack.EMPTY);
+            }
+            return removed;
         }
-        return removed;
+        int backpackIndex = backpackIndex(index);
+        return backpackIndex >= 0
+                ? ContainerHelper.removeItem(carpetFga$backpackItems(), backpackIndex, count)
+                : ItemStack.EMPTY;
     }
 
     @Override
     public ItemStack removeItemNoUpdate(int index) {
         int equipmentIndex = equipmentIndex(index);
-        if (equipmentIndex < 0) {
-            return ItemStack.EMPTY;
+        if (equipmentIndex >= 0) {
+            ItemStack equipped = getItem(index);
+            mob.setItemSlot(SLOTS[equipmentIndex], ItemStack.EMPTY);
+            return equipped;
         }
-        ItemStack equipped = getItem(index);
-        mob.setItemSlot(SLOTS[equipmentIndex], ItemStack.EMPTY);
-        return equipped;
+        int backpackIndex = backpackIndex(index);
+        return backpackIndex >= 0
+                ? ContainerHelper.takeItem(carpetFga$backpackItems(), backpackIndex)
+                : ItemStack.EMPTY;
     }
 
     @Override
     public void setItem(int index, ItemStack stack) {
         int equipmentIndex = equipmentIndex(index);
-        if (equipmentIndex < 0) {
+        if (equipmentIndex >= 0) {
+            ItemStack equipped = stack;
+            if (stack.getCount() > 1) {
+                equipped = FGACompat.copyWithCount(stack, 1);
+            }
+            EquipmentSlot slot = SLOTS[equipmentIndex];
+            mob.setItemSlot(slot, equipped);
+            if (!equipped.isEmpty()) {
+                mob.setDropChance(slot, 2.0F);
+            }
             return;
         }
-        ItemStack equipped = stack;
-        if (stack.getCount() > 1) {
-            equipped = FGACompat.copyWithCount(stack, 1);
-        }
-        EquipmentSlot slot = SLOTS[equipmentIndex];
-        mob.setItemSlot(slot, equipped);
-        if (!equipped.isEmpty()) {
-            mob.setDropChance(slot, 2.0F);
-        }
+        int backpackIndex = backpackIndex(index);
+        if (backpackIndex >= 0) carpetFga$backpackItems().set(backpackIndex, stack);
     }
 
     @Override
@@ -106,7 +125,7 @@ public final class MobEquipmentContainer implements Container {
 
     @Override
     public boolean canPlaceItem(int index, ItemStack stack) {
-        return isEquipmentIndex(index);
+        return isEquipmentIndex(index) || isBackpackIndex(index);
     }
 
     @Override
@@ -114,10 +133,30 @@ public final class MobEquipmentContainer implements Container {
         for (EquipmentSlot slot : SLOTS) {
             mob.setItemSlot(slot, ItemStack.EMPTY);
         }
+        for (int index = 0; index < MobBackpackData.SIZE; index++) {
+            carpetFga$backpackItems().set(index, ItemStack.EMPTY);
+        }
     }
 
     public static boolean isEquipmentIndex(int index) {
         return equipmentIndex(index) >= 0;
+    }
+
+    public static boolean isBackpackIndex(int index) {
+        return backpackIndex(index) >= 0;
+    }
+
+    private static final int[] BACKPACK_INDICES = {4, 5, 6, 7, 13, 14, 15, 16};
+
+    private static int backpackIndex(int index) {
+        for (int backpackIndex = 0; backpackIndex < BACKPACK_INDICES.length; backpackIndex++) {
+            if (BACKPACK_INDICES[backpackIndex] == index) return backpackIndex;
+        }
+        return -1;
+    }
+
+    private NonNullList<ItemStack> carpetFga$backpackItems() {
+        return ((MobBackpackAccess) (Object) mob).carpetFga$getBackpackData().items();
     }
 
     private static int equipmentIndex(int index) {
