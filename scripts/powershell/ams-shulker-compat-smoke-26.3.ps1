@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory)][string] $LegacyAmsJar,
     [Parameter(Mandatory)][string] $BetaAmsJar,
     [Parameter(Mandatory)][string] $Jdk25,
-    [Parameter(Mandatory)][string] $Jdk21
+    [Parameter(Mandatory)][string] $Jdk21,
+    [ValidateSet('all', 'none', 'legacy-off', 'legacy-on', 'beta')][string] $Scenario = 'all'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -27,7 +28,8 @@ $probeJar = Join-Path $runRoot 'fga-ams-shulker-probe.jar'
 & "$Jdk25\bin\jar.exe" cf $probeJar -C $stage .
 if ($LASTEXITCODE -ne 0) { throw 'Could not package test probe' }
 $results = @()
-foreach ($scenario in @('none', 'legacy-off', 'legacy-on', 'beta')) {
+$scenarios = if ($Scenario -eq 'all') { @('none', 'legacy-off', 'legacy-on', 'beta') } else { @($Scenario) }
+foreach ($scenario in $scenarios) {
     $run = Join-Path $runRoot $scenario
     $mods = Join-Path $run 'mods'
     $world = Join-Path $run 'world'

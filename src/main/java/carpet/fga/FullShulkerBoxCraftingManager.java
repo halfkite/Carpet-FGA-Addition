@@ -306,6 +306,7 @@ public final class FullShulkerBoxCraftingManager {
     private static Analysis analyze(CraftingContainer crafting, Player player) {
         Level level = FGACompat.level(player);
         int shulkerSize = shulkerSize();
+        if (shulkerSize == 0) return Analysis.NONE;
         List<Integer> sourceSlots = new ArrayList<>();
         List<ItemStack> sourceBoxes = new ArrayList<>();
         List<ItemStack> ingredients = new ArrayList<>();
@@ -626,7 +627,9 @@ public final class FullShulkerBoxCraftingManager {
     /** Content representative (count 1) when the input qualifies for the current mode, else EMPTY. */
     public static ItemStack stonecutterBoxContent(Level level, ItemStack input) {
         if (!ruleEnabled(level)) return ItemStack.EMPTY;
-        return singleContent(input, shulkerSize(), new long[1], only64Mode(level));
+        int shulkerSize = shulkerSize();
+        return shulkerSize == 0 ? ItemStack.EMPTY
+                : singleContent(input, shulkerSize, new long[1], only64Mode(level));
     }
 
     private static StonecutterAnalysis analyzeStonecutter(Level level, ItemStack input,
@@ -635,6 +638,7 @@ public final class FullShulkerBoxCraftingManager {
                                                           boolean allowPreviewPlaceholders) {
         if (!ruleEnabled(level) || recipe == null || inventory == null) return null;
         int shulkerSize = shulkerSize();
+        if (shulkerSize == 0) return null;
         long[] totalIn = new long[1];
         ItemStack content = singleContent(input, shulkerSize, totalIn, only64Mode(level));
         if (content.isEmpty() || content.getMaxStackSize() <= 1) return null;
@@ -1090,7 +1094,9 @@ public final class FullShulkerBoxCraftingManager {
 
     private static int shulkerSize() {
         //#if MC >= 1.20.1 && MC <= 26.3
-        return AmsLargeShulkerBoxCompat.isEnabled() ? AMS_LARGE_SHULKER_SIZE : VANILLA_SHULKER_SIZE;
+        int expected = AmsLargeShulkerBoxCompat.isEnabled()
+                ? AMS_LARGE_SHULKER_SIZE : VANILLA_SHULKER_SIZE;
+        return AmsLargeShulkerBoxCompat.actualCapacity() == expected ? expected : 0;
         //#else
         //$$ return VANILLA_SHULKER_SIZE;
         //#endif

@@ -319,7 +319,7 @@ Controls permission for terrain regeneration and terrain clearing commands<br>`f
 
 ### Full Shulker Box Crafting(fullShulkerBoxCrafting)
 
-Allows shulker boxes containing one item type to craft directly through matching crafting or stonecutter recipes<br>`false`: disables the feature<br>`only64`: input boxes must be full at the vanilla stack limit, and outputs and recipe returns must form whole full boxes<br>`any`: input boxes may contain the same amount from 1 to the container stack limit; the total is crafted in one operation, a final output box may be partial, and leftovers remain in the input boxes<br>Each input box must internally contain one stackable item type; different boxes may contain different recipe-slot ingredients, but every input box must have the same item count and capacity<br>The legacy value `true` is treated as `any`
+Allows shulker boxes containing one item type to craft directly through matching crafting or stonecutter recipes<br>`false`: disables the feature<br>`only64`: input boxes must be full at the vanilla stack limit, and outputs and recipe returns must form whole full boxes<br>`any`: input boxes may contain the same amount from 1 to the container stack limit; the total is crafted in one operation, a final output box may be partial, and leftovers remain in the input boxes<br>Each input box must internally contain one stackable item type; different boxes may contain different recipe-slot ingredients, but every input box must have the same item count and capacity<br>Full-box crafting and stonecutting are disabled when the AMS rule disagrees with the actual shulker capacity, preventing item loss<br>The legacy value `true` is treated as `any`
 
 - Type: `String`
 - Default: `false`
