@@ -18,6 +18,7 @@ run/
 .codex/
 .claude/
 .zcode/
+.zcodeignore
 .idea/
 *.iml
 .vscode/
