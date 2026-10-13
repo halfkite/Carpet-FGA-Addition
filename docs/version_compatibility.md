@@ -1,5 +1,19 @@
 # Minecraft 版本适配记录
 
+## 2026-10-13 End Portal / End Gateway Mixin 修复与规则服务端回归
+
+- BUG 表象：项目声明支持 Minecraft 1.21.9 的构建在 Dedicated Server 启动时，`EndPortalBlock` 的 Mixin 因 `entityInside` 注入方法描述符不匹配而失败，服务器未能启动
+- 真实根因：`:1.21.10` 构建节点产出的同一 JAR 声明支持 1.21.9–1.21.10；`MC >= 1.21.10` 分支的 End Portal 回调硬绑定了 1.21.10 新增的尾随 `boolean` 参数，而 Minecraft 1.21.9 目标方法没有该参数。End Gateway 回调存在相同签名风险
+- 修复：`EndPortalPlayerTpControlMixin` 与 `EndGatewayPlayerTpControlMixin` 在 `MC >= 1.21.10` 分支改用 MixinExtras `@Local(argsOnly = true)` 捕获 `Level` 和 `Entity`，不再把目标方法完整参数列表写入注入回调；保留其他预处理分支、注入点和必需注入约束
+- 修复源码条件：`MC >= 1.21.10`；受影响构建节点：`1.21.10`、`1.21.11`、`26.1.2`、`26.2`、`26.3`
+- 完整构建：`:1.21.10:build --no-daemon --configure-on-demand --max-workers=1` 成功，包含 Java 编译、自动测试与 remapJar；`:26.3:build --no-daemon --configure-on-demand --max-workers=1 --offline` 成功，`26.3` 的 76 项自动测试全部通过（0 失败、0 错误），`jar` 生成成功；`1.21.10` 节点产物适配范围仍为 `1.21.9–1.21.10`
+- 服务端启动回归：16/16 子版本通过，测试服务器均启动到 Ready、接受 `carpet quickCraftEasyPlaceEntities true` 并干净停服：`1.21.1`、`1.21.2`、`1.21.3`、`1.21.4`、`1.21.5`、`1.21.6`、`1.21.7`、`1.21.8`、`1.21.9`、`1.21.10`、`1.21.11`、`26.1`、`26.1.1`、`26.1.2`、`26.2`、`26.3`
+- 测试汇总：`scripts/logs/server-startup-smoke-subversions-20261013-130710/summary-combined.json`；原始日志位于 `scripts/logs/server-startup-smoke-subversions-20261013-123649`、`scripts/logs/server-startup-smoke-subversions-20261013-130549`、`scripts/logs/server-startup-smoke-subversions-20261013-130710`。26.x 初次尝试因 Gradle 未发现 JDK 21 toolchain 未能启动；临时烟测命令显式传入 JDK 21 路径并以 JDK 25 运行后全部通过，初次失败日志见 `scripts/logs/server-startup-smoke-subversions-20261013-123649`、`scripts/logs/server-startup-smoke-subversions-20261013-130331`
+- 基线构建归档：`mod-builds/20261013-123405/carpet-fga-addition-1.6.3+v2610131230-mc1.21.9-1.21.10.jar`，SHA-256 见同目录 `build-manifest.json`
+- 26.3 构建归档：`mod-builds/20261013-161941/carpet-fga-addition-1.6.3+v2610131616-mc26.3.jar`，SHA-256 `8ca9105f4770928d6859b281ed740621b61a4be73ba86478cda486f3120f30b5`
+- 验证范围仅包括 Dedicated Server 启动、规则注册与开启命令、正常停服；没有连接 QuickCraft 客户端，也没有验证实体实际放置及材料扣除
+- 待人工确认项：`docs/rules_ch_cn.md` 将规则标为 `1.21+`，而 `docs/quickcraft-entity-placement-server.md` 说明协议服务端支持 Minecraft 1.21 和 1.21.1；本次启动测试不能确认这些版本以外的 QuickCraft 客户端协议行为或实际放置流程
+
 ## 2026-10-09 潜影盒放置修复发布（1.6.3）
 
 - 基于 1.6.2 的潜影盒修复与 AMS 规则直接查询更新模组版本至 `1.6.3`；根目录 `gradle.properties` 是所有版本源码集共用的版本来源

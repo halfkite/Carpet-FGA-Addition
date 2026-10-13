@@ -2,6 +2,9 @@
 package carpet.fga.mixin;
 
 import carpet.fga.PlayerTpEndControlManager;
+//#if MC >= 1.21.10
+import com.llamalad7.mixinextras.sugar.Local;
+//#endif
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -24,15 +27,12 @@ public abstract class EndPortalPlayerTpControlMixin {
     // with false, repeat and verify vanilla teleportation. Never use a production save.
     //#if MC >= 1.21.5
     //#if MC >= 1.21.10
-    //$$ @Inject(
-    //$$         method = "entityInside",
-    //$$         at = @At("HEAD"),
-    //$$         cancellable = true
-    //$$ )
-    //$$ private void carpetFga$controlPlayerEndPortal(BlockState state, Level level, BlockPos pos, Entity entity,
-    //$$                                                 InsideBlockEffectApplier effectApplier, boolean flag, CallbackInfo ci) {
-    //$$     carpetFga$controlPlayerEndPortal(level, entity, ci);
-    //$$ }
+    @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
+    private void carpetFga$controlPlayerEndPortal(CallbackInfo ci,
+                                                  @Local(argsOnly = true) Level level,
+                                                  @Local(argsOnly = true) Entity entity) {
+        carpetFga$controlPlayerEndPortal(level, entity, ci);
+    }
     //#else
     //$$ @Inject(
     //$$         method = "entityInside",
