@@ -249,7 +249,7 @@ Allows crafting one End Portal Frame with eight End Stone around one Eye of Ende
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21-26.3`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
 
 ### Craftable Barrier(craftableBarrier)
 
@@ -800,7 +800,7 @@ Changing this rule closes open stonecutter menus and returns their inputs to ref
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21+`
+- Effective versions: `1.21.1`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
 
 ### Light Source Stonecutting Recipes(lightSourceStonecuttingRecipes)
 
@@ -813,7 +813,7 @@ Changing this rule closes open stonecutter menus and returns their inputs to ref
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21+`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
 
 ### Breakable Light Blocks(lightBlockBreakable)
 
