@@ -3,6 +3,17 @@
     "package": "carpet.fga.mixin",
     "compatibilityLevel": "{{COMPATIBILITY_LEVEL}}",
     "mixins": [
+        //#if MC >= 1.21.3
+        //$$ "SilentFoodEffectsMixin",
+        //$$ "SilentFoodNutritionMixin",
+        //#endif
+        //#if MC == 1.21.1
+        "SilentFoodLegacyMixin",
+        //#endif
+        //#if MC == 26.3
+        //$$ "WitherBossEventAccessor",
+        //$$ "DragonFightBossEventAccessor",
+        //#endif
         //#if MC >= 1.21.1 && MC <= 26.3
         "NaturalWeatherFeaturesMixin",
         "NaturalWorldgenFeaturesMixin",

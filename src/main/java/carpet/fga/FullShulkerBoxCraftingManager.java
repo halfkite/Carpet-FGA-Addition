@@ -613,14 +613,16 @@ public final class FullShulkerBoxCraftingManager {
                 .getRecipesFor(RecipeType.STONECUTTING,
                         new SingleRecipeInput(FGACompat.copyWithCount(content, 1)), level)
                 .stream()
-                .filter(recipe -> !DeepslateStonecuttingRecipes.isDisabledFgaRecipe(recipe))
+                .filter(recipe -> FGACompat.isClientSide(level)
+                        || !DeepslateStonecuttingRecipes.isDisabledFgaRecipe(recipe))
                 .toList();
     }
     //#else
     //$$ public static SelectableRecipe.SingleInputSet<StonecutterRecipe> stonecutterRecipesForContent(
     //$$         Level level, ItemStack content) {
-    //$$     return DeepslateStonecuttingRecipes.filter(
-    //$$             level.recipeAccess().stonecutterRecipes().selectByInput(FGACompat.copyWithCount(content, 1)));
+    //$$     var recipes = level.recipeAccess().stonecutterRecipes()
+    //$$             .selectByInput(FGACompat.copyWithCount(content, 1));
+    //$$     return FGACompat.isClientSide(level) ? recipes : DeepslateStonecuttingRecipes.filter(recipes);
     //$$ }
     //#endif
 

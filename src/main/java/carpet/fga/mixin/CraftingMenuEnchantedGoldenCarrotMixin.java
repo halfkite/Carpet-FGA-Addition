@@ -2,6 +2,8 @@
 package carpet.fga.mixin;
 
 import carpet.fga.EnchantedGoldenCarrotManager;
+import carpet.fga.CraftableBarrierManager;
+import carpet.fga.CraftableEndPortalFrameManager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.CraftingContainer;
@@ -34,6 +36,8 @@ public abstract class CraftingMenuEnchantedGoldenCarrotMixin {
             RecipeHolder<CraftingRecipe> recipe,
             CallbackInfo ci) {
         EnchantedGoldenCarrotManager.filterCraftingResult(crafting, result, recipe);
+        CraftableEndPortalFrameManager.filterCraftingResult(result, recipe);
+        CraftableBarrierManager.filterCraftingResult(result, recipe);
     }
 }
 //#endif

@@ -1,10 +1,24 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.6.3`
+> Documentation version: `1.7.0`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default
 
 Tip: use `Ctrl+F` to quickly find a rule
+
+### silentAutoEat
+
+Allows halfmasa clients to request immediate consumption of inventory food on the server, preserving vanilla hunger, saturation, food effects and use remainders without use animations, eating sounds or food particles<br>
+The server validates the actual stack, inventory state and consumption conditions and prevents duplicate consumption of a request<br>
+Clients must enable both Auto Eat and Silent Eating, and fall back to ordinary eating when the rule is disabled or server support is unavailable
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
+- Installation: FGA, Carpet and Fabric API on the server, halfmasa supporting the silent eating protocol for the matching game version and Fabric API on the client, client-side FGA optional
+- Enable command: `/carpet silentAutoEat true`
 
 ### Custom Join Notice(customJoinNotice) · [Related command](commands_en.md#cmd-join-notice)
 
@@ -226,6 +240,26 @@ The result is an enchanted-looking golden carrot that can be eaten at full hunge
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
 - Effective versions: `1.21-26.3`
+
+### Craftable End Portal Frame(craftableEndPortalFrame)
+
+Allows crafting one End Portal Frame with eight End Stone around one Eye of Ender
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21-26.3`
+
+### Craftable Barrier(craftableBarrier)
+
+Allows crafting one Barrier with eight Glass around one Obsidian
+
+- Type: `Boolean`
+- Default: `false`
+- Options: `false`, `true`
+- Categories: `FGA`, `Feature`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2`, `26.3`
 
 ### Inventory Advancement Optimization(inventoryAdvancementOptimization)
 
@@ -746,15 +780,21 @@ Entries can be edited by clicking the list; totals below 100% leave the remainde
 
 Makes deepslate behave in the stonecutter like 26.1+, and allows it to be placed directly into the stonecutter
 
+Changing this rule closes open stonecutter menus and returns their inputs to refresh recipes and clear stale output previews
+
+Minecraft 26.1.2, 26.2 and 26.3 already provide vanilla deepslate stonecutting recipes, which this rule does not disable
+
 - Type: `Boolean`
 - Default: `false`
 - Options: `false`, `true`
 - Categories: `FGA`, `Feature`
-- Effective versions: `1.21-26.1`
+- Effective versions: `1.21.1`, `1.21.3`, `1.21.4`, `1.21.5`, `1.21.8`, `1.21.10`, `1.21.11`
 
 ### Wood Stonecutting Recipes(woodStonecuttingRecipes)
 
 Allows wood products to be crafted in the stonecutter
+
+Changing this rule closes open stonecutter menus and returns their inputs to refresh recipes and clear stale output previews
 
 - Type: `Boolean`
 - Default: `false`
@@ -766,6 +806,8 @@ Allows wood products to be crafted in the stonecutter
 
 Allows beacons, glowstone, jack-o-lanterns, sea lanterns, frog lights, end rods, torches, candles, and other light-emitting blocks to be placed in the stonecutter and cut into `minecraft:light` blocks with light levels 1 through 15, producing 4 each time; `1.21.9+` also supports copper torches and all oxidized and waxed copper lantern variants<br>
 `minecraft:light` blocks of any light level can also be converted between each other at a one-to-one rate
+
+Changing this rule closes open stonecutter menus and returns their inputs to refresh recipes and clear stale output previews
 
 - Type: `Boolean`
 - Default: `false`

@@ -80,6 +80,10 @@
     "carpet.rule.enchantedGoldenCarrot.name": "Enchanted Golden Carrot",
     "carpet.rule.enchantedGoldenCarrot.desc": "Adds two shapeless recipes: 8 gold ingots with 1 carrot, or 7 gold ingots with 1 regular golden carrot",
     "carpet.rule.enchantedGoldenCarrot.extra.0": "Produces an enchanted-looking golden carrot that can be eaten at full hunger and restores hunger and saturation to 20",
+    "carpet.rule.craftableEndPortalFrame.name": "Craftable End Portal Frame",
+    "carpet.rule.craftableEndPortalFrame.desc": "Allows crafting one End Portal Frame with eight End Stone around one Eye of Ender",
+    "carpet.rule.craftableBarrier.name": "Craftable Barrier",
+    "carpet.rule.craftableBarrier.desc": "Allows crafting one Barrier with eight Glass around one Obsidian",
     "carpet.rule.lightSourceStonecuttingRecipes.name": "Light Source Stonecutting Recipes",
     "carpet.rule.lightSourceStonecuttingRecipes.desc": "Allows beacons, glowstone, jack-o-lanterns, sea lanterns, frog lights, end rods, torches, candles, and other light-emitting blocks to be placed in the stonecutter and cut into minecraft:light blocks with light levels 1 through 15, producing 4 each time; 1.21.9+ also supports copper torches and all oxidized and waxed copper lantern variants",
     "carpet.rule.lightSourceStonecuttingRecipes.extra.0": "minecraft:light blocks of any light level can also be converted between each other in the stonecutter at a one-to-one rate",
@@ -493,5 +497,6 @@
     "carpet.fga.fake_player_item_sort.stock_line": "%s: %s items, about %s boxes; sorter players: %s",
     "carpet.fga.fake_player_item_sort.help_whitelist_status": "Show the active filter mode and built-in list count, or switch vanilla, FGA built-in, or disabled filtering",
     "carpet.fga.fake_player_item_sort.help_stock": "Search item names, IDs, or target fake players with a Java regex; all exports the complete TXT inventory list",
-    "carpet.fga.fake_player_item_sort.help_permission": "Grant true/false access to one command or all for ops, permission levels 0–4, or a player name; OP access is the default"
+    "carpet.fga.fake_player_item_sort.help_permission": "Grant true/false access to one command or all for ops, permission levels 0–4, or a player name; OP access is the default",
+    "carpet.rule.silentAutoEat.desc": "Allow compatible clients to consume their own food instantly while preserving hunger, saturation, effects and remainders, without consumption animation, sounds or particles, disabled by default"
 }

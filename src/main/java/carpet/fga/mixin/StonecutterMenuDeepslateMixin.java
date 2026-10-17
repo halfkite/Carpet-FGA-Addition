@@ -7,6 +7,10 @@ import carpet.fga.DeepslateStonecuttingRecipes;
 import carpet.fga.LightSourceStonecuttingRecipes;
 //#endif
 import net.minecraft.world.inventory.StonecutterMenu;
+//#if MC >= 1.21.1
+import net.minecraft.world.level.Level;
+import org.spongepowered.asm.mixin.Final;
+//#endif
 //#if MC >= 1.21.3
 //$$ import net.minecraft.world.item.crafting.SelectableRecipe;
 //#endif
@@ -21,6 +25,10 @@ import java.util.List;
 
 @Mixin(StonecutterMenu.class)
 public abstract class StonecutterMenuDeepslateMixin {
+    //#if MC >= 1.21.1
+    @Shadow @Final private Level level;
+    //#endif
+
     @Shadow
     //#if MC >= 1.21.3
     //$$ private SelectableRecipe.SingleInputSet<StonecutterRecipe> recipesForInput;
@@ -30,6 +38,10 @@ public abstract class StonecutterMenuDeepslateMixin {
 
     @Inject(method = "setupRecipeList", at = @At("RETURN"))
     private void carpetFga$filterDeepslateRecipes(CallbackInfo callback) {
+        //#if MC >= 1.21.1
+        // Client menus consume the server-filtered recipe packet, not local Carpet defaults.
+        if (carpet.fga.FGACompat.isClientSide(level)) return;
+        //#endif
         //#if MC >= 1.21.3
         //$$ recipesForInput = DeepslateStonecuttingRecipes.filter(recipesForInput);
         //#else

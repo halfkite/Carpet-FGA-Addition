@@ -1,4 +1,6 @@
 {
+    "carpet.rule.silentAutoEat.desc": "允許相容客戶端直接消耗自身背包食物，保留飢餓、飽和度、食用效果及餘留物，無食用動畫、聲音和粒子，預設關閉",
+    "carpet.rule.silentAutoEat.name": "靜默自動進食",
     "carpet.rule.abnormalDisconnectNotice.name": "異常退出提示",
     "carpet.rule.abnormalDisconnectNotice.desc": "偵測真實玩家逾時或連線錯誤，true 輸出公頻，console 僅輸出主控台，false 關閉額外提示，不把普通斷流判斷為異常",
     "carpet.rule.vehicleJump.name": "載具跳躍",
@@ -89,6 +91,10 @@
     "carpet.rule.enchantedGoldenCarrot.name": "附魔金胡蘿蔔",
     "carpet.rule.enchantedGoldenCarrot.desc": "啟用後提供兩種無序配方：8 個金錠加 1 個胡蘿蔔，或 7 個金錠加 1 個普通金胡蘿蔔",
     "carpet.rule.enchantedGoldenCarrot.extra.0": "合成帶有附魔外觀的附魔金胡蘿蔔，可在飽食度滿時食用，食用後飽食度與飽和度均恢復到 20",
+    "carpet.rule.craftableEndPortalFrame.name": "可合成末地門框架",
+    "carpet.rule.craftableEndPortalFrame.desc": "啟用後允許使用八個終界石圍繞一個終界之眼合成一個終界門框架",
+    "carpet.rule.craftableBarrier.name": "可合成屏障",
+    "carpet.rule.craftableBarrier.desc": "啟用後允許使用八個玻璃方塊圍繞一個黑曜石合成一個屏障",
     "carpet.rule.lightSourceStonecuttingRecipes.name": "光源方塊切石配方",
     "carpet.rule.lightSourceStonecuttingRecipes.desc": "啟用後可將信標、螢石、南瓜燈、海晶燈、蛙明燈、終界燭、火把、蠟燭等發光方塊放入切石機並切成亮度等級 1 至 15 的 minecraft:light 光源方塊，每次產出 4 個；1.21.9+ 額外支援銅火把和各種氧化、塗蠟銅燈籠",
     "carpet.rule.lightSourceStonecuttingRecipes.extra.0": "任意亮度等級的 minecraft:light 光源方塊也可以在切石機中互相一比一轉換",

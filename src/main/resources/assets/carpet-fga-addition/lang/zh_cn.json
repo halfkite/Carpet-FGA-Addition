@@ -91,6 +91,10 @@
     "carpet.rule.enchantedGoldenCarrot.name": "附魔金胡萝卜",
     "carpet.rule.enchantedGoldenCarrot.desc": "开启后提供两种无序配方：8 个金锭加 1 个胡萝卜，或 7 个金锭加 1 个普通金胡萝卜",
     "carpet.rule.enchantedGoldenCarrot.extra.0": "合成带有附魔外观的附魔 金胡萝卜，可在饱食度满时食用，食用后饱食度与饱和度均恢复到 20",
+    "carpet.rule.craftableEndPortalFrame.name": "末地门框架可合成",
+    "carpet.rule.craftableEndPortalFrame.desc": "开启后允许使用八个末地石围绕一个末影之眼合成一个末地门框架",
+    "carpet.rule.craftableBarrier.name": "屏障可合成",
+    "carpet.rule.craftableBarrier.desc": "开启后允许使用八个玻璃方块围绕一个黑曜石合成一个屏障",
     "carpet.rule.lightSourceStonecuttingRecipes.name": "光源方块切石配方",
     "carpet.rule.lightSourceStonecuttingRecipes.desc": "开启后可将信标、荧石、南瓜灯、海晶灯、蛙明灯、末地烛、火把、蜡烛等发光方块放入切石机并切成亮度等级 1 至 15 的 minecraft:light 光源方块，每次产出 4 个；1.21.9+ 额外支持铜火把和各种氧化、涂蜡铜灯笼",
     "carpet.rule.lightSourceStonecuttingRecipes.extra.0": "任意亮度等级的 minecraft:light 光源方块也可以在切石机中互相一比一转换",
@@ -507,5 +511,7 @@
     "carpet.fga.fake_player_item_sort.stock_line": "%s：%s 个，约 %s 盒；分类假人：%s",
     "carpet.fga.fake_player_item_sort.help_whitelist_status": "查看当前过滤模式和 FGA 白名单数量，也可切换 vanilla、FGA 内置白名单或关闭",
     "carpet.fga.fake_player_item_sort.help_stock": "按 Java 正则表达式搜索物品名、物品 ID 或目标假人；all 会导出完整 TXT 清单",
-    "carpet.fga.fake_player_item_sort.help_permission": "为单条命令或 all 设置 ops、权限等级 0–4 或玩家名的 true/false 访问权；默认仅 OP 可用"
+    "carpet.fga.fake_player_item_sort.help_permission": "为单条命令或 all 设置 ops、权限等级 0–4 或玩家名的 true/false 访问权；默认仅 OP 可用",
+    "carpet.rule.silentAutoEat.desc": "允许兼容客户端直接消耗自身背包食物，保留饥饿、饱和度、食用效果及余留物，无食用动画、声音和粒子，默认关闭",
+    "carpet.rule.silentAutoEat.name": "静默自动进食"
 }

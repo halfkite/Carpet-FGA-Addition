@@ -567,7 +567,6 @@ public class FGAExtension implements CarpetExtension {
                     //#endif
                     //#endif
                     ) && server != null) {
-                boolean lightRecipesChanged = "lightSourceStonecuttingRecipes".equals(rule.name());
                 net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket packet =
                         new net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket(
                                 //#if MC >= 1.21.3
@@ -577,16 +576,14 @@ public class FGAExtension implements CarpetExtension {
                                 server.getRecipeManager().getRecipes());
                                 //#endif
                 server.getPlayerList().getPlayers().forEach(player -> {
-                    player.connection.send(packet);
-                    //#if MC == 1.21.1
-                    // A stonecutter already open while the rule changes keeps its
-                    // previous recipe list until the next input update. Close it so
-                    // the client immediately rebuilds the list from the new packet.
-                    if (lightRecipesChanged && player.containerMenu
-                            instanceof net.minecraft.world.inventory.StonecutterMenu) {
+                    //#if MC >= 1.21.1
+                    // Recipe updates replace the client's list. Invalidate both menus
+                    // and return input before sending it, so no old selection survives.
+                    if (player.containerMenu instanceof net.minecraft.world.inventory.StonecutterMenu) {
                         player.closeContainer();
                     }
                     //#endif
+                    player.connection.send(packet);
                 });
             }
         });
@@ -596,10 +593,12 @@ public class FGAExtension implements CarpetExtension {
     //#if MC >= 1.21 && MC <= 26.3
     private static void registerEnchantedGoldenCarrotObserver() {
         carpet.api.settings.SettingsManager.registerGlobalRuleObserver((source, rule, userInput) -> {
-            if (!"enchantedGoldenCarrot".equals(rule.name())) return;
+            if (!"enchantedGoldenCarrot".equals(rule.name())
+                    && !"craftableEndPortalFrame".equals(rule.name())
+                    && !"craftableBarrier".equals(rule.name())
+            ) return;
             MinecraftServer server = CarpetServer.minecraft_server;
             if (server == null) return;
-            boolean enabled = FGASettings.enchantedGoldenCarrot;
             //#if MC < 1.21.3
             // Rebuild the client recipe manager from the server's filtered recipe set on
             // both transitions.  A REMOVE packet only clears the known flag; the client
@@ -613,7 +612,7 @@ public class FGAExtension implements CarpetExtension {
                 player.connection.send(packet);
                 java.util.List<net.minecraft.resources.ResourceLocation> knownRecipes =
                         server.getRecipeManager().getRecipes().stream()
-                                .filter(holder -> enabled || !EnchantedGoldenCarrotManager.isRecipe(holder))
+                                .filter(holder -> !EnchantedGoldenCarrotManager.isDisabledRecipe(holder))
                                 .filter(holder -> player.getRecipeBook().contains(holder))
                                 .map(net.minecraft.world.item.crafting.RecipeHolder::id)
                                 .toList();

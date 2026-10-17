@@ -2,8 +2,6 @@
 package carpet.fga;
 
 import net.minecraft.resources.ResourceLocation;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.FabricLoader;
 //#if MC >= 1.20.2
 import net.minecraft.world.item.crafting.RecipeHolder;
 //#else
@@ -25,7 +23,7 @@ public final class DeepslateStonecuttingRecipes {
                     //#if MC >= 1.20.1 && MC <= 1.21.1
                     || WoodStonecuttingRecipes.isWoodRecipe(id)
                     //#elseif MC >= 1.21.4 && MC <= 26.3
-                    || WoodStonecuttingRecipes.isWoodRecipe(id)
+                    //$$ || WoodStonecuttingRecipes.isWoodRecipe(id)
                     //#endif
                     //#if MC >= 1.21 && MC <= 26.3
                     || LightSourceStonecuttingRecipes.isRecipe(id)
@@ -46,11 +44,6 @@ public final class DeepslateStonecuttingRecipes {
 
     public static boolean isDisabledFgaRecipe(Object recipe) {
         if (!isFgaRecipe(recipe)) return false;
-        // The client never receives Carpet rule values, so it must never hide one of our recipes from
-        // its own menu: reading the local default here removed every wood, deepslate and light recipe
-        // from the stonecutter of any client whose config still says false. The server filters its own
-        // menu and decides authoritatively, so the client can safely show all of them.
-        if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) return false;
         ResourceLocation id = recipeId(recipe);
         if (id.getPath().endsWith("_from_deepslate_stonecutting")) {
             return !FGASettings.deepslateStonecuttingRecipes;
@@ -60,9 +53,9 @@ public final class DeepslateStonecuttingRecipes {
             return !FGASettings.woodStonecuttingRecipes;
         }
         //#elseif MC >= 1.21.4 && MC <= 26.3
-        if (WoodStonecuttingRecipes.isWoodRecipe(id)) {
-            return !FGASettings.woodStonecuttingRecipes;
-        }
+        //$$ if (WoodStonecuttingRecipes.isWoodRecipe(id)) {
+            //$$ return !FGASettings.woodStonecuttingRecipes;
+        //$$ }
         //#endif
         //#if MC >= 1.21 && MC <= 26.3
         if (LightSourceStonecuttingRecipes.isRecipe(id)) {

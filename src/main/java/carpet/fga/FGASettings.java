@@ -48,6 +48,11 @@ public class FGASettings {
     /** FGA 自定义分类，会出现在 /carpet 菜单中作为可点击选项 */
     public static final String FGA = "FGA";
 
+    //#if MC >= 1.21.1
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE})
+    public static boolean silentAutoEat = false;
+    //#endif
+
     //#if MC >= 1.21.1 && MC <= 26.3
     @carpet.api.settings.Rule(categories = {FGA, FEATURE}, options = {"false", "true", "console"})
     public static String abnormalDisconnectNotice = "false";
@@ -1289,6 +1294,16 @@ public class FGASettings {
         options = {"false", "true"}
     )
     public static boolean enchantedGoldenCarrot = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+        options = {"false", "true"}
+    )
+    public static boolean craftableEndPortalFrame = false;
+
+    @carpet.api.settings.Rule(categories = {FGA, FEATURE},
+            options = {"false", "true"}
+    )
+    public static boolean craftableBarrier = false;
     //#endif
 
     // Kept for binary/source compatibility with the disabled progress optimizer; it is not a Carpet rule.

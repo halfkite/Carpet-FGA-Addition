@@ -2,7 +2,6 @@
 package carpet.fga.mixin;
 
 import carpet.fga.EnchantedGoldenCarrotManager;
-import carpet.fga.FGASettings;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeInput;
@@ -26,9 +25,8 @@ public abstract class RecipeManagerEnchantedGoldenCarrotMixin {
             Level level,
             RecipeHolder<T> previous,
             CallbackInfoReturnable<Optional<RecipeHolder<T>>> cir) {
-        if (FGASettings.enchantedGoldenCarrot) return;
         Optional<RecipeHolder<T>> result = cir.getReturnValue();
-        if (result.isPresent() && EnchantedGoldenCarrotManager.isRecipe(result.get())) {
+        if (result.isPresent() && EnchantedGoldenCarrotManager.isDisabledRecipe(result.get())) {
             cir.setReturnValue(Optional.empty());
         }
     }

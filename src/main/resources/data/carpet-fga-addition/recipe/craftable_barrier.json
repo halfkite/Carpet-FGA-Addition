@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "craftable_barrier",
+  "pattern": [
+    "GGG",
+    "GOG",
+    "GGG"
+  ],
+  "key": {
+    "G": { "item": "minecraft:glass" },
+    "O": { "item": "minecraft:obsidian" }
+  },
+  "result": {
+    "count": 1,
+    "id": "minecraft:barrier"
+  }
+}

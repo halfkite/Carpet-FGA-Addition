@@ -42,7 +42,9 @@ public final class EnchantedGoldenCarrotManager {
     }
 
     public static boolean isDisabledRecipe(Object recipe) {
-        return isRecipe(recipe) && !FGASettings.enchantedGoldenCarrot;
+        return (isRecipe(recipe) && !FGASettings.enchantedGoldenCarrot)
+                || CraftableEndPortalFrameManager.isDisabledRecipe(recipe)
+                || CraftableBarrierManager.isDisabledRecipe(recipe);
     }
 
     public static boolean blockResultTake(ItemStack stack) {

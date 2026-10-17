@@ -23,6 +23,9 @@ public class CarpetFGAAddition implements ModInitializer {
         //#if MC == 26.3
         //$$ PlayerSortInventoryApi.register();
         //#endif
+        //#if MC >= 1.21.1
+        HalfMasaSupportServer.register();
+        //#endif
         //#if MC >= 1.20.5
         // The handshake also has to live in Fabric's payload registry. Vanilla only finds it through the
         // payload list that CustomPacketPayload.codec receives, and another mod rebuilding that list from a
