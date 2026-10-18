@@ -2,6 +2,9 @@
 package carpet.fga;
 
 import carpet.CarpetSettings;
+//#if MC >= 1.21.4 && MC <= 26.3
+//$$ import carpet.fga.mixin.CarpetFakePlayerSpawningAccessor;
+//#endif
 import carpet.patches.EntityPlayerMPFake;
 import carpet.utils.Messenger;
 import com.mojang.authlib.GameProfile;
@@ -33,6 +36,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.WeakHashMap;
+//#if MC >= 1.21.1 && MC < 1.21.4
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+//#endif
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -56,6 +64,10 @@ public final class FakePlayerProfilePreloadManager {
     private static final long ADAPTIVE_ACTIVE_NANOS = TimeUnit.MINUTES.toNanos(2);
     private static final long PROFILE_TIMEOUT_SECONDS = 60L;
     private static final Map<MinecraftServer, ServerState> STATES = new WeakHashMap<>();
+    //#if MC >= 1.21.1 && MC < 1.21.4
+    // Actual Carpet spawns outlive a rule toggle; keep these separate from cancellable lookups.
+    private static final Map<MinecraftServer, Map<String, Set<CompletableFuture<?>>>> LEGACY_SPAWNS = new WeakHashMap<>();
+    //#endif
     private static final ThreadLocal<Boolean> REPLAYING = ThreadLocal.withInitial(() -> false);
     private static final ThreadLocal<Integer> COMMAND_PASSTHROUGH = ThreadLocal.withInitial(() -> 0);
     private static volatile boolean externalSpawnCallbackLookupDone;
@@ -121,6 +133,9 @@ public final class FakePlayerProfilePreloadManager {
     }
 
     public static synchronized void close(MinecraftServer server) {
+        //#if MC >= 1.21.1 && MC < 1.21.4
+        LEGACY_SPAWNS.remove(server);
+        //#endif
         ServerState state = STATES.remove(server);
         if (state != null) {
             state.close();
@@ -139,18 +154,66 @@ public final class FakePlayerProfilePreloadManager {
                 .performPrefixedCommand(context.getSource(), context.getInput()));
     }
 
+    //#if MC >= 1.21.1 && MC < 1.21.4
+    public static synchronized void trackLegacySpawn(MinecraftServer server, String name, CompletableFuture<?> spawn) {
+        String key = name.toLowerCase(Locale.ROOT);
+        Map<String, Set<CompletableFuture<?>>> pending = LEGACY_SPAWNS.computeIfAbsent(server, ignored -> new HashMap<>());
+        Set<CompletableFuture<?>> futures = pending.computeIfAbsent(key, ignored -> new HashSet<>());
+        futures.add(spawn);
+        spawn.whenComplete((value, error) -> {
+            synchronized (FakePlayerProfilePreloadManager.class) {
+                futures.remove(spawn);
+                if (futures.isEmpty()) pending.remove(key, futures);
+                if (pending.isEmpty() && LEGACY_SPAWNS.get(server) == pending) LEGACY_SPAWNS.remove(server);
+            }
+        });
+    }
+    //#endif
+
+    //#if MC >= 1.21.1 && MC <= 26.3
+    private static boolean isSpawnPending(MinecraftServer server, String requested, String canonical) {
+        //#if MC < 1.21.4
+        synchronized (FakePlayerProfilePreloadManager.class) {
+            Map<String, Set<CompletableFuture<?>>> pending = LEGACY_SPAWNS.get(server);
+            return pending != null && (pending.containsKey(requested.toLowerCase(Locale.ROOT))
+                    || pending.containsKey(canonical.toLowerCase(Locale.ROOT)));
+        }
+        //#else
+        //$$ return CarpetFakePlayerSpawningAccessor.fga$spawningPlayers().stream().anyMatch(
+        //$$         pending -> pending.equalsIgnoreCase(requested) || pending.equalsIgnoreCase(canonical));
+        //#endif
+    }
+    //#endif
+
     private static void preload(MinecraftServer server, String name,
                                 CommandSourceStack source, Runnable continuation) {
         ServerState state = state(server);
         String key = name.toLowerCase(Locale.ROOT);
-        CompletableFuture<Optional<GameProfile>> future = state.inFlight.computeIfAbsent(key,
-                ignored -> CompletableFuture.supplyAsync(() -> resolveProfile(server, name), state.executor)
-                        .orTimeout(PROFILE_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        //#if MC >= 1.21.1 && MC <= 26.3
+        boolean[] ownsPreload = {false};
+        CompletableFuture<Optional<GameProfile>> future = state.inFlight.computeIfAbsent(key, ignored -> {
+            ownsPreload[0] = true;
+            return CompletableFuture.supplyAsync(() -> resolveProfile(server, name), state.executor)
+                    .orTimeout(PROFILE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        });
+        // Sharing a profile lookup must also share its spawn continuation.
+        if (!ownsPreload[0]) {
+            return;
+        }
+        //#else
+        //$$ CompletableFuture<Optional<GameProfile>> future = state.inFlight.computeIfAbsent(key,
+                //$$ ignored -> CompletableFuture.supplyAsync(() -> resolveProfile(server, name), state.executor)
+                        //$$ .orTimeout(PROFILE_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        //#endif
         future.whenComplete((profile, error) -> server.execute(() -> {
             if (state.closed) {
                 return;
             }
-            state.inFlight.remove(key, future);
+            //#if MC >= 1.21.1 && MC <= 26.3
+            try {
+            //#else
+            //$$ state.inFlight.remove(key, future);
+            //#endif
             if (error != null) {
                 LOGGER.warn("Failed to preload fake-player profile {}", name, error);
                 if (source != null) {
@@ -166,7 +229,29 @@ public final class FakePlayerProfilePreloadManager {
                 }
                 return;
             }
+            //#if MC >= 1.21.1 && MC <= 26.3
+            GameProfile resolved = profile.get();
+            // Carpet's asynchronous login reservation retains the requested spelling.
+            // Match both names without case so any first-request spelling is protected.
+            //#if MC >= 1.21.10
+            //$$ var resolvedId = resolved.id();
+            //$$ String resolvedName = resolved.name();
+            //#else
+            var resolvedId = resolved.getId();
+            String resolvedName = resolved.getName();
+            //#endif
+            if (server.getPlayerList().getPlayer(resolvedId) != null
+                    || server.getPlayerList().getPlayerByName(resolvedName) != null
+                    || isSpawnPending(server, name, resolvedName)) {
+                return;
+            }
+            //#endif
             continuation.run();
+            //#if MC >= 1.21.1 && MC <= 26.3
+            } finally {
+                state.inFlight.remove(key, future);
+            }
+            //#endif
         }));
     }
 

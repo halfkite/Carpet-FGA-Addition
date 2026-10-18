@@ -1,6 +1,6 @@
 # Carpet FGA Addition Rules
 
-> Documentation version: `1.7.0`
+> Documentation version: `1.7.1`
 
 All rules are managed with `/carpet <rule> <value>`. Unless stated otherwise, rules are disabled by default
 
@@ -203,6 +203,8 @@ Allows destroyed End gateways to regenerate after the Ender Dragon is killed. On
 ### Fake Player Profile Preload(fakePlayerProfilePreload)
 
 Asynchronously queries a player profile before summoning a fake player so authentication requests do not block the server thread<br>`false`: keeps Carpet’s synchronous profile lookup<br>`always`: asynchronously preloads the profile before every summon<br>`adaptive`: the first summon keeps the original behavior; a second summon within 30 seconds opens a two-minute preload window, and each summon in the window resets its remaining time
+
+Pending preload requests for the same name are merged without regard to case and only the first request spawns a player; before replay, the resolved UUID is checked for an online player and the requested and canonical names are checked without regard to case against pending logins to prevent duplicate creation across dimensions<br>See the [version compatibility record](version_compatibility.md) for each build version's implementation and actual verification status
 
 - Type: `Enum`
 - Default: `false`

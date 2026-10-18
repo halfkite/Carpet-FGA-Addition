@@ -146,6 +146,12 @@ loaded    # 只刷新已加载区块，不请求或生成区块
 
 服务器夺舍权限同时受 `playerPossession` 和 Carpet 的 `commandPlayer` 控制。单人世界服主在预先启用 `playerPossession` 后，可通过 `/fga possess <name>` 开始夺舍、通过 `/fga possess stop` 结束会话，无需开放局域网；普通服务器仍遵守 `commandPlayer`
 
+单人世界按夺舍前的身份识别服主，假人不会因显示服主名称而继承服主权限；`permissionSwapsToo=true` 保留操控者原权限，`false` 使用目标原权限，均不自动开启作弊。`/player` 入口仍受 `commandPlayer` 限制；会话参与者可通过 `/fga possess stop` 退出，即使当前没有普通命令权限。各构建版本的适配和实际验证状态见 [版本适配记录](version_compatibility.md)
+
+夺舍统计使用独立快照，结束时还原统计归属并保留夺舍期间新增的统计，缺失项显式清零以同步客户端；此修复不恢复已经污染的历史统计，各构建版本的实际验证状态见版本适配记录
+
+已知兼容问题：与 RankBoard `1.10.11` 联用时，夺舍中断线仍可能使其离线榜单缓存提前记录交换中的名字与数值，原版统计已正确恢复并保存；此断线缓存路径尚未修复
+
 <a id="cmd-control-player"></a>
 
 ### `/controlPlayer` 与 `/fga controlPlayer`

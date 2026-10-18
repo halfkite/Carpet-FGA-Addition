@@ -188,6 +188,13 @@ public final class PlayerPossessionManager {
         return SWAPS.originalName(id, currentServer);
     }
 
+    //#if MC >= 1.21.1 && MC <= 26.3
+    /** The login identity of an active participant, before its display profile changed. */
+    public static com.mojang.authlib.GameProfile originalProfile(UUID id, MinecraftServer currentServer) {
+        return isParticipantId(id) ? SWAPS.originalProfile(id, currentServer) : null;
+    }
+    //#endif
+
     /** Permission checks must use the pre-possession identity, never the display profile. */
     public static boolean isOriginalOp(ServerPlayer player, MinecraftServer currentServer) {
         if (player == null || currentServer == null) return false;

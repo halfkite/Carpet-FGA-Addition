@@ -1,0 +1,24 @@
+String version = System.getenv('FGA_RECENT_PORT_VERSION')
+String runDirectory = System.getenv('FGA_RECENT_PORT_RUN_DIR')
+String mode = System.getenv('FGA_RECENT_PORT_MODE')
+if (!version || !runDirectory || !(mode in ['server', 'client'])) {
+    throw new GradleException('FGA_RECENT_PORT_VERSION, FGA_RECENT_PORT_RUN_DIR and server/client MODE are required')
+}
+gradle.afterProject { project ->
+    if (project.path == ":${version}") {
+        String vmp = System.getenv('FGA_RECENT_PORT_VMP_JAR')
+        if (mode == 'server' && vmp) {
+            project.dependencies.add(project.mcVersion >= 26_00_00 ? 'runtimeOnly' : 'modRuntimeOnly', project.files(vmp))
+            String libraries = System.getenv('FGA_RECENT_PORT_VMP_LIBS')
+            if (libraries) project.dependencies.add('runtimeOnly', project.fileTree(libraries) { include '*.jar' })
+        }
+        project.loom.runs.named(mode) {
+            runDir runDirectory
+            if (mode == 'client') {
+                if (project.mcVersion >= 26_00_00 || System.getenv('FGA_RECENT_FORCE_XINT') == 'true') vmArg '-Xint'
+                vmArg '-XX:StackShadowPages=32'
+                vmArg '--enable-native-access=ALL-UNNAMED'
+            }
+        }
+    }
+}

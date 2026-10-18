@@ -11,6 +11,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.stats.ServerStatsCounter;
+//#if MC >= 1.21.1 && MC <= 26.3
+import net.minecraft.stats.Stat;
+//#endif
 import carpet.fga.mixin.PossessionStatsCounterAccessor;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
@@ -23,6 +26,9 @@ import net.minecraft.world.level.GameType;
 
 import java.util.ArrayList;
 import java.util.List;
+//#if MC >= 1.21.1 && MC <= 26.3
+import java.util.Map;
+//#endif
 import java.util.UUID;
 
 /** Immutable in-memory copy of one player body, based on PlayerControl. */
@@ -30,7 +36,11 @@ public final class SwapSnapshot {
     private final GameProfile profile;
     private final boolean fallFlying;
     private final boolean wonGame;
-    private final ServerStatsCounter stats;
+    //#if MC >= 1.21.1 && MC <= 26.3
+    private final Map<Stat<?>, Integer> stats;
+    //#else
+    //$$ private final ServerStatsCounter stats;
+    //#endif
     private final HumanoidArm mainArm;
     private final ServerGamePacketListenerImpl connection;
     //#if MC == 1.21.1
@@ -74,7 +84,11 @@ public final class SwapSnapshot {
         this.profile = player.getGameProfile();
         this.fallFlying = player.isFallFlying();
         this.wonGame = player.wonGame;
-        this.stats = player.getStats();
+        //#if MC >= 1.21.1 && MC <= 26.3
+        this.stats = Map.copyOf(((PossessionStatsCounterAccessor) player.getStats()).fga$stats());
+        //#else
+        //$$ this.stats = player.getStats();
+        //#endif
         this.mainArm = player.getMainArm();
         this.connection = player.connection;
         //#if MC == 1.21.1
@@ -222,9 +236,20 @@ public final class SwapSnapshot {
         abilities.applyTo(player.getAbilities());
         player.onUpdateAbilities();
 
-        for (var entry : ((PossessionStatsCounterAccessor) stats).fga$stats().object2IntEntrySet()) {
-            player.getStats().setValue(player, entry.getKey(), entry.getIntValue());
+        //#if MC >= 1.21.1 && MC <= 26.3
+        ServerStatsCounter targetStats = player.getStats();
+        // Vanilla stat packets merge values: send explicit zeros for target-only entries.
+        for (var stat : List.copyOf(((PossessionStatsCounterAccessor) targetStats).fga$stats().keySet())) {
+            if (!stats.containsKey(stat)) targetStats.setValue(player, stat, 0);
         }
+        for (var entry : stats.entrySet()) {
+            targetStats.setValue(player, entry.getKey(), entry.getValue());
+        }
+        //#else
+        //$$ for (var entry : ((PossessionStatsCounterAccessor) stats).fga$stats().object2IntEntrySet()) {
+            //$$ player.getStats().setValue(player, entry.getKey(), entry.getIntValue());
+        //$$ }
+        //#endif
         player.getStats().sendStats(player);
         player.getStats().markAllDirty();
     }

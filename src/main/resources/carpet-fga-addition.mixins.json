@@ -10,6 +10,12 @@
         //#if MC == 1.21.1
         "SilentFoodLegacyMixin",
         //#endif
+        //#if MC >= 1.21.4 && MC <= 26.3
+        //$$ "CarpetFakePlayerSpawningAccessor",
+        //#endif
+        //#if MC >= 1.21.1 && MC < 1.21.4
+        "LegacyFakePlayerSpawnCompletionMixin",
+        //#endif
         //#if MC == 26.3
         //$$ "WitherBossEventAccessor",
         //$$ "DragonFightBossEventAccessor",
@@ -86,8 +92,8 @@
         "ServerCommonPacketListenerAccessor",
         "ServerCommonPacketListenerImplMixin",
         //#if MC == 26.3
-        "SorterFakeJoinNoticeMixin",
-        "SorterFakeLeaveNoticeMixin",
+        //$$ "SorterFakeJoinNoticeMixin",
+        //$$ "SorterFakeLeaveNoticeMixin",
         //#endif
         //#endif
         //#if MC >= 1.16.5 && MC < 1.20.2
@@ -356,6 +362,9 @@
         //#endif
     ],
     "client": [
+        //#if MC >= 1.21.1 && MC <= 26.3
+        "PossessionIntegratedServerMixin",
+        //#endif
         //#if MC >= 1.20.5
         //#if MC >= 26.3
         //$$ "ModernLongNameClientHandshakeMixin",
