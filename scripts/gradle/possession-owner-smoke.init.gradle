@@ -1,0 +1,27 @@
+// Run :<version>:runServer with this init script to check owner behavior in a new disposable world.
+gradle.afterProject { project ->
+    if (project == project.rootProject || !project.plugins.hasPlugin('java')) return
+    def testRun = new File(project.layout.buildDirectory.get().asFile,
+            'possession-owner-smoke/' + new Date().format('yyyyMMdd-HHmmss-SSS'))
+    def addon = project.tasks.register('possessionOwnerProbeJar', Jar) {
+        dependsOn project.tasks.named('testClasses')
+        from(project.sourceSets.test.output.classesDirs) { include 'carpet/fga/smoke/PossessionOwnerProbe.class' }
+        from(project.rootProject.file('scripts/tests/possession-owner-probe'))
+        destinationDirectory.set(new File(testRun, 'mods'))
+        archiveFileName.set('owner-probe.jar')
+    }
+    project.loom.runs.named('server') { runDir testRun.absolutePath }
+    project.tasks.named('runServer') {
+        dependsOn addon
+        doFirst {
+            new File(testRun, 'eula.txt').text = 'eula=true\n'
+            new File(testRun, 'server.properties').text = 'online-mode=false\nserver-ip=127.0.0.1\nserver-port=0\nview-distance=2\nsimulation-distance=2\nlevel-name=fixture\nlevel-seed=123456\npause-when-empty-seconds=0\nlevel-type=minecraft:flat\ngenerator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1}]}\n'
+        }
+        doLast {
+            def log = new File(testRun, 'logs/latest.log').text
+            if (!log.contains('FGA_OWNER_BEHAVIOR_PASS') || log.contains('FGA_OWNER_BEHAVIOR_FAIL')) {
+                throw new GradleException("Possession owner regression failed in ${testRun}")
+            }
+        }
+    }
+}

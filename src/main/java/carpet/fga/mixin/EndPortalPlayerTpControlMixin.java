@@ -27,7 +27,13 @@ public abstract class EndPortalPlayerTpControlMixin {
     // with false, repeat and verify vanilla teleportation. Never use a production save.
     //#if MC >= 1.21.5
     //#if MC >= 1.21.10
+    //#if MC == 1.21.10
+    //$$ // The shared 1.21.9/1.21.10 jar must match both descriptors. The method
+    //$$ // has the same named and intermediary names on each patch version.
+    //$$ @Inject(method = {"entityInside", "method_9548"}, remap = false, at = @At("HEAD"), cancellable = true, require = 1, allow = 1)
+    //#else
     @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
+    //#endif
     private void carpetFga$controlPlayerEndPortal(CallbackInfo ci,
                                                   @Local(argsOnly = true) Level level,
                                                   @Local(argsOnly = true) Entity entity) {

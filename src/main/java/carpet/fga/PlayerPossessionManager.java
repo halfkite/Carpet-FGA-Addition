@@ -152,6 +152,10 @@ public final class PlayerPossessionManager {
         return player != null && SWAPS.isSwapped(player.getUUID());
     }
 
+    static boolean hasSessions() {
+        return !CONTROLLERS.isEmpty();
+    }
+
     public static boolean isParticipantId(UUID id) {
         return id != null && SWAPS.isSwapped(id);
     }

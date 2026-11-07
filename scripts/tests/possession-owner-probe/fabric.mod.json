@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "id": "fga_possession_owner_probe",
+  "version": "1",
+  "environment": "server",
+  "entrypoints": { "main": ["carpet.fga.smoke.PossessionOwnerProbe"] }
+}
