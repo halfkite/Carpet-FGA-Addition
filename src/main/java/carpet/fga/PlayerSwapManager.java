@@ -42,6 +42,7 @@ public final class PlayerSwapManager {
         originalStates.put(uidA, snapA);
         originalStates.put(uidB, snapB);
 
+        PossessionOwners.swapFishingHooks(playerA, playerB);
         snapB.applyTo(playerA, snapB.gameProfile());
         snapA.applyTo(playerB, snapA.gameProfile());
 
@@ -73,6 +74,7 @@ public final class PlayerSwapManager {
             return SwapResult.fail(Component.translatable("fga.possession.failed"));
         }
         if (currentB != null) {
+            PossessionOwners.swapFishingHooks(initiator, playerB);
             currentB.applyTo(initiator, origA.gameProfile());
         } else {
             origA.applyTo(initiator, origA.gameProfile());

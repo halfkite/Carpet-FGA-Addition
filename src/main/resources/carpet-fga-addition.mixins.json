@@ -48,6 +48,35 @@
         "PossessionStatsCounterAccessor",
         "PossessionPlayerAccessor",
         "PossessionFakePlayerMixin",
+        "FoxBodyTrustMixin",
+        "FoxBodyDefenseMixin",
+        //#if MC <= 1.21.4
+        "FoxBodyBreedingMixin",
+        //#endif
+        "AllayBodyFriendMixin",
+        "AllayBodyDeliveryMixin",
+        "BreedingBodyActorMixin",
+        "InteractionBodyActorMixin",
+        "LightningBodyCauseMixin",
+        "CombatBodyCreditMixin",
+        "DamageBodyAttributionMixin",
+        "ProjectileBodyOwnerMixin",
+        //#if MC >= 1.21.10
+        //$$ "PlayerDeflectionBodyMixin",
+        //#endif
+        "OwnedAnimalBodyMixin",
+        "AreaEffectCloudBodyOwnerMixin",
+        "EvokerFangsBodyOwnerMixin",
+        "ItemEntityBodyOwnerMixin",
+        "PrimedTntBodyOwnerMixin",
+        "TameBodyAssignmentMixin",
+        "HorseBodyAssignmentMixin",
+        //#if MC >= 1.21.8
+        //$$ "PearlBodyOwnerMixin",
+        //#endif
+        //#if MC >= 1.21.3
+        //$$ "PossessionPearlRegistryMixin",
+        //#endif
         //#if MC >= 26.1 && MC <= 26.3
         //$$ "FakePlayerRejoinVehicleMixin",
         //#endif

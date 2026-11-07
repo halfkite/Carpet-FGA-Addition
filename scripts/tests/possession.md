@@ -43,6 +43,16 @@ The init script creates a unique directory under `build/possession-tests/`, uses
 
 Tests run actual transformed Minecraft/Carpet server classes with fake connections. They cover the five-value permission matrix, command registration, fake and real targets, exclusive sessions, state/profile/inventory swaps, mounts, dimension changes, rule/OP changes, death and disconnect cleanup, and the no-persistent-data path. This is **not** a graphical vanilla-client or signed-chat integration test.
 
+## Dedicated-server owner regression
+
+Run `bash gradlew :26.2:runServer -I scripts/gradle/possession-owner-smoke.init.gradle --configure-on-demand`, substituting the target build version. The init script creates a fresh loopback-only world under the version’s build directory and requires the `FGA_OWNER_BEHAVIOR_PASS` marker after shutdown. The probe checks the live body during possession, the persistent owner after release, and the main hand used to resolve Looting.
+
+## Delayed arrow ownership
+
+The 1.21.1 fixture fires two arrows as A while A possesses fake player B, ends the session and invokes vanilla arrow impact against two living targets. Its test loot table drops one lapis lazuli plus exactly one per Looting level. Only B holding Looting III must produce four drops. Only A holding Looting III must produce one. The fixture reports `FGA_POSSESSION_LOOT_PASS fake_only=4 controller_only=1`.
+
+To check the same timing in a client, fire an arrow into a bubble-column stasis setup during possession. End possession and change the two main hands before releasing the arrow onto the target. Repeat with the sword on the other player. A normal loot table is random, so the automated fixture uses a fixed count for both comparisons.
+
 ## Manual acceptance / 人工验收
 
 Use a new test world and two vanilla 1.21.1 clients, A and B; keep a third observer available for body/skin checks. Do not use a production save.

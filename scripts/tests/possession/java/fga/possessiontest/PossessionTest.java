@@ -9,11 +9,22 @@ import com.mojang.authlib.GameProfile;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.world.entity.AreaEffectCloud;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.TraceableEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.item.PrimedTnt;
+import net.minecraft.world.entity.projectile.EvokerFangs;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.Fox;
+import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -132,6 +143,7 @@ public final class PossessionTest implements ModInitializer {
         STEPS.add(() -> {
             FGASettings.playerPossession = "true";
             check(PlayerPossessionManager.start(body, real) == null, "true allows real");
+            check(body.getUUID().equals(savedOwner(fireArrow(body))), "real-to-real possession keeps vanilla shooter identity");
             check(body.gameMode.getGameModeForPlayer() == GameType.CREATIVE, "target game mode applied");
             check(body.getInventory().getItem(0).is(Items.COMMAND_BLOCK), "target inventory applied");
         });
@@ -169,7 +181,13 @@ public final class PossessionTest implements ModInitializer {
             check(PlayerPossessionManager.start(body, fake) == null, "cross-dimension fake swap");
             check(body.serverLevel().dimension() == net.minecraft.world.level.Level.NETHER, "controller enters target dimension");
             check(fake.serverLevel().dimension() == net.minecraft.world.level.Level.OVERWORLD, "fake enters controller dimension");
+            Arrow reloaded = new Arrow(EntityType.ARROW, body.serverLevel());
+            reloaded.load(fireArrow(body).saveWithoutId(new CompoundTag()));
+            Wolf wolf = tameWolf(body);
+            check(reloaded.getOwner() == body && wolf.isOwnedBy(body),
+                    "cold ownership lookup finds the controlled body in the Nether");
             check(PlayerPossessionManager.stop(body, "PossessionBot"), "cross-dimension session exits");
+            check(reloaded.getOwner() == fake && wolf.isOwnedBy(fake), "owners resolve in Nether after exit");
         });
         STEPS.add(() -> {
             server.getPlayerList().op(body.getGameProfile());
@@ -229,6 +247,56 @@ public final class PossessionTest implements ModInitializer {
             FGASettings.playerPossession = "onlyfake";
         });
         STEPS.add(() -> {
+            body.teleportTo(server.overworld(), 0, -60, 0, 0, 0);
+            fake.teleportTo(server.overworld(), 3, -60, 0, 0, 0);
+            Arrow before = fireArrow(body);
+            Wolf oldPet = tameWolf(fake);
+            check(PlayerPossessionManager.start(body, fake) == null, "owner regression session starts");
+            check(before.getOwner() == fake && body.getUUID().equals(savedOwner(before)),
+                    "earlier arrow retains A's identity and follows A's current body");
+            check(oldPet.getOwner() == body, "earlier pet follows B's current body");
+
+            var level = body.serverLevel();
+            var melee = body.damageSources().playerAttack(body);
+            check(melee.getEntity() == body && melee.getDirectEntity() == body, "melee uses active body");
+            Wolf newPet = tameWolf(body);
+            var fox = new Fox(EntityType.FOX, level);
+            var parent = new Fox(EntityType.FOX, level) {
+                void spawnChild() { onOffspringSpawnedFromEgg(body, fox); }
+            };
+            parent.spawnChild();
+            var trusted = fox.saveWithoutId(new CompoundTag()).getList("Trusted", net.minecraft.nbt.Tag.TAG_INT_ARRAY);
+            check(trusted.contains(net.minecraft.nbt.NbtUtils.createUUID(fake.getUUID()))
+                    && !trusted.contains(net.minecraft.nbt.NbtUtils.createUUID(body.getUUID())), "fox cub trusts B");
+            var victim = EntityType.CHICKEN.create(level);
+            check(victim != null, "create credit target");
+            victim.hurt(melee, 1);
+            newPet.setInLove(body);
+            check(victim.getKillCredit() == body && newPet.getLoveCause() == body, "active combat and breeding credit");
+            Arrow arrow = fireArrow(body);
+            Arrow loaded = new Arrow(EntityType.ARROW, level);
+            loaded.load(arrow.saveWithoutId(new CompoundTag()));
+            var item = new ItemEntity(level, 0, 0, 0, new ItemStack(Items.STONE));
+            item.setThrower(body);
+            var cloud = new AreaEffectCloud(level, 0, 0, 0);
+            cloud.setOwner(body);
+            var fangs = new EvokerFangs(level, 0, 0, 0, 0, 0, body);
+            var tnt = new PrimedTnt(level, 0, 0, 0, body);
+            var unownedTnt = new PrimedTnt(level, 0, 0, 0, null);
+            var owned = List.<TraceableEntity>of(arrow, loaded, item, cloud, fangs, tnt);
+            for (var entity : owned) check(entity.getOwner() == body, "live owner of " + entity.getClass());
+            check(fake.getUUID().equals(savedOwner(arrow)), "arrow saves B");
+            check(fake.getUUID().equals(savedOwner(newPet)) && newPet.isOwnedBy(body), "new wolf saves B");
+            check(PlayerPossessionManager.stopCurrent(body), "owner regression session stops");
+            check(victim.getKillCredit() == fake && newPet.getLoveCause() == fake, "delayed combat and breeding credit");
+            check(melee.getEntity() == fake && melee.getDirectEntity() == fake, "retained melee source belongs to B");
+            for (var entity : owned) check(entity.getOwner() == fake, "released owner of " + entity.getClass());
+            check(newPet.isOwnedBy(fake) && oldPet.isOwnedBy(fake), "both wolves belong to B after exit");
+            check(before.getOwner() == body, "earlier arrow belongs to A after exit");
+            check(unownedTnt.getOwner() == null, "unowned TNT has no owner");
+        });
+        STEPS.add(() -> OwnerLootProbe.run(body, fake));
+        STEPS.add(() -> {
             check(PlayerPossessionManager.start(body, fake) == null, "death session starts");
             fake.kill();
             check(!PlayerPossessionManager.isParticipant(body), "fake kill releases session");
@@ -247,6 +315,21 @@ public final class PossessionTest implements ModInitializer {
     private static int runCommand(String command, ServerPlayer actor) {
         try { return server.getCommands().getDispatcher().execute(command, actor.createCommandSourceStack()); }
         catch (com.mojang.brigadier.exceptions.CommandSyntaxException exception) { throw new AssertionError(exception); }
+    }
+
+    private static Arrow fireArrow(ServerPlayer shooter) {
+        return new Arrow(shooter.serverLevel(), shooter, new ItemStack(Items.ARROW), new ItemStack(Items.BOW));
+    }
+
+    private static Wolf tameWolf(ServerPlayer owner) {
+        Wolf wolf = new Wolf(EntityType.WOLF, owner.serverLevel());
+        wolf.tame(owner);
+        return wolf;
+    }
+
+    private static UUID savedOwner(Entity entity) {
+        CompoundTag data = entity.saveWithoutId(new CompoundTag());
+        return data.hasUUID("Owner") ? data.getUUID("Owner") : null;
     }
 
     private static void check(boolean condition, String name) {
